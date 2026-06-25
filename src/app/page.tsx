@@ -54,10 +54,14 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId, email, name, ref }),
       })
-      const { url } = await res.json()
-      if (url) window.location.href = url
-    } catch {
-      alert('Fehler beim Checkout. Bitte versuche es erneut.')
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Fehler: ' + (data.error || 'Unbekannter Fehler'))
+      }
+    } catch (e: unknown) {
+      alert('Netzwerkfehler: ' + (e instanceof Error ? e.message : String(e)))
     } finally {
       setLoading(null)
     }
