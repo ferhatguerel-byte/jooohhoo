@@ -20,73 +20,47 @@ export async function POST(req: NextRequest) {
     const { name, planId, ref } = session.metadata || {}
     const email = session.customer_email || ''
     const amount = (session.amount_total || 0) / 100
-
-    // Zufälligen Affiliate-Code generieren
     const affiliateCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // Kunde in DB speichern
-    const customer = await db.customer.upsert({
-      where: { email },
-      create: {
-        email,
-        name,
-        stripeCustomerId: session.customer as string,
-        plan: planId || 'starter',
-        affiliateCode,
-        referredBy: ref || null,
-      },
-      update: {
-        plan: planId || 'starter',
-        stripeCustomerId: session.customer as string,
-      },
+    const customer = db.createCustomer({
+      email,
+      name,
+      stripeCustomerId: session.customer as string,
+      plan: planId || 'starter',
+      affiliateCode,
+      referredBy: ref || undefined,
     })
 
-    // Kauf in DB speichern
-    await db.purchase.create({
-      data: {
-        customerId: customer.id,
-        productName: planId || 'starter',
-        amount,
-        stripeSessionId: session.id,
-        status: 'completed',
-      },
+    db.createPurchase({
+      customerId: customer.id,
+      productName: planId || 'starter',
+      amount,
+      stripeSessionId: session.id,
     })
 
-    // Umsatz tracken
-    const today = new Date().toISOString().split('T')[0]
-    await db.revenue.create({
-      data: { date: today, amount, source: 'subscription' },
-    })
+    db.trackRevenue(new Date().toISOString().split('T')[0], amount, 'subscription')
 
-    // Willkommens-E-Mail senden
     await sendWelcomeEmail(email, name || 'Kunde', planId || 'Starter', affiliateCode)
     await sendPaymentConfirmation(email, amount, planId || 'Starter')
 
-    // Affiliate-Provision verarbeiten (30%)
     if (ref) {
-      const affiliate = await db.customer.findFirst({ where: { affiliateCode: ref } })
+      const affiliate = db.getCustomerByAffiliateCode(ref)
       if (affiliate) {
         const commissionAmount = Math.round(amount * 0.30 * 100) / 100
-        await db.commission.create({
-          data: {
-            affiliateId: affiliate.id,
-            referredEmail: email,
-            purchaseAmount: amount,
-            commissionAmount,
-            status: 'pending',
-          },
+        db.createCommission({
+          affiliateId: affiliate.id as string,
+          referredEmail: email,
+          purchaseAmount: amount,
+          commissionAmount,
         })
-        await sendAffiliateCommissionEmail(affiliate.email, commissionAmount, email)
+        await sendAffiliateCommissionEmail(affiliate.email as string, commissionAmount, email)
       }
     }
   }
 
   if (event.type === 'customer.subscription.deleted') {
-    const subscription = event.data.object as Stripe.Subscription
-    await db.customer.updateMany({
-      where: { stripeCustomerId: subscription.customer as string },
-      data: { plan: 'free', status: 'cancelled' },
-    })
+    const sub = event.data.object as Stripe.Subscription
+    db.updateCustomerPlan(sub.customer as string, 'free', 'cancelled')
   }
 
   return NextResponse.json({ received: true })

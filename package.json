@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.8.0",
+    "better-sqlite3": "^12.11.1",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
@@ -18,8 +19,12 @@
     "resend": "^6.14.0",
     "stripe": "^22.3.0"
   },
+  "optionalDependencies": {
+    "@types/better-sqlite3": "^7.6.12"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
