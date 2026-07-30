@@ -1,0 +1,626 @@
+{
+  "name": "Aufzugsfirma Lead-Agent (Apify + OpenAI + Google Sheets)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "f9773294-b8bd-4206-bd80-027b38ed44e8",
+      "name": "Schedule Trigger (täglich 08:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Setup - vor dem Aktivieren prüfen\n\n1. **Apify**: In den beiden HTTP-Request-Nodes `DEIN_APIFY_TOKEN` durch deinen Apify API-Token ersetzen. Actor ist auf `compass~crawler-google-places` (Google Maps Scraper) gesetzt.\n2. **OpenAI**: In den beiden OpenAI HTTP-Request-Nodes den Header `Authorization: Bearer DEIN_OPENAI_API_KEY` mit deinem echten Key ersetzen.\n3. **Google Sheets**: In allen 3 Google-Sheets-Nodes eine Google-Sheets-Verbindung (OAuth2) wählen und deine Tabelle + Tabellenblatt (Spalten: Firma, Website, Telefon, E-Mail, Adresse, Kategorie, Ansprechpartner, Lead-Score, Notiz, Status, Datum) auswählen.\n4. **Gmail (optional)**: Node ist standardmäßig deaktiviert. Gmail-Verbindung setzen und Node aktivieren, sobald die Mailqualität geprüft wurde. Alternativ durch einen Brevo-HTTP-Request ersetzen.\n5. Workflow oben rechts aktivieren.",
+        "height": 420,
+        "width": 460,
+        "color": 5
+      },
+      "id": "aba48a62-a82c-4fcf-ab20-d77dbed4335f",
+      "name": "Sticky Note: Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Apify-Suchbegriffe (Berlin + 50 km)\n\n- Hausverwaltung Berlin\n- Wohnungsbaugesellschaft Berlin\n- Hotel Berlin\n- Pflegeheim Berlin\n- Krankenhaus Berlin\n- Bauträger Berlin\n- Immobilienverwaltung Potsdam\n- Hausverwaltung Oranienburg\n\nBei Bedarf im Node **HTTP: Apify Actor starten** anpassen/erweitern.",
+        "height": 300,
+        "width": 340,
+        "color": 4
+      },
+      "id": "54bd63ea-f1f1-4baf-b884-d551de752247",
+      "name": "Sticky Note: Suchbegriffe",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/compass~crawler-google-places/runs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "DEIN_APIFY_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"searchStringsArray\": [\n    \"Hausverwaltung Berlin\",\n    \"Wohnungsbaugesellschaft Berlin\",\n    \"Hotel Berlin\",\n    \"Pflegeheim Berlin\",\n    \"Krankenhaus Berlin\",\n    \"Bauträger Berlin\",\n    \"Immobilienverwaltung Potsdam\",\n    \"Hausverwaltung Oranienburg\"\n  ],\n  \"locationQuery\": \"Berlin, Deutschland\",\n  \"maxCrawledPlacesPerSearch\": 50,\n  \"language\": \"de\",\n  \"countryCode\": \"de\"\n}",
+        "options": {}
+      },
+      "id": "21888ae2-2dac-462d-83f0-3ed11b4c8d97",
+      "name": "HTTP: Apify Actor starten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "fc1194a3-dc1f-4698-b822-61175d86d71c",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        360,
+        300
+      ],
+      "webhookId": "b0c1e6d0-0000-4000-8000-000000000001"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/actor-runs/{{$node[\"HTTP: Apify Actor starten\"].json[\"data\"][\"id\"]}}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "DEIN_APIFY_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "86302b50-e91a-4c29-9cf3-d7ae929e60e3",
+      "name": "HTTP: Run Status prüfen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "run-status-cond",
+              "leftValue": "={{$json[\"data\"][\"status\"]}}",
+              "rightValue": "SUCCEEDED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "30379ac3-50d0-4198-ae26-4d702806f3be",
+      "name": "IF: Run fertig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.apify.com/v2/datasets/{{$node[\"HTTP: Apify Actor starten\"].json[\"data\"][\"defaultDatasetId\"]}}/items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "DEIN_APIFY_TOKEN"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "clean",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cfc4f58a-452d-420a-a253-b5d71c6c787e",
+      "name": "HTTP: Datensätze abrufen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "DEINE_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "b393eb84-b1b2-42d8-8922-fafc8159bd09",
+      "name": "Google Sheets: Bestehende Leads lesen",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        100,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nimmt die Apify-Antwort (Array aus Firmen-Datensätzen) und gibt\n// pro Firma ein eigenes n8n-Item zurück (\"Split Out je Firma\").\nconst input = $input.all();\nconst output = [];\n\nfor (const entry of input) {\n  const data = entry.json;\n  if (Array.isArray(data)) {\n    for (const place of data) {\n      output.push({ json: place });\n    }\n  } else if (Array.isArray(data.data)) {\n    for (const place of data.data) {\n      output.push({ json: place });\n    }\n  } else {\n    output.push({ json: data });\n  }\n}\n\nreturn output;\n"
+      },
+      "id": "56c7232a-e043-4cc6-80ff-4dbbc98808ec",
+      "name": "Split Out (je Firma)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Vergleicht jede Firma mit den bereits in Google Sheets vorhandenen\n// Leads (anhand der Website) und markiert Dubletten.\nconst existingItems = $('Google Sheets: Bestehende Leads lesen').all();\nconst existingWebsites = existingItems\n  .map(i => (i.json['Website'] || '').toString().trim().toLowerCase())\n  .filter(w => w.length > 0);\n\nreturn $input.all().map(item => {\n  const website = (item.json.website || '').toString().trim().toLowerCase();\n  item.json.isDuplicate = website.length > 0 && existingWebsites.includes(website);\n  return item;\n});\n"
+      },
+      "id": "083ebe98-372b-48e1-823f-e7b8f8342a90",
+      "name": "Dublette prüfen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "dup-cond",
+              "leftValue": "={{$json.isDuplicate}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a8d070f2-813f-42ad-ba91-f16cda3d858f",
+      "name": "IF: Dublette?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1920,
+        220
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9cd0808c-1c93-47b3-a371-5a1c5a8358e3",
+      "name": "Dublette übersprungen",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2180,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer DEIN_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    { role: \"system\", content: \"Du bist Vertriebsassistent einer Aufzugsfirma (Wartung, Modernisierung, Neuinstallation von Aufzügen) im Raum Berlin/Brandenburg. Du bewertest eingehende Firmen-Leads (Hausverwaltungen, Wohnungsbaugesellschaften, Hotels, Pflegeheime, Krankenhäuser, Bauträger) danach, wie interessant sie als B2B-Kunde für Aufzugsdienstleistungen sind. Antworte ausschließlich als JSON-Objekt mit den Feldern \\\"score\\\" (Ganzzahl 1-10) und \\\"summary\\\" (kurze deutsche Zusammenfassung, max. 2 Sätze).\" },\n    { role: \"user\", content: `Firma: ${$json.title}\\nKategorie: ${$json.categoryName}\\nAdresse: ${$json.address}\\nWebsite: ${$json.website}\\nBewertung/Anzahl Rezensionen: ${$json.totalScore} / ${$json.reviewsCount}` }\n  ]\n}) }}",
+        "options": {}
+      },
+      "id": "5bf35387-3cf2-4a86-bc5b-959dab4b3ee4",
+      "name": "HTTP: OpenAI Lead-Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2180,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrahiert Lead-Score + Zusammenfassung aus der OpenAI-Antwort und\n// verbindet sie wieder mit den ursprünglichen Firmendaten.\nconst results = [];\nconst scoreResponses = $input.all();\nconst companies = $('Dublette prüfen').all().filter(i => i.json.isDuplicate !== true);\n\nfor (let i = 0; i < scoreResponses.length; i++) {\n  const company = companies[i] ? companies[i].json : {};\n  let score = null;\n  let summary = '';\n  try {\n    const content = scoreResponses[i].json.choices[0].message.content;\n    const parsed = JSON.parse(content);\n    score = parsed.score;\n    summary = parsed.summary;\n  } catch (e) {\n    summary = 'Automatische Bewertung fehlgeschlagen';\n  }\n\n  results.push({\n    json: {\n      ...company,\n      leadScore: score,\n      notiz: summary,\n    },\n  });\n}\n\nreturn results;\n"
+      },
+      "id": "60f8b639-b839-4871-9086-baca2294a75d",
+      "name": "Lead-Score parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "DEINE_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Firma": "={{$json.title}}",
+            "Website": "={{$json.website}}",
+            "Telefon": "={{$json.phone || $json.phoneUnformatted}}",
+            "E-Mail": "={{$json.email || ''}}",
+            "Adresse": "={{$json.address}}",
+            "Kategorie": "={{$json.categoryName}}",
+            "Ansprechpartner": "",
+            "Lead-Score": "={{$json.leadScore}}",
+            "Notiz": "={{$json.notiz}}",
+            "Status": "Neu",
+            "Datum": "={{$now.format('yyyy-MM-dd')}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "c1158e98-e846-4960-81e7-0d7e72d1b593",
+      "name": "Google Sheets: Zeile anhängen",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2700,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer DEIN_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gpt-4o-mini\",\n  response_format: { type: \"json_object\" },\n  messages: [\n    { role: \"system\", content: \"Du schreibst im Namen einer Aufzugsfirma (Wartung, Modernisierung, Neuinstallation von Aufzügen, Raum Berlin/Brandenburg) eine kurze, persönliche Erstansprache-E-Mail an einen potenziellen B2B-Kunden. Ton: professionell, freundlich, nicht aufdringlich, auf Deutsch. Antworte ausschließlich als JSON-Objekt mit den Feldern \\\"betreff\\\" und \\\"text\\\" (E-Mail-Text inkl. Grußformel, ohne Signatur).\" },\n    { role: \"user\", content: `Firma: ${$json.title}\\nKategorie: ${$json.categoryName}\\nAdresse: ${$json.address}\\nWebsite: ${$json.website}\\nLead-Score: ${$json.leadScore}\\nNotiz: ${$json.notiz}` }\n  ]\n}) }}",
+        "options": {}
+      },
+      "id": "04f4f1c2-1f70-4c8d-ad79-17d5dedb246e",
+      "name": "HTTP: OpenAI Erstmail erstellen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2960,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrahiert Betreff + Text der generierten Erstmail und hängt sie an\n// die Firmendaten an, damit der Gmail-Node sie versenden kann.\nconst results = [];\nconst mailResponses = $input.all();\nconst companies = $('Lead-Score parsen').all();\n\nfor (let i = 0; i < mailResponses.length; i++) {\n  const company = companies[i] ? companies[i].json : {};\n  let betreff = 'Ihr Aufzug - unverbindliches Angebot';\n  let text = '';\n  try {\n    const content = mailResponses[i].json.choices[0].message.content;\n    const parsed = JSON.parse(content);\n    betreff = parsed.betreff;\n    text = parsed.text;\n  } catch (e) {\n    text = '';\n  }\n\n  results.push({\n    json: {\n      ...company,\n      betreff,\n      mailText: text,\n    },\n  });\n}\n\nreturn results;\n"
+      },
+      "id": "e79bcf99-8a89-4fcb-8fff-1c3672a1eab9",
+      "name": "Erstmail parsen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json['E-Mail']}}",
+        "subject": "={{$json.betreff}}",
+        "message": "={{$json.mailText}}",
+        "options": {}
+      },
+      "id": "cb940a56-4446-4023-8406-e984d59b697d",
+      "name": "Gmail: Versand (optional)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3480,
+        100
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## Optional\n\nDieser Node ist standardmäßig deaktiviert. Erst aktivieren, wenn:\n- Gmail-Zugang verbunden ist\n- die generierten Mailtexte geprüft wurden\n- E-Mail-Adressen tatsächlich vorhanden sind (Google Maps liefert selten E-Mails)\n\nAlternativ: Node löschen und durch einen Brevo-HTTP-Request ersetzen.",
+        "height": 260,
+        "width": 300,
+        "color": 3
+      },
+      "id": "6aa958ed-9a21-48ea-a322-98d4b4c08540",
+      "name": "Sticky Note: Gmail optional",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3480,
+        -180
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (täglich 08:00)": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Apify Actor starten",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets: Bestehende Leads lesen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Apify Actor starten": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Run Status prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Run Status prüfen": {
+      "main": [
+        [
+          {
+            "node": "IF: Run fertig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Run fertig?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Datensätze abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Datensätze abrufen": {
+      "main": [
+        [
+          {
+            "node": "Split Out (je Firma)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out (je Firma)": {
+      "main": [
+        [
+          {
+            "node": "Dublette prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dublette prüfen": {
+      "main": [
+        [
+          {
+            "node": "IF: Dublette?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Dublette?": {
+      "main": [
+        [
+          {
+            "node": "Dublette übersprungen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: OpenAI Lead-Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI Lead-Score": {
+      "main": [
+        [
+          {
+            "node": "Lead-Score parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead-Score parsen": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Zeile anhängen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Zeile anhängen": {
+      "main": [
+        [
+          {
+            "node": "HTTP: OpenAI Erstmail erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: OpenAI Erstmail erstellen": {
+      "main": [
+        [
+          {
+            "node": "Erstmail parsen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Erstmail parsen": {
+      "main": [
+        [
+          {
+            "node": "Gmail: Versand (optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
