@@ -90,10 +90,23 @@ Zusätzlich zum SaaS-Teil gibt es jetzt einen eigenen Produkt-Shop unter `/colle
 gute Margen, TikTok-taugliche Reaktionsvideos). Der Shop läuft als eigener Bereich der App und
 teilt sich Stripe/DB mit dem Rest des Projekts.
 
-Sortiment (Anker + Verbrauch + Impuls):
-- **Anker**: Orthopädisches Hundebett M/L (Marge ~65–75%)
-- **Verbrauch/Zubehör**: Schnüffelteppich, interaktives Denkspiel (Wiederkauf, Marge ~70–80%)
-- **Impuls**: Leckerli-Spender-Ball, Pfotenreiniger-Becher (kleiner Zusatzkauf im Checkout)
+Sortiment (Anker + Verbrauch + Impuls), Produkte anhand echter CJ-Suchergebnisse ausgewählt
+(Preis/Bestellzahlen aus CJ-Dropshipping-Screenshots, siehe `cjMatch`-Feld je Produkt in
+`src/lib/products.ts`):
+- **Anker**: Hundebett Haustiernest M/L — Vorlage "Hundebett, Haustiernest, Katzenmatte"
+  (3,10–20,56€ EK, 795 Bestellungen auf CJ)
+- **Verbrauch/Zubehör**: Hundeschnüffelkissen (4,49€ EK, 630 Bestellungen), Interaktiver
+  Futterpuzzle-Spender (4,88–9,76€ EK, 659 Bestellungen)
+- **Impuls**: Automatischer Leckerli-Ball (0,81–3,34€ EK, 2021 Bestellungen — stärkstes
+  Nachfrage-Signal), Hundekotbeutel-Vorteilspack (11,52€ EK, 76 Bestellungen, klassischer
+  Wiederkauf-Artikel)
+
+**Wichtig:** Die `supplierProductId`/`supplierVariantId` in `src/lib/products.ts` sind noch
+`CJ-PENDING-*`-Platzhalter. Die echte SKU/PID steht erst auf der jeweiligen CJ-Produktdetailseite
+(nicht im Such-Ergebnis-Grid) — dort das passende Produkt öffnen, die ID aus der URL/Produktseite
+übernehmen und die Platzhalter ersetzen, bevor `CJ_API_EMAIL`/`CJ_API_KEY` live geschaltet werden.
+Ein Pfotenreiniger-Becher war auf CJ nicht auffindbar (auch nicht unter "pet paw washer") und
+wurde deshalb durch den Hundekotbeutel-Vorteilspack ersetzt.
 
 - Produktkatalog: `src/lib/products.ts` (Preise, Beschreibungen, Bilder-Icons anpassen)
 - Kollektionsseite: `/collections/hunde-komfort`

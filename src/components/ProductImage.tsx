@@ -1,4 +1,4 @@
-import { BedDouble, LayoutGrid, PawPrint, Bone, Droplets } from 'lucide-react'
+import { BedDouble, LayoutGrid, PawPrint, Bone, ShoppingBag } from 'lucide-react'
 import type { Product } from '@/lib/products'
 
 const ICONS = {
@@ -6,7 +6,7 @@ const ICONS = {
   mat: LayoutGrid,
   paw: PawPrint,
   bone: Bone,
-  wash: Droplets,
+  bag: ShoppingBag,
 }
 
 export function ProductImage({ product, className }: { product: Product; className?: string }) {
