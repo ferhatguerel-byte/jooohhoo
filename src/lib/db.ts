@@ -55,6 +55,32 @@ function initSchema(db: Database.Database) {
       source TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      stripe_session_id TEXT UNIQUE,
+      customer_email TEXT,
+      customer_name TEXT,
+      shipping_address TEXT,
+      subtotal REAL,
+      currency TEXT DEFAULT 'eur',
+      status TEXT DEFAULT 'paid',
+      supplier_status TEXT DEFAULT 'pending',
+      supplier_order_id TEXT,
+      supplier_error TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS order_items (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      product_id TEXT NOT NULL,
+      supplier_variant_id TEXT,
+      name TEXT,
+      quantity INTEGER,
+      unit_price REAL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `)
 }
 
@@ -106,6 +132,53 @@ export const db = {
 
   trackRevenue(date: string, amount: number, source: string) {
     getDb().prepare('INSERT INTO revenue (id, date, amount, source) VALUES (?, ?, ?, ?)').run(uid(), date, amount, source)
+  },
+
+  createOrder(data: {
+    stripeSessionId: string
+    customerEmail: string
+    customerName?: string
+    shippingAddress: string
+    subtotal: number
+    currency?: string
+    items: { productId: string; supplierVariantId: string; name: string; quantity: number; unitPrice: number }[]
+  }) {
+    const id = uid()
+    const database = getDb()
+    const insertOrder = database.prepare(`
+      INSERT INTO orders (id, stripe_session_id, customer_email, customer_name, shipping_address, subtotal, currency, status, supplier_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'paid', 'pending')
+    `)
+    const insertItem = database.prepare(`
+      INSERT INTO order_items (id, order_id, product_id, supplier_variant_id, name, quantity, unit_price)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+    const tx = database.transaction(() => {
+      insertOrder.run(id, data.stripeSessionId, data.customerEmail, data.customerName, data.shippingAddress, data.subtotal, data.currency || 'eur')
+      for (const item of data.items) {
+        insertItem.run(uid(), id, item.productId, item.supplierVariantId, item.name, item.quantity, item.unitPrice)
+      }
+    })
+    tx()
+    return { id, ...data }
+  },
+
+  getOrderByStripeSession(stripeSessionId: string) {
+    return getDb().prepare('SELECT * FROM orders WHERE stripe_session_id = ?').get(stripeSessionId) as Record<string, unknown> | undefined
+  },
+
+  getOrderItems(orderId: string) {
+    return getDb().prepare('SELECT * FROM order_items WHERE order_id = ?').all(orderId) as Record<string, unknown>[]
+  },
+
+  updateOrderSupplierStatus(orderId: string, status: string, supplierOrderId?: string, supplierError?: string) {
+    getDb().prepare(`
+      UPDATE orders SET supplier_status = ?, supplier_order_id = ?, supplier_error = ? WHERE id = ?
+    `).run(status, supplierOrderId ?? null, supplierError ?? null, orderId)
+  },
+
+  listOrders(limit = 50) {
+    return getDb().prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT ?').all(limit) as Record<string, unknown>[]
   },
 
   getStats() {

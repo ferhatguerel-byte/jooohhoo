@@ -40,6 +40,8 @@ FROM_EMAIL=noreply@deinedomain.de
 NEXT_PUBLIC_APP_URL=https://deinedomain.de
 ADMIN_SECRET=waehle-ein-starkes-passwort
 DATABASE_URL="file:./dev.db"
+CJ_API_EMAIL=deine-cj-dropshipping-email@example.com
+CJ_API_KEY=dein-cj-dropshipping-api-key
 ```
 
 ### 4. Datenbank initialisieren
@@ -80,6 +82,39 @@ Alle .env Variablen in Vercel Dashboard eintragen.
 ### 8. Domain verbinden
 
 In Vercel → Domain hinzufügen → DNS bei deinem Registrar setzen
+
+## Pflanzenlampen-Shop (Grow-Lights)
+
+Zusätzlich zum SaaS-Teil gibt es jetzt einen eigenen Produkt-Shop unter `/collections/grow-lights`
+(Nische: Pflanzenlampen statt der stark gesättigten Selbstbewässerungstöpfe). Der Shop läuft als
+eigener Bereich der App und teilt sich Stripe/DB mit dem Rest des Projekts.
+
+- Produktkatalog: `src/lib/products.ts` (Preise, Beschreibungen, Bilder-Icons anpassen)
+- Kollektionsseite: `/collections/grow-lights`
+- Produktseite: `/products/[slug]`
+- Warenkorb: `/cart` (lokal im Browser gespeichert)
+- Checkout: `/api/shop/checkout` → erstellt eine Stripe-Checkout-Session mit Versandadress-Erfassung
+
+### Lieferanten-Kopplung (CJ Dropshipping)
+
+Sobald eine Bestellung bezahlt ist, verarbeitet der Webhook (`/api/webhook`) die Bestellung:
+1. Legt die Order + Positionen in der DB an (`orders` / `order_items`)
+2. Übergibt die Bestellung automatisch an CJ Dropshipping (`src/lib/suppliers/cjdropshipping.ts`)
+3. Speichert Lieferanten-Status (`forwarded` / `mock_forwarded` / `failed`) an der Order
+
+**Ohne `CJ_API_EMAIL` / `CJ_API_KEY`** läuft die Anbindung automatisch im **Mock-Modus** — Bestellungen
+werden simuliert und im Server-Log ausgegeben (`[CJ Dropshipping MOCK] ...`), nichts wird wirklich
+bestellt. Sobald du ein CJ-Dropshipping-Konto hast:
+
+1. Account erstellen: https://cjdropshipping.com
+2. Für jedes Produkt aus `src/lib/products.ts` einen passenden Artikel bei CJ suchen und die
+   `supplierProductId` / `supplierVariantId` mit der echten CJ-Produkt-/Varianten-ID ersetzen
+3. `CJ_API_EMAIL` und `CJ_API_KEY` in `.env.local` (und in Vercel) eintragen
+4. Ab dann bestellt der Webhook automatisch live bei CJ Dropshipping, inkl. Versand an die vom
+   Kunden im Stripe-Checkout erfasste Adresse
+
+Andere Lieferanten (z.B. Spocket) lassen sich anbinden, indem du `src/lib/suppliers/types.ts`
+implementierst und in `src/lib/suppliers/index.ts` als `activeSupplier` einträgst.
 
 ## Wie du €500/Tag erreichst
 
