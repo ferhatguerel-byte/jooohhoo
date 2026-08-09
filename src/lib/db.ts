@@ -188,6 +188,25 @@ export const db = {
     const pendingCommissions = (db2.prepare("SELECT COALESCE(SUM(commission_amount),0) as s FROM commissions WHERE status='pending'").get() as { s: number }).s
     const revenueByDay = db2.prepare('SELECT date, SUM(amount) as amount FROM revenue GROUP BY date ORDER BY date DESC LIMIT 30').all()
     const planBreakdown = db2.prepare('SELECT plan, COUNT(*) as count FROM customers GROUP BY plan').all()
-    return { totalCustomers, totalRevenue, pendingCommissions, revenueByDay, planBreakdown }
+
+    const shopOrderCount = (db2.prepare('SELECT COUNT(*) as c FROM orders').get() as { c: number }).c
+    const shopRevenue = (db2.prepare("SELECT COALESCE(SUM(subtotal),0) as s FROM orders WHERE status='paid'").get() as { s: number }).s
+    const shopSupplierBreakdown = db2.prepare('SELECT supplier_status, COUNT(*) as count FROM orders GROUP BY supplier_status').all()
+    const recentShopOrders = db2.prepare(`
+      SELECT id, customer_email, subtotal, currency, supplier_status, created_at
+      FROM orders ORDER BY created_at DESC LIMIT 10
+    `).all()
+
+    return {
+      totalCustomers,
+      totalRevenue,
+      pendingCommissions,
+      revenueByDay,
+      planBreakdown,
+      shopOrderCount,
+      shopRevenue,
+      shopSupplierBreakdown,
+      recentShopOrders,
+    }
   },
 }

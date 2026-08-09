@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { TrendingUp, Users, Euro, Award } from 'lucide-react'
+import { useState } from 'react'
+import { TrendingUp, Users, Euro, Award, ShoppingBag } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface Stats {
@@ -10,6 +10,17 @@ interface Stats {
   pendingCommissions: number
   revenueByDay: { date: string; amount: number }[]
   planBreakdown: { plan: string; _count: { plan: number } }[]
+  shopOrderCount: number
+  shopRevenue: number
+  shopSupplierBreakdown: { supplier_status: string; count: number }[]
+  recentShopOrders: {
+    id: string
+    customer_email: string
+    subtotal: number
+    currency: string
+    supplier_status: string
+    created_at: string
+  }[]
 }
 
 export default function DashboardPage() {
@@ -96,7 +107,7 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
+        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 mb-6">
           <h2 className="text-xl font-bold mb-4">Kunden nach Plan</h2>
           <div className="space-y-3">
             {stats?.planBreakdown.map((p) => (
@@ -106,6 +117,68 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Shop-Bestellungen (Hunde-Komfort)</h2>
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <ShoppingBag className="w-4 h-4" />
+              {stats?.shopOrderCount || 0} Bestellungen · €{(stats?.shopRevenue || 0).toFixed(2)}
+            </div>
+          </div>
+
+          <div className="flex gap-3 mb-4 flex-wrap">
+            {stats?.shopSupplierBreakdown.map((s) => (
+              <span
+                key={s.supplier_status}
+                className="text-xs px-3 py-1 rounded-full bg-slate-700 text-slate-300"
+              >
+                {s.supplier_status}: {s.count}
+              </span>
+            ))}
+          </div>
+
+          {stats?.recentShopOrders.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-slate-700">
+                    <th className="pb-2 pr-4">E-Mail</th>
+                    <th className="pb-2 pr-4">Betrag</th>
+                    <th className="pb-2 pr-4">Lieferanten-Status</th>
+                    <th className="pb-2">Datum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.recentShopOrders.map((o) => (
+                    <tr key={o.id} className="border-b border-slate-800">
+                      <td className="py-2 pr-4 text-slate-300">{o.customer_email}</td>
+                      <td className="py-2 pr-4 text-slate-300">
+                        {o.subtotal.toFixed(2)} {o.currency.toUpperCase()}
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span
+                          className={
+                            o.supplier_status === 'forwarded'
+                              ? 'text-green-400'
+                              : o.supplier_status === 'failed'
+                              ? 'text-red-400'
+                              : 'text-yellow-400'
+                          }
+                        >
+                          {o.supplier_status}
+                        </span>
+                      </td>
+                      <td className="py-2 text-slate-400">{o.created_at}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm">Noch keine Shop-Bestellungen.</p>
+          )}
         </div>
 
         <div className="mt-6 text-center">

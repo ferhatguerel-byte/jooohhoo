@@ -90,23 +90,20 @@ Zusätzlich zum SaaS-Teil gibt es jetzt einen eigenen Produkt-Shop unter `/colle
 gute Margen, TikTok-taugliche Reaktionsvideos). Der Shop läuft als eigener Bereich der App und
 teilt sich Stripe/DB mit dem Rest des Projekts.
 
-Sortiment (Anker + Verbrauch + Impuls), Produkte anhand echter CJ-Suchergebnisse ausgewählt
-(Preis/Bestellzahlen aus CJ-Dropshipping-Screenshots, siehe `cjMatch`-Feld je Produkt in
-`src/lib/products.ts`):
-- **Anker**: Hundebett Haustiernest M/L — Vorlage "Hundebett, Haustiernest, Katzenmatte"
-  (3,10–20,56€ EK, 795 Bestellungen auf CJ)
-- **Verbrauch/Zubehör**: Hundeschnüffelkissen (4,49€ EK, 630 Bestellungen), Interaktiver
-  Futterpuzzle-Spender (4,88–9,76€ EK, 659 Bestellungen)
-- **Impuls**: Automatischer Leckerli-Ball (0,81–3,34€ EK, 2021 Bestellungen — stärkstes
-  Nachfrage-Signal), Hundekotbeutel-Vorteilspack (11,52€ EK, 76 Bestellungen, klassischer
-  Wiederkauf-Artikel)
+Sortiment (Anker + Verbrauch + Impuls), alle 6 Produkte mit echten CJ-Dropshipping-Produkt-IDs
+verknüpft (Herkunft/Preis/Bestellzahlen je Produkt im `cjMatch`-Feld in `src/lib/products.ts`
+dokumentiert):
+- **Anker**: Hundebett mit gepolstertem Kissen M/L (dasselbe CJ-Produkt, zwei Größen)
+- **Verbrauch/Zubehör**: Hundeschnüffelkissen, interaktiver Futterpuzzle-Spender (Enten-Design)
+- **Impuls**: Automatischer Bewegungsball (ursprünglich Katzenspielzeug, funktioniert auch für
+  kleine/verspielte Hunde), Hundekotbeutel-Vorteilspack (750 Stück)
 
-**Wichtig:** Die `supplierProductId`/`supplierVariantId` in `src/lib/products.ts` sind noch
-`CJ-PENDING-*`-Platzhalter. Die echte SKU/PID steht erst auf der jeweiligen CJ-Produktdetailseite
-(nicht im Such-Ergebnis-Grid) — dort das passende Produkt öffnen, die ID aus der URL/Produktseite
-übernehmen und die Platzhalter ersetzen, bevor `CJ_API_EMAIL`/`CJ_API_KEY` live geschaltet werden.
-Ein Pfotenreiniger-Becher war auf CJ nicht auffindbar (auch nicht unter "pet paw washer") und
-wurde deshalb durch den Hundekotbeutel-Vorteilspack ersetzt.
+**Noch offen:** Alle `supplierProductId`-Felder sind mit echten CJ-PIDs befüllt, die
+`supplierVariantId`-Felder sind aber noch `CJ-PENDING-*-VID`-Platzhalter — die genaue
+Varianten-ID (z.B. für eine bestimmte Größe/Farbe) steht erst, wenn man auf der jeweiligen
+CJ-Produktseite die gewünschte Variante auswählt. Ohne echte Variant-ID kann die CJ-API beim
+Bestellen einen Fehler zurückgeben (Order landet dann mit `supplier_status='failed'` in der DB,
+sichtbar im Admin-Dashboard) — für den Mock-Modus (ohne API-Keys) spielt das keine Rolle.
 
 - Produktkatalog: `src/lib/products.ts` (Preise, Beschreibungen, Bilder-Icons anpassen)
 - Kollektionsseite: `/collections/hunde-komfort`
@@ -126,14 +123,40 @@ werden simuliert und im Server-Log ausgegeben (`[CJ Dropshipping MOCK] ...`), ni
 bestellt. Sobald du ein CJ-Dropshipping-Konto hast:
 
 1. Account erstellen: https://cjdropshipping.com
-2. Für jedes Produkt aus `src/lib/products.ts` einen passenden Artikel bei CJ suchen und die
-   `supplierProductId` / `supplierVariantId` mit der echten CJ-Produkt-/Varianten-ID ersetzen
+2. Auf jeder der 6 Produktseiten (Links siehe `cjMatch`-Feld in `src/lib/products.ts`) die
+   gewünschte Variante (Größe/Farbe) auswählen und die dortige Varianten-ID in
+   `supplierVariantId` eintragen (`supplierProductId` ist bereits befüllt)
 3. `CJ_API_EMAIL` und `CJ_API_KEY` in `.env.local` (und in Vercel) eintragen
 4. Ab dann bestellt der Webhook automatisch live bei CJ Dropshipping, inkl. Versand an die vom
    Kunden im Stripe-Checkout erfasste Adresse
 
 Andere Lieferanten (z.B. Spocket) lassen sich anbinden, indem du `src/lib/suppliers/types.ts`
 implementierst und in `src/lib/suppliers/index.ts` als `activeSupplier` einträgst.
+
+### Admin-Dashboard
+
+Unter `/dashboard` (Passwort = `ADMIN_SECRET`) gibt es jetzt neben den SaaS-Kennzahlen auch einen
+Block **"Shop-Bestellungen"**: Anzahl Bestellungen, Umsatz, Aufschlüsselung nach
+Lieferanten-Status (`pending` / `forwarded` / `mock_forwarded` / `failed`) und eine Liste der
+letzten 10 Bestellungen. Damit siehst du sofort, ob eine Bestellung erfolgreich an CJ
+weitergeleitet wurde oder fehlgeschlagen ist.
+
+### Go-Live-Checkliste
+
+Der Code ist vollständig fertig und getestet (Build, Typecheck, End-to-End-Test der
+Bestell-Pipeline lokal durchgeführt). Es fehlen nur noch Zugangsdaten/Accounts, die nur du
+anlegen kannst:
+
+- [ ] Echte Stripe-Keys in `.env.local` eintragen (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`)
+- [ ] Stripe-Webhook einrichten und `STRIPE_WEBHOOK_SECRET` eintragen
+- [ ] CJ-Dropshipping-Varianten-IDs für die 6 Produkte ergänzen (siehe oben)
+- [ ] `CJ_API_EMAIL` / `CJ_API_KEY` bereits eingetragen — vor dem Live-Gang im CJ-Dashboard
+      sicherheitshalber neu generieren, da die Werte im Chat-Verlauf sichtbar waren
+- [ ] `npx prisma generate && npx prisma db push` bzw. DB-Datei einmal initialisieren
+      (passiert automatisch beim ersten Request, siehe `src/lib/db.ts`)
+- [ ] `vercel --prod` deployen, alle `.env.local`-Werte ins Vercel-Dashboard übertragen
+- [ ] `NEXT_PUBLIC_APP_URL` auf die echte Domain setzen (wichtig für Stripe-Redirects nach
+      dem Checkout)
 
 ## Wie du €500/Tag erreichst
 
