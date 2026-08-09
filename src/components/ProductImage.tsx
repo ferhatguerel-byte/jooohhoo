@@ -1,12 +1,12 @@
-import { Lamp, Sun, Leaf, Lightbulb, PanelTop } from 'lucide-react'
+import { BedDouble, LayoutGrid, PawPrint, Bone, Droplets } from 'lucide-react'
 import type { Product } from '@/lib/products'
 
 const ICONS = {
-  lamp: Lamp,
-  sun: Sun,
-  leaf: Leaf,
-  clip: Lightbulb,
-  panel: PanelTop,
+  bed: BedDouble,
+  mat: LayoutGrid,
+  paw: PawPrint,
+  bone: Bone,
+  wash: Droplets,
 }
 
 export function ProductImage({ product, className }: { product: Product; className?: string }) {

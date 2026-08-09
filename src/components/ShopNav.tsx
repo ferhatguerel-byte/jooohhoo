@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Leaf, ShoppingBag } from 'lucide-react'
+import { PawPrint, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/lib/cart-context'
 
 export function ShopNav() {
@@ -10,13 +10,12 @@ export function ShopNav() {
   return (
     <header className="border-b border-black/10 bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Leaf className="h-5 w-5" />
-          Solenza
+        <Link href="/collections/hunde-komfort" className="flex items-center gap-2 font-semibold tracking-tight">
+          <PawPrint className="h-5 w-5" />
+          Pawlenza
         </Link>
         <nav className="hidden gap-8 text-sm sm:flex">
-          <Link href="/" className="hover:opacity-70">Startseite</Link>
-          <Link href="/collections/grow-lights" className="hover:opacity-70">Pflanzenlampen</Link>
+          <Link href="/collections/hunde-komfort" className="hover:opacity-70">Hunde-Komfort</Link>
           <Link href="/#kontakt" className="hover:opacity-70">Kontakt</Link>
         </nav>
         <Link href="/cart" className="relative flex items-center gap-2 text-sm">

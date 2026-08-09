@@ -83,14 +83,20 @@ Alle .env Variablen in Vercel Dashboard eintragen.
 
 In Vercel → Domain hinzufügen → DNS bei deinem Registrar setzen
 
-## Pflanzenlampen-Shop (Grow-Lights)
+## Hunde-Komfort-Shop (Pawlenza)
 
-Zusätzlich zum SaaS-Teil gibt es jetzt einen eigenen Produkt-Shop unter `/collections/grow-lights`
-(Nische: Pflanzenlampen statt der stark gesättigten Selbstbewässerungstöpfe). Der Shop läuft als
-eigener Bereich der App und teilt sich Stripe/DB mit dem Rest des Projekts.
+Zusätzlich zum SaaS-Teil gibt es jetzt einen eigenen Produkt-Shop unter `/collections/hunde-komfort`
+(Nische: orthopädische Hundebetten + Enrichment-Spielzeug — hohe emotionale Kaufbereitschaft,
+gute Margen, TikTok-taugliche Reaktionsvideos). Der Shop läuft als eigener Bereich der App und
+teilt sich Stripe/DB mit dem Rest des Projekts.
+
+Sortiment (Anker + Verbrauch + Impuls):
+- **Anker**: Orthopädisches Hundebett M/L (Marge ~65–75%)
+- **Verbrauch/Zubehör**: Schnüffelteppich, interaktives Denkspiel (Wiederkauf, Marge ~70–80%)
+- **Impuls**: Leckerli-Spender-Ball, Pfotenreiniger-Becher (kleiner Zusatzkauf im Checkout)
 
 - Produktkatalog: `src/lib/products.ts` (Preise, Beschreibungen, Bilder-Icons anpassen)
-- Kollektionsseite: `/collections/grow-lights`
+- Kollektionsseite: `/collections/hunde-komfort`
 - Produktseite: `/products/[slug]`
 - Warenkorb: `/cart` (lokal im Browser gespeichert)
 - Checkout: `/api/shop/checkout` → erstellt eine Stripe-Checkout-Session mit Versandadress-Erfassung
