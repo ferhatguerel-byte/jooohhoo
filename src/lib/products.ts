@@ -123,9 +123,10 @@ export const PRODUCTS: Product[] = [
     ],
     icon: 'mat',
     color: '#eaf0e8',
-    supplierProductId: 'CJ-PENDING-SNUFFLE',
-    supplierVariantId: 'CJ-PENDING-SNUFFLE',
-    cjMatch: 'Hundeschnüffelkissen, Hundespielzeug, Hundetraining — 4,49€, 630 Bestellungen',
+    supplierProductId: '1441373809616752640',
+    supplierVariantId: 'CJ-PENDING-SNUFFLE-VID',
+    cjMatch:
+      'Dog Sniffing Training Blanket / Snuffle Ball Mat, detachable pads — 4,49€, 630 Bestellungen — https://www.cjdropshipping.com/product/dog-sniffing-training-blanket-snuffle-ball-mat-detachable-pads-puzzle-toy-pet-supplies-for-dogs-cats-p-1441373809616752640.html',
   },
   {
     id: 'dc-enrich-02',
