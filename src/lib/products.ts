@@ -218,9 +218,9 @@ export const PRODUCTS: Product[] = [
     ],
     icon: 'bag',
     color: '#e3eef2',
-    supplierProductId: 'CJ-PENDING-BAGS',
-    supplierVariantId: 'CJ-PENDING-BAGS',
-    cjMatch: 'Hundekotbeutel, 750 Stück, Schwarz, 30 x 20cm, PE — 11,52€, 76 Bestellungen',
+    supplierProductId: '1990691848111837185',
+    supplierVariantId: 'CJ-PENDING-BAGS-VID',
+    cjMatch: 'Hundekotbeutel, 750 Stück, Schwarz, 30 x 20cm, PE — 11,52€, 76 Bestellungen — https://www.cjdropshipping.com/product/--dog-poop-bags-750-pcs.-black-30x20-cm-pe-p-1990691848111837185.html',
   },
 ]
 
