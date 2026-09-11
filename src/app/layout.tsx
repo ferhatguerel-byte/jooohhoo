@@ -12,29 +12,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://www.rundumwerk24.de";
-const SITE_NAME = "RundumWerk24";
-const TITLE = "RundumWerk24 – Umzüge, Transporte, Reinigung & Bau aus einer Hand";
+const SITE_URL = "https://www.baupartner24.de";
+const SITE_NAME = "BauPartner24";
+const TITLE = "BauPartner24 – Subunternehmer für Ihre Bauprojekte finden";
 const DESCRIPTION =
-  "RundumWerk24 ist Ihr Rundum-Dienstleister in Deutschland für Umzüge, Transporte, Gebäudereinigung und Bau-/Renovierungsarbeiten. Festpreis-Garantie, versichert, deutschlandweit im Einsatz.";
+  "BauPartner24 vermittelt deutschen Bauunternehmen qualifizierte Subunternehmer für Trockenbau, Elektro, Sanitär, Fassade, Rohbau und mehr. Auftrag einstellen, Angebote erhalten, direkt beauftragen.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: TITLE, template: `%s – ${SITE_NAME}` },
   description: DESCRIPTION,
   keywords: [
-    "Umzug Deutschland",
-    "Umzugsfirma",
-    "Transporte",
-    "Gebäudereinigung",
-    "Renovierung",
-    "Bauarbeiten",
-    "Festpreis Umzug",
+    "Subunternehmer finden",
+    "Bauaufträge vergeben",
+    "Gewerke vermitteln",
+    "Trockenbau Subunternehmer",
+    "Nachunternehmer Bau",
+    "Bauleistungen ausschreiben",
   ],
-  alternates: {
-    canonical: "/",
-    languages: { de: "/", en: "/en" },
-  },
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "de_DE",
@@ -50,15 +46,14 @@ export const metadata: Metadata = {
   },
 };
 
-const localBusinessJsonLd = {
+const organizationJsonLd = {
   "@context": "https://schema.org",
-  "@type": "MovingCompany",
+  "@type": "Organization",
   name: SITE_NAME,
   legalName: "GGV BAU GmbH",
   url: SITE_URL,
+  email: "kontakt@baupartner24.de",
   telephone: "+4915252968818",
-  email: "anfrage@rundumwerk24.de",
-  areaServed: "DE",
   address: {
     "@type": "PostalAddress",
     streetAddress: "Mühlenstr. 8a",
@@ -66,8 +61,6 @@ const localBusinessJsonLd = {
     addressLocality: "Berlin",
     addressCountry: "DE",
   },
-  openingHours: ["Mo-Fr 08:00-18:00", "Sa 09:00-13:00"],
-  priceRange: "€€",
 };
 
 export default function RootLayout({
@@ -83,7 +76,7 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>

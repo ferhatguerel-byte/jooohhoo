@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Datenschutzerklärung – RundumWerk24' }
+export const metadata: Metadata = { title: 'Datenschutzerklärung – BauPartner24' }
 
 export default function DatenschutzPage() {
   return (
@@ -13,40 +13,50 @@ export default function DatenschutzPage() {
         <h2 className="font-bold text-slate-900 mb-2">1. Verantwortlicher</h2>
         <p>
           Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: anfrage@rundumwerk24.de
+          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: kontakt@baupartner24.de
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">2. Erhebung und Speicherung personenbezogener Daten</h2>
+        <h2 className="font-bold text-slate-900 mb-2">2. Registrierung und Nutzerkonto</h2>
         <p>
-          Beim Ausfüllen unseres Anfrage-/Angebotsformulars erheben wir die von Ihnen eingegebenen Daten
-          (Name, E-Mail-Adresse, Telefonnummer, gewünschte Leistung, Wunschtermin sowie Ihre Nachricht),
-          um Ihre Anfrage zu bearbeiten und Ihnen ein Angebot zu erstellen. Die Verarbeitung erfolgt auf
-          Grundlage von Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Maßnahmen) bzw. Art. 6 Abs. 1 lit. f DSGVO
-          (berechtigtes Interesse an der Bearbeitung von Anfragen).
+          Bei der Registrierung als Auftraggeber oder Subunternehmer erheben wir die von Ihnen angegebenen
+          Daten (Firmenname, E-Mail-Adresse, Telefonnummer, Adresse, ggf. Gewerke) sowie ein verschlüsselt
+          gespeichertes Passwort. Die Verarbeitung erfolgt zur Erfüllung des Nutzungsvertrags gemäß
+          Art. 6 Abs. 1 lit. b DSGVO.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">3. Weitergabe von Daten</h2>
+        <h2 className="font-bold text-slate-900 mb-2">3. Aufträge und Angebote</h2>
         <p>
-          Eine Übermittlung Ihrer Daten an Dritte erfolgt nur, soweit dies zur Vertragsdurchführung
-          erforderlich ist (z. B. an von uns eingesetzte Auftragsverarbeiter für den technischen Betrieb
-          dieser Website und den E-Mail-Versand) oder Sie ausdrücklich eingewilligt haben.
+          Von Auftraggebern eingestellte Aufträge (Titel, Gewerk, Ort, Beschreibung, Budget) sind für
+          registrierte Subunternehmer sichtbar. Von Subunternehmern abgegebene Angebote (Preis, Nachricht)
+          sind für den jeweiligen Auftraggeber sichtbar; Kontaktdaten des Subunternehmers werden dem
+          Auftraggeber erst nach expliziter Freischaltung im Rahmen seines Abo-Kontingents offengelegt.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">4. Speicherdauer</h2>
+        <h2 className="font-bold text-slate-900 mb-2">4. Zahlungsabwicklung</h2>
         <p>
-          Wir speichern Ihre Daten nur so lange, wie dies zur Bearbeitung Ihrer Anfrage bzw. zur Erfüllung
-          gesetzlicher Aufbewahrungspflichten erforderlich ist.
+          Für die Abrechnung der Abo-Gebühren von Auftraggebern setzen wir den Zahlungsdienstleister
+          Stripe ein. Hierbei werden die zur Zahlungsabwicklung erforderlichen Daten (u. a. E-Mail-Adresse,
+          Zahlungsinformationen) an Stripe übermittelt. Weitere Informationen: stripe.com/de/privacy.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">5. Ihre Rechte</h2>
+        <h2 className="font-bold text-slate-900 mb-2">5. Speicherdauer</h2>
+        <p>
+          Wir speichern Ihre Daten, solange Ihr Nutzerkonto besteht, bzw. so lange, wie dies zur Erfüllung
+          gesetzlicher Aufbewahrungspflichten erforderlich ist. Nach Löschung des Kontos werden Daten
+          gelöscht oder anonymisiert, soweit keine Aufbewahrungspflichten entgegenstehen.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">6. Ihre Rechte</h2>
         <p>
           Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
           Datenübertragbarkeit sowie Widerspruch gegen die Verarbeitung Ihrer personenbezogenen Daten.
@@ -55,16 +65,17 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">6. Cookies</h2>
+        <h2 className="font-bold text-slate-900 mb-2">7. Cookies</h2>
         <p>
-          Diese Website verwendet ausschließlich technisch notwendige Funktionen. Es werden keine
-          Tracking- oder Marketing-Cookies eingesetzt.
+          Diese Website verwendet ein technisch notwendiges Session-Cookie zur Anmeldung im Nutzerkonto.
+          Es werden keine Tracking- oder Marketing-Cookies eingesetzt.
         </p>
       </section>
 
       <p className="text-sm text-slate-400">
         [Platzhalter-Text – vor Livegang durch eine rechtssichere, individuell geprüfte Datenschutzerklärung
-        ersetzen, insbesondere sobald weitere Dienste wie Analyse- oder Marketing-Tools eingebunden werden.]
+        ersetzen, insbesondere im Hinblick auf die Auftragsverarbeitungsverträge mit Hosting- und
+        Zahlungsdienstleistern.]
       </p>
     </div>
   )

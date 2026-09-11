@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const alt = 'RundumWerk24 – Umzüge, Transporte, Reinigung & Bau'
+export const alt = 'BauPartner24 – Subunternehmer für Ihre Bauprojekte finden'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -34,17 +34,17 @@ export default async function Image() {
               color: 'white',
             }}
           >
-            R
+            B
           </div>
           <div style={{ display: 'flex', fontSize: 34, fontWeight: 900, color: 'white' }}>
-            RundumWerk<span style={{ color: '#f97316' }}>24</span>
+            BauPartner<span style={{ color: '#f97316' }}>24</span>
           </div>
         </div>
         <div style={{ fontSize: 52, fontWeight: 900, color: 'white', lineHeight: 1.15, maxWidth: 950 }}>
-          Umzug, Transport, Reinigung &amp; Bau – alles aus einer Hand
+          Der Marktplatz für Subunternehmer im Baugewerbe
         </div>
         <div style={{ fontSize: 28, color: '#bfdbfe', marginTop: 24 }}>
-          Festpreis-Garantie · Versichert · Deutschlandweit
+          Auftrag einstellen · Angebote erhalten · Direkt beauftragen
         </div>
       </div>
     ),

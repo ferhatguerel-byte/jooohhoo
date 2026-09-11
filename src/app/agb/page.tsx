@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'AGB – RundumWerk24' }
+export const metadata: Metadata = { title: 'AGB – BauPartner24' }
 
 export default function AgbPage() {
   return (
@@ -10,51 +10,67 @@ export default function AgbPage() {
       <h1 className="text-3xl font-black text-slate-900 mt-6 mb-8">Allgemeine Geschäftsbedingungen</h1>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich und Leistungsbeschreibung</h2>
         <p>
-          Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge zwischen der GGV BAU GmbH
-          (Handelsmarke „RundumWerk24“, nachfolgend „Auftragnehmer“) und ihren Kunden über die
-          Erbringung von Leistungen in den Bereichen Umzug, Transport, Reinigung sowie Bau- und
-          Renovierungsarbeiten.
+          Diese AGB gelten für die Nutzung der Vermittlungsplattform BauPartner24 (Betreiber: GGV BAU GmbH,
+          nachfolgend „Betreiber“). BauPartner24 vermittelt Kontakte zwischen Bauunternehmen, die
+          Bauleistungen ausschreiben („Auftraggeber“), und Subunternehmen, die entsprechende Leistungen
+          anbieten („Subunternehmer“). Der Betreiber ist selbst nicht Vertragspartei der zwischen
+          Auftraggeber und Subunternehmer geschlossenen Werk- oder Dienstverträge.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 2 Vertragsschluss</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 2 Registrierung</h2>
         <p>
-          Ein Vertrag kommt durch die schriftliche oder in Textform (z. B. per E-Mail) erklärte Annahme
-          eines Angebots durch den Kunden zustande. Angebote sind freibleibend, sofern nicht ausdrücklich
-          als verbindlich gekennzeichnet.
+          Die Registrierung als Subunternehmer ist kostenlos. Die Registrierung als Auftraggeber ist
+          kostenlos; die Einstellung von Aufträgen sowie die Freischaltung von Subunternehmer-Kontakten
+          setzt ein aktives, kostenpflichtiges Abonnement voraus.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 3 Preise und Zahlung</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Auftraggeber</h2>
         <p>
-          Es gelten die im jeweiligen Angebot genannten Festpreise. Zusatzleistungen, die nicht Bestandteil
-          des Angebots waren, werden gesondert vereinbart und berechnet.
+          Auftraggeber können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
+          hinsichtlich der Anzahl gleichzeitig aktiver Aufträge sowie der Anzahl monatlich freischaltbarer
+          Subunternehmer-Kontakte unterscheiden. Die jeweils aktuellen Preise und Leistungsumfänge sind auf
+          der Website unter „Preise“ einsehbar. Nicht genutzte Kontingente verfallen zum Ende der
+          Abrechnungsperiode und werden nicht in den Folgemonat übertragen.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 4 Terminvereinbarung und Rücktritt</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 4 Zahlung und Kündigung</h2>
         <p>
-          Vereinbarte Termine sind für beide Seiten verbindlich. Eine Terminverschiebung ist bis spätestens
-          48 Stunden vor dem vereinbarten Termin kostenfrei möglich.
+          Die Abo-Gebühr wird monatlich im Voraus über den Zahlungsdienstleister Stripe abgebucht. Das Abo
+          kann jederzeit zum Ende der laufenden Abrechnungsperiode über die Kontoverwaltung gekündigt
+          werden. Bereits gezahlte Gebühren werden nicht anteilig erstattet.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 5 Haftung</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 5 Pflichten der Nutzer</h2>
         <p>
-          Der Auftragnehmer haftet für Schäden, die im Rahmen der Leistungserbringung nachweislich durch
-          ihn oder seine Erfüllungsgehilfen verursacht wurden, im Rahmen der bestehenden
-          Betriebs- und Transporthaftpflichtversicherung.
+          Nutzer verpflichten sich, wahrheitsgemäße Angaben zu ihrem Unternehmen zu machen und Aufträge
+          bzw. Angebote sachlich korrekt darzustellen. Der Betreiber behält sich vor, Inhalte zu entfernen
+          und Konten bei Missbrauch zu sperren.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 6 Schlussbestimmungen</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 6 Haftung</h2>
+        <p>
+          Der Betreiber übernimmt keine Gewähr für die Richtigkeit der von Nutzern eingestellten Inhalte,
+          die Bonität oder Qualifikation der Nutzer sowie für den erfolgreichen Abschluss oder die
+          ordnungsgemäße Durchführung von Verträgen zwischen Auftraggebern und Subunternehmern. Für Schäden
+          aus der Durchführung vermittelter Aufträge haftet ausschließlich das jeweils beauftragte
+          Unternehmen.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">§ 7 Schlussbestimmungen</h2>
         <p>
           Es gilt das Recht der Bundesrepublik Deutschland. Sollten einzelne Bestimmungen dieser AGB
           unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.
@@ -62,7 +78,9 @@ export default function AgbPage() {
       </section>
 
       <p className="text-sm text-slate-400">
-        [Platzhalter-Text – vor Livegang durch rechtlich geprüfte, individuelle AGB ersetzen.]
+        [Platzhalter-Text – vor Livegang durch rechtlich geprüfte, individuelle AGB für eine
+        Vermittlungsplattform ersetzen, insbesondere hinsichtlich Haftungsausschluss, Widerrufsrecht bei
+        Abo-Abschluss und Kündigungsmodalitäten.]
       </p>
     </div>
   )
