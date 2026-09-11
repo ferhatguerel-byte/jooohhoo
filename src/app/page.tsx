@@ -135,13 +135,19 @@ function Header() {
           </button>
         </div>
 
-        <button className="md:hidden text-slate-700" onClick={() => setOpen(!open)} aria-label="Menü öffnen">
+        <button
+          className="md:hidden text-slate-700"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? 'Menü schließen' : 'Menü öffnen'}
+          aria-expanded={open}
+          aria-controls="mobile-menu"
+        >
           {open ? <X size={26} /> : <Menu size={26} />}
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-slate-200 px-6 py-4 flex flex-col gap-4 bg-white">
+        <div id="mobile-menu" className="md:hidden border-t border-slate-200 px-6 py-4 flex flex-col gap-4 bg-white">
           {links.map((l) => (
             <button key={l.id} onClick={() => scrollTo(l.id)} className="text-left text-slate-700 font-medium">
               {l.label}
@@ -204,24 +210,24 @@ function QuoteForm() {
     <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Name *</label>
-          <input name="name" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+          <label htmlFor="qf-name" className="block text-sm font-semibold text-slate-700 mb-1">Name *</label>
+          <input id="qf-name" name="name" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Telefon</label>
-          <input name="telefon" type="tel" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+          <label htmlFor="qf-telefon" className="block text-sm font-semibold text-slate-700 mb-1">Telefon</label>
+          <input id="qf-telefon" name="telefon" type="tel" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">E-Mail *</label>
-        <input name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+        <label htmlFor="qf-email" className="block text-sm font-semibold text-slate-700 mb-1">E-Mail *</label>
+        <input id="qf-email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Leistung *</label>
-          <select name="leistung" required defaultValue="" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900">
+          <label htmlFor="qf-leistung" className="block text-sm font-semibold text-slate-700 mb-1">Leistung *</label>
+          <select id="qf-leistung" name="leistung" required defaultValue="" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900">
             <option value="" disabled>Bitte wählen</option>
             {SERVICE_OPTIONS.map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -229,17 +235,17 @@ function QuoteForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Wunschtermin</label>
-          <input name="termin" type="date" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+          <label htmlFor="qf-termin" className="block text-sm font-semibold text-slate-700 mb-1">Wunschtermin</label>
+          <input id="qf-termin" name="termin" type="date" min={new Date().toISOString().split('T')[0]} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">Nachricht</label>
-        <textarea name="nachricht" rows={4} placeholder="Beschreiben Sie kurz Ihr Anliegen (z. B. Wohnungsgröße, Adresse von/nach, Umfang der Arbeiten)…" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+        <label htmlFor="qf-nachricht" className="block text-sm font-semibold text-slate-700 mb-1">Nachricht</label>
+        <textarea id="qf-nachricht" name="nachricht" rows={4} placeholder="Beschreiben Sie kurz Ihr Anliegen (z. B. Wohnungsgröße, Adresse von/nach, Umfang der Arbeiten)…" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
       </div>
 
-      {status === 'error' && <p className="text-sm text-red-600">Fehler: {error}</p>}
+      {status === 'error' && <p role="alert" className="text-sm text-red-600">Fehler: {error}</p>}
 
       <button
         type="submit"
@@ -248,23 +254,29 @@ function QuoteForm() {
       >
         {status === 'loading' ? 'Wird gesendet…' : 'Unverbindliches Angebot anfordern'} <ArrowRight size={18} />
       </button>
-      <p className="text-xs text-slate-400 text-center">Mit dem Absenden stimmen Sie unserer Datenschutzerklärung zu.</p>
+      <p className="text-xs text-slate-400 text-center">
+        Mit dem Absenden stimmen Sie unserer{' '}
+        <Link href="/datenschutz" className="underline hover:text-slate-600">Datenschutzerklärung</Link> zu.
+      </p>
     </form>
   )
 }
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
+  const panelId = `faq-panel-${q.replace(/\W+/g, '-').toLowerCase()}`
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-slate-900"
       >
         {q}
         <ChevronDown size={20} className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className="px-5 pb-4 text-slate-600 text-sm leading-relaxed">{a}</div>}
+      {open && <div id={panelId} className="px-5 pb-4 text-slate-600 text-sm leading-relaxed">{a}</div>}
     </div>
   )
 }
