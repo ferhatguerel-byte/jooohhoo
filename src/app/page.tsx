@@ -73,7 +73,7 @@ const STEPS = [
 
 const TESTIMONIALS = [
   { name: 'Familie Schneider', role: 'Umzug, München', text: 'Reibungsloser Ablauf, faires Festpreisangebot und sehr vorsichtiger Umgang mit unseren Möbeln. Absolute Empfehlung!', stars: 5 },
-  { name: 'Anna K.', role: 'Büroreinigung, Berlin', text: 'Seit einem Jahr betreut ProfiWerk24 unsere Praxisräume. Immer pünktlich, gründlich und zuverlässig.', stars: 5 },
+  { name: 'Anna K.', role: 'Büroreinigung, Berlin', text: 'Seit einem Jahr betreut RundumWerk24 unsere Praxisräume. Immer pünktlich, gründlich und zuverlässig.', stars: 5 },
   { name: 'Michael R.', role: 'Renovierung, Köln', text: 'Vom Boden bis zur Wand alles aus einer Hand organisiert. Termin wurde exakt eingehalten.', stars: 5 },
 ]
 
@@ -112,7 +112,7 @@ function Header() {
           <span className="bg-blue-900 text-white rounded-lg w-9 h-9 flex items-center justify-center">
             <HardHat size={18} />
           </span>
-          ProfiWerk<span className="text-orange-500">24</span>
+          RundumWerk<span className="text-orange-500">24</span>
         </a>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -286,7 +286,7 @@ export default function HomePage() {
               <span className="text-orange-400">alles aus einer Hand</span>
             </h1>
             <p className="text-lg text-blue-100 mb-8 max-w-xl">
-              ProfiWerk24 ist Ihr zuverlässiger Rundum-Dienstleister für Privat- und Geschäftskunden in ganz Deutschland. Ein Ansprechpartner, transparente Festpreise, saubere Ausführung.
+              RundumWerk24 ist Ihr zuverlässiger Rundum-Dienstleister für Privat- und Geschäftskunden in ganz Deutschland. Ein Ansprechpartner, transparente Festpreise, saubere Ausführung.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a
@@ -355,7 +355,7 @@ export default function HomePage() {
       <section className="bg-slate-50 border-y border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-20">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Warum ProfiWerk24?</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Warum RundumWerk24?</h2>
             <p className="text-slate-500">Was uns von anderen Anbietern unterscheidet.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -427,7 +427,7 @@ export default function HomePage() {
                 <Phone size={18} className="text-blue-900" /> 030 / 123 456 789
               </div>
               <div className="flex items-center gap-3 text-slate-700">
-                <Mail size={18} className="text-blue-900" /> anfrage@profiwerk24.de
+                <Mail size={18} className="text-blue-900" /> anfrage@rundumwerk24.de
               </div>
               <div className="flex items-center gap-3 text-slate-700">
                 <Clock size={18} className="text-blue-900" /> Mo–Fr 08:00–18:00, Sa 09:00–13:00
@@ -458,7 +458,7 @@ export default function HomePage() {
               <span className="bg-orange-500 text-white rounded-lg w-9 h-9 flex items-center justify-center">
                 <HardHat size={18} />
               </span>
-              ProfiWerk24
+              RundumWerk24
             </div>
             <p className="text-sm text-blue-200">Ihr Rundum-Dienstleister für Umzüge, Transporte, Reinigung und Bau in ganz Deutschland.</p>
           </div>
@@ -484,14 +484,14 @@ export default function HomePage() {
             <div className="font-bold text-white mb-4">Kontakt</div>
             <ul className="space-y-3 text-sm text-blue-200">
               <li className="flex items-center gap-2"><Phone size={14} /> 030 / 123 456 789</li>
-              <li className="flex items-center gap-2"><Mail size={14} /> anfrage@profiwerk24.de</li>
+              <li className="flex items-center gap-2"><Mail size={14} /> anfrage@rundumwerk24.de</li>
               <li className="flex items-center gap-2"><MapPin size={14} /> Musterstraße 1, 10115 Berlin</li>
             </ul>
           </div>
         </div>
         <div className="border-t border-white/10">
           <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row gap-3 justify-between items-center text-xs text-blue-300">
-            <p>© {new Date().getFullYear()} ProfiWerk24. Alle Rechte vorbehalten.</p>
+            <p>© {new Date().getFullYear()} RundumWerk24. Alle Rechte vorbehalten.</p>
             <div className="flex gap-4">
               <Link href="/impressum" className="hover:text-white">Impressum</Link>
               <Link href="/datenschutz" className="hover:text-white">Datenschutz</Link>

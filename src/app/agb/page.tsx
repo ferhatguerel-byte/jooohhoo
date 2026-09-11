@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'AGB – ProfiWerk24' }
+export const metadata: Metadata = { title: 'AGB – RundumWerk24' }
 
 export default function AgbPage() {
   return (
@@ -12,7 +12,7 @@ export default function AgbPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich</h2>
         <p>
-          Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge zwischen der ProfiWerk24 GmbH
+          Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge zwischen der RundumWerk24 GmbH
           (nachfolgend „Auftragnehmer“) und ihren Kunden über die Erbringung von Leistungen in den
           Bereichen Umzug, Transport, Reinigung sowie Bau- und Renovierungsarbeiten.
         </p>

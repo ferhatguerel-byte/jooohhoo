@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Impressum – ProfiWerk24' }
+export const metadata: Metadata = { title: 'Impressum – RundumWerk24' }
 
 export default function ImpressumPage() {
   return (
@@ -12,7 +12,7 @@ export default function ImpressumPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">Angaben gemäß § 5 TMG</h2>
         <p>
-          ProfiWerk24 GmbH<br />
+          RundumWerk24 GmbH<br />
           Musterstraße 1<br />
           10115 Berlin<br />
           Deutschland
@@ -31,7 +31,7 @@ export default function ImpressumPage() {
         <h2 className="font-bold text-slate-900 mb-2">Kontakt</h2>
         <p>
           Telefon: 030 / 123 456 789<br />
-          E-Mail: anfrage@profiwerk24.de
+          E-Mail: anfrage@rundumwerk24.de
         </p>
       </section>
 

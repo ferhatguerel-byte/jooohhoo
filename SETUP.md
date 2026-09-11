@@ -1,139 +1,72 @@
-# AutoBusiness Pro - Setup Anleitung
+# RundumWerk24 – Setup-Anleitung
 
-## Was du bekommst
+## Was das Projekt enthält
 
-Ein vollautomatisiertes SaaS-Business mit:
-- **Landing Page** mit Verkaufstexten und 3 Preisplänen
-- **Stripe Integration** für automatische Zahlungen (Kreditkarte + SEPA)
-- **Affiliate System** - andere verkaufen für dich, 30% Provision automatisch
-- **E-Mail Automatisierung** - Welcome, Bestätigung, Affiliate-Benachrichtigung
-- **Admin Dashboard** - Echtzeit Umsatz, Kunden, Charts
-- **Datenbank** - alle Kunden, Käufe, Provisionen gespeichert
+Eine Next.js-Homepage für einen deutschen Dienstleister (Umzüge, Transporte,
+Reinigung, Bau/Renovierung):
 
-## Schritt-für-Schritt Setup (ca. 2 Stunden)
+- Landing Page mit Leistungen, Ablauf, Referenzen, FAQ
+- Angebotsformular → `/api/anfrage` → E-Mail-Versand via Resend
+- Impressum, Datenschutzerklärung, AGB (Platzhalter-Texte, siehe unten)
+- `robots.ts` / `sitemap.ts` für SEO
 
-### 1. Accounts erstellen (kostenlos)
+## 1. Firmendaten eintragen
 
-- **Stripe**: https://stripe.com → Account erstellen → API Keys holen
-- **Resend**: https://resend.com → Account erstellen → API Key holen → Domain verifizieren
-- **Vercel**: https://vercel.com → Account erstellen (kostenloses Hosting)
+Bevor die Seite live geht, echte Angaben eintragen (aktuell Platzhalter):
 
-### 2. Stripe Produkte anlegen
+- `src/app/impressum/page.tsx` – Firmenname, Adresse, Geschäftsführer, HRB-Nummer, USt-ID
+- `src/app/datenschutz/page.tsx`, `src/app/agb/page.tsx`
+- Telefon/E-Mail/Adresse in `src/app/page.tsx` (Header, Kontakt, Footer)
+- `src/app/layout.tsx` – `SITE_URL`, Kontaktdaten im `localBusinessJsonLd`-Objekt
 
-Im Stripe Dashboard:
-1. Produkte → Neues Produkt
-2. "Starter" → €29/Monat wiederkehrend → Price ID kopieren
-3. "Pro" → €79/Monat wiederkehrend → Price ID kopieren
-4. "Enterprise" → €199/Monat wiederkehrend → Price ID kopieren
+**Wichtig:** Impressum und Datenschutzerklärung vor dem Livegang von einem
+Anwalt oder einem Generator (z. B. e-recht24.de) prüfen/erstellen lassen –
+die aktuellen Texte sind nur ein Gerüst.
 
-### 3. .env.local ausfüllen
+## 2. Domain
+
+Empfehlung: **rundumwerk24.de** (Verfügbarkeit beim Registrar deiner Wahl
+selbst final prüfen, z. B. bei INWX, Namecheap oder Checkdomain – aus dieser
+Umgebung heraus ist kein Live-WHOIS-Check möglich).
+
+## 3. E-Mail-Versand aktivieren (Resend)
+
+1. Account auf https://resend.com erstellen, Domain verifizieren
+2. API-Key holen
+3. `.env.local` anlegen:
 
 ```
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_STARTER=price_...
-STRIPE_PRICE_PRO=price_...
-STRIPE_PRICE_ENTERPRISE=price_...
 RESEND_API_KEY=re_...
-FROM_EMAIL=noreply@deinedomain.de
-NEXT_PUBLIC_APP_URL=https://deinedomain.de
-ADMIN_SECRET=waehle-ein-starkes-passwort
-DATABASE_URL="file:./dev.db"
+FROM_EMAIL=anfrage@rundumwerk24.de
+QUOTE_NOTIFY_EMAIL=deine-empfangsadresse@rundumwerk24.de
 ```
 
-### 4. Datenbank initialisieren
+Ohne gesetzten `RESEND_API_KEY` wird jede Anfrage nur ins Server-Log
+geschrieben (kein Versand, kein Absturz) – praktisch zum lokalen Testen.
+
+## 4. Lokal testen
 
 ```bash
-npx prisma generate
-npx prisma db push
-```
-
-### 5. Lokal testen
-
-```bash
+npm install
 npm run dev
 # → http://localhost:3000
 ```
 
-### 6. Stripe Webhook einrichten (für automatische Verarbeitung)
-
-```bash
-# Stripe CLI installieren und testen:
-stripe listen --forward-to localhost:3000/api/webhook
-```
-
-Im Stripe Dashboard:
-- Webhooks → Endpoint hinzufügen
-- URL: `https://deinedomain.de/api/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.deleted`
-
-### 7. Auf Vercel deployen
+## 5. Deployment (z. B. Vercel)
 
 ```bash
 npm install -g vercel
 vercel --prod
 ```
 
-Alle .env Variablen in Vercel Dashboard eintragen.
+Umgebungsvariablen (`RESEND_API_KEY`, `FROM_EMAIL`, `QUOTE_NOTIFY_EMAIL`) im
+Vercel-Dashboard eintragen, danach die Domain verbinden (Vercel → Domain
+hinzufügen → DNS beim Registrar setzen).
 
-### 8. Domain verbinden
+## 6. Rechtliches – Checkliste vor Livegang
 
-In Vercel → Domain hinzufügen → DNS bei deinem Registrar setzen
-
-## Wie du €500/Tag erreichst
-
-### Rechenbeispiel
-- 7 Pro-Kunden (€79/Monat) = €553/Monat ≈ €18/Tag
-- **Für €500/Tag brauchst du ~190 aktive Pro-Kunden**
-
-### Strategie
-
-1. **Affiliate Marketing starten** (0€ Kosten)
-   - Deinen Affiliate-Link in Facebook-Gruppen teilen
-   - YouTube Video über das Tool machen
-   - Reddit Posts in relevanten Subreddits
-
-2. **SEO Content** (0€ Kosten, Zeit: 2-3 Monate)
-   - Blog-Artikel über Business-Automatisierung schreiben
-   - Keywords: "business automatisieren", "passive einnahmen online"
-
-3. **Paid Ads** (Budget nötig)
-   - Facebook/Instagram Ads: €5-10/Tag Budget
-   - Google Ads auf Keywords wie "business software"
-   - Erwarteter CAC: €20-50 pro Kunde
-
-4. **Cold Outreach**
-   - LinkedIn Nachrichten an Unternehmer
-   - E-Mail Kampagnen mit kostenlosem Trial
-
-### Monatliches Wachstumsziel
-
-| Monat | Kunden | MRR | Tages-Ø |
-|-------|--------|-----|---------|
-| 1     | 10     | €790 | €26 |
-| 3     | 50     | €3.950 | €130 |
-| 6     | 150    | €11.850 | €395 |
-| 12    | 250    | €19.750 | €658 |
-
-## Admin Dashboard
-
-Gehe zu: `https://deinedomain.de/dashboard`
-Passwort: das was du in ADMIN_SECRET gesetzt hast
-
-Siehst du:
-- Tagesumsatz
-- Gesamtumsatz
-- Kundenanzahl
-- Umsatz-Chart
-- Fortschrittsbalken zur €500/Tag Ziel
-
-## Wichtig: Rechtliches
-
-Du brauchst noch:
-- **Impressum** (`/impressum`)
-- **Datenschutzerklärung** (`/datenschutz`) - DSGVO-konform
-- **AGB** (`/agb`)
-- Steuerberater für die Einnahmen
-
-Nutze Generator-Tools wie: https://www.e-recht24.de/muster-datenschutzerklaerung.html
+- [ ] Impressum mit echten Firmendaten (§ 5 TMG)
+- [ ] Datenschutzerklärung DSGVO-konform (ggf. anpassen, falls Analytics/Cookies dazukommen)
+- [ ] AGB juristisch geprüft
+- [ ] Transport-/Betriebshaftpflichtversicherung tatsächlich vorhanden, falls in den Texten behauptet
+- [ ] Google Business Profil anlegen (hilft massiv beim lokalen SEO)

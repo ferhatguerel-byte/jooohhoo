@@ -12,10 +12,58 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://www.rundumwerk24.de";
+const SITE_NAME = "RundumWerk24";
+const TITLE = "RundumWerk24 – Umzüge, Transporte, Reinigung & Bau aus einer Hand";
+const DESCRIPTION =
+  "RundumWerk24 ist Ihr Rundum-Dienstleister in Deutschland für Umzüge, Transporte, Gebäudereinigung und Bau-/Renovierungsarbeiten. Festpreis-Garantie, versichert, deutschlandweit im Einsatz.";
+
 export const metadata: Metadata = {
-  title: "ProfiWerk24 – Umzüge, Transporte, Reinigung & Bau aus einer Hand",
-  description:
-    "ProfiWerk24 ist Ihr Rundum-Dienstleister in Deutschland für Umzüge, Transporte, Gebäudereinigung und Bau-/Renovierungsarbeiten. Festpreis-Garantie, versichert, deutschlandweit im Einsatz.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: TITLE, template: `%s – ${SITE_NAME}` },
+  description: DESCRIPTION,
+  keywords: [
+    "Umzug Deutschland",
+    "Umzugsfirma",
+    "Transporte",
+    "Gebäudereinigung",
+    "Renovierung",
+    "Bauarbeiten",
+    "Festpreis Umzug",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+};
+
+const localBusinessJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "MovingCompany",
+  name: SITE_NAME,
+  url: SITE_URL,
+  telephone: "+4930123456789",
+  email: "anfrage@rundumwerk24.de",
+  areaServed: "DE",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Musterstraße 1",
+    postalCode: "10115",
+    addressLocality: "Berlin",
+    addressCountry: "DE",
+  },
+  openingHours: ["Mo-Fr 08:00-18:00", "Sa 09:00-13:00"],
+  priceRange: "€€",
 };
 
 export default function RootLayout({
@@ -28,6 +76,12 @@ export default function RootLayout({
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

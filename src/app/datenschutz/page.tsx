@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Datenschutzerklärung – ProfiWerk24' }
+export const metadata: Metadata = { title: 'Datenschutzerklärung – RundumWerk24' }
 
 export default function DatenschutzPage() {
   return (
@@ -13,7 +13,7 @@ export default function DatenschutzPage() {
         <h2 className="font-bold text-slate-900 mb-2">1. Verantwortlicher</h2>
         <p>
           Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-          ProfiWerk24 GmbH, Musterstraße 1, 10115 Berlin, E-Mail: anfrage@profiwerk24.de
+          RundumWerk24 GmbH, Musterstraße 1, 10115 Berlin, E-Mail: anfrage@rundumwerk24.de
         </p>
       </section>
 
