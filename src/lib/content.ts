@@ -52,9 +52,14 @@ export interface FaqItemData {
   a: string
 }
 
+export interface ProjectImage {
+  src: string
+  alt: string
+}
+
 export interface Content {
   htmlLang: string
-  nav: { leistungen: string; ablauf: string; referenzen: string; faq: string; kontakt: string }
+  nav: { leistungen: string; projekte: string; ablauf: string; referenzen: string; faq: string; kontakt: string }
   ctaAnfrage: string
   menuOpenLabel: string
   menuCloseLabel: string
@@ -74,6 +79,7 @@ export interface Content {
   whyUs: { heading: string; subheading: string; items: WhyUsItem[] }
   process: { heading: string; subheading: string; steps: StepItem[] }
   testimonials: { heading: string; items: TestimonialItem[] }
+  projects: { heading: string; subheading: string; images: ProjectImage[] }
   quote: {
     heading: string
     desc: string
@@ -242,10 +248,32 @@ const faqEn: FaqItemData[] = [
   { q: 'Is my move/transport insured?', a: 'Yes, all jobs are covered by our transport and general liability insurance.' },
 ]
 
+const projectImagesDe: ProjectImage[] = [
+  { src: '/fotos/bau-09.jpg', alt: 'Fertig saniertes Zimmer mit Dielenboden' },
+  { src: '/fotos/bau-10.jpg', alt: 'Fertiggestelltes Badezimmer mit Duschkabine' },
+  { src: '/fotos/bau-01.jpg', alt: 'Ausgebautes Dachgeschoss mit Sichtfachwerk' },
+  { src: '/fotos/bau-04.jpg', alt: 'Fliesenverlegung im Badezimmer' },
+  { src: '/fotos/bau-05.jpg', alt: 'Parkettschliff und Aufarbeitung' },
+  { src: '/fotos/bau-06.jpg', alt: 'Fußbodenaufbau mit OSB-Platten' },
+  { src: '/fotos/bau-07.jpg', alt: 'Elektroinstallation und Sicherheitsprüfung' },
+  { src: '/fotos/bau-08.jpg', alt: 'Trockenbau und Elektroinstallation im Flur' },
+]
+
+const projectImagesEn: ProjectImage[] = [
+  { src: '/fotos/bau-09.jpg', alt: 'Fully renovated room with wood flooring' },
+  { src: '/fotos/bau-10.jpg', alt: 'Completed bathroom with walk-in shower' },
+  { src: '/fotos/bau-01.jpg', alt: 'Converted attic room with exposed timber framing' },
+  { src: '/fotos/bau-04.jpg', alt: 'Bathroom tiling in progress' },
+  { src: '/fotos/bau-05.jpg', alt: 'Sanding and refinishing a parquet floor' },
+  { src: '/fotos/bau-06.jpg', alt: 'Subfloor construction with OSB panels' },
+  { src: '/fotos/bau-07.jpg', alt: 'Electrical installation and safety testing' },
+  { src: '/fotos/bau-08.jpg', alt: 'Drywall and electrical work in a hallway' },
+]
+
 export const content: Record<Locale, Content> = {
   de: {
     htmlLang: 'de',
-    nav: { leistungen: 'Leistungen', ablauf: 'Ablauf', referenzen: 'Referenzen', faq: 'FAQ', kontakt: 'Kontakt' },
+    nav: { leistungen: 'Leistungen', projekte: 'Projekte', ablauf: 'Ablauf', referenzen: 'Referenzen', faq: 'FAQ', kontakt: 'Kontakt' },
     ctaAnfrage: 'Kostenlose Anfrage',
     menuOpenLabel: 'Menü öffnen',
     menuCloseLabel: 'Menü schließen',
@@ -267,6 +295,11 @@ export const content: Record<Locale, Content> = {
     whyUs: { heading: 'Warum RundumWerk24?', subheading: 'Was uns von anderen Anbietern unterscheidet.', items: whyUsDe },
     process: { heading: 'So läuft es ab', subheading: 'In vier einfachen Schritten zu Ihrem fertigen Auftrag.', steps: stepsDe },
     testimonials: { heading: 'Das sagen unsere Kunden', items: testimonialsDe },
+    projects: {
+      heading: 'Unsere Projekte',
+      subheading: 'Ein Einblick in echte Baustellen und abgeschlossene Arbeiten von GGV BAU.',
+      images: projectImagesDe,
+    },
     quote: {
       heading: 'Kostenloses & unverbindliches Angebot',
       desc: 'Füllen Sie das Formular aus – wir melden uns innerhalb von 24 Stunden mit einem individuellen Festpreisangebot bei Ihnen.',
@@ -298,6 +331,7 @@ export const content: Record<Locale, Content> = {
       companyHeading: 'Unternehmen',
       companyLinks: [
         { label: 'Leistungen', href: '#leistungen' },
+        { label: 'Projekte', href: '#projekte' },
         { label: 'Referenzen', href: '#referenzen' },
         { label: 'FAQ', href: '#faq' },
         { label: 'Angebot anfordern', href: '#anfrage' },
@@ -309,7 +343,7 @@ export const content: Record<Locale, Content> = {
   },
   en: {
     htmlLang: 'en',
-    nav: { leistungen: 'Services', ablauf: 'Process', referenzen: 'Reviews', faq: 'FAQ', kontakt: 'Contact' },
+    nav: { leistungen: 'Services', projekte: 'Projects', ablauf: 'Process', referenzen: 'Reviews', faq: 'FAQ', kontakt: 'Contact' },
     ctaAnfrage: 'Free Quote',
     menuOpenLabel: 'Open menu',
     menuCloseLabel: 'Close menu',
@@ -331,6 +365,11 @@ export const content: Record<Locale, Content> = {
     whyUs: { heading: 'Why RundumWerk24?', subheading: 'What sets us apart from other providers.', items: whyUsEn },
     process: { heading: 'How It Works', subheading: 'Four simple steps to your completed job.', steps: stepsEn },
     testimonials: { heading: 'What Our Customers Say', items: testimonialsEn },
+    projects: {
+      heading: 'Our Projects',
+      subheading: 'A look at real job sites and completed work by GGV BAU.',
+      images: projectImagesEn,
+    },
     quote: {
       heading: 'Free & Non-Binding Quote',
       desc: 'Fill out the form – we’ll get back to you within 24 hours with a personalized fixed-price quote.',
@@ -362,6 +401,7 @@ export const content: Record<Locale, Content> = {
       companyHeading: 'Company',
       companyLinks: [
         { label: 'Services', href: '#leistungen' },
+        { label: 'Projects', href: '#projekte' },
         { label: 'Reviews', href: '#referenzen' },
         { label: 'FAQ', href: '#faq' },
         { label: 'Request a Quote', href: '#anfrage' },

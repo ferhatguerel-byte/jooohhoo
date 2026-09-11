@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Phone,
   Mail,
@@ -34,6 +35,7 @@ function Header({ t }: { t: (typeof content)['de'] }) {
 
   const links = [
     { id: 'leistungen', label: t.nav.leistungen },
+    { id: 'projekte', label: t.nav.projekte },
     { id: 'ablauf', label: t.nav.ablauf },
     { id: 'referenzen', label: t.nav.referenzen },
     { id: 'faq', label: t.nav.faq },
@@ -211,6 +213,66 @@ function QuoteForm({ t }: { t: (typeof content)['de'] }) {
   )
 }
 
+function Gallery({ t }: { t: (typeof content)['de'] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const images = t.projects.images
+
+  return (
+    <section id="projekte" className="max-w-6xl mx-auto px-6 py-20">
+      <div className="text-center max-w-2xl mx-auto mb-14">
+        <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">{t.projects.heading}</h2>
+        <p className="text-slate-500">{t.projects.subheading}</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {images.map((img, i) => (
+          <button
+            key={img.src}
+            onClick={() => setActiveIndex(i)}
+            className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group focus:outline-none focus:ring-2 focus:ring-blue-900/40"
+          >
+            <Image
+              src={img.src}
+              alt={img.alt}
+              fill
+              sizes="(max-width: 768px) 50vw, 25vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          </button>
+        ))}
+      </div>
+
+      {activeIndex !== null && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setActiveIndex(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            onClick={() => setActiveIndex(null)}
+            aria-label="Close"
+            className="absolute top-4 right-4 text-white/80 hover:text-white"
+          >
+            <X size={32} />
+          </button>
+          <div className="relative w-full max-w-3xl aspect-[4/3]" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={images[activeIndex].src}
+              alt={images[activeIndex].alt}
+              fill
+              sizes="100vw"
+              className="object-contain"
+            />
+          </div>
+          <p className="absolute bottom-6 left-0 right-0 text-center text-white/80 text-sm px-6">
+            {images[activeIndex].alt}
+          </p>
+        </div>
+      )}
+    </section>
+  )
+}
+
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   const panelId = `faq-panel-${q.replace(/\W+/g, '-').toLowerCase()}`
@@ -317,6 +379,8 @@ export default function HomePage({ locale }: { locale: Locale }) {
           ))}
         </div>
       </section>
+
+      <Gallery t={t} />
 
       {/* Why us */}
       <section className="bg-slate-50 border-y border-slate-200">
