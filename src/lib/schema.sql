@@ -74,7 +74,23 @@ CREATE TABLE IF NOT EXISTS lead_unlocks (
   UNIQUE(auftraggeber_id, offer_id)
 );
 
+-- Auftrag vergeben: welcher Subunternehmer hat den Zuschlag erhalten
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS awarded_subunternehmer_id UUID REFERENCES users(id);
+
+-- Gegenseitige Bewertungen nach Auftragsabschluss
+CREATE TABLE IF NOT EXISTS reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  reviewer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reviewee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(job_id, reviewer_id, reviewee_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_gewerk ON jobs(gewerk);
 CREATE INDEX IF NOT EXISTS idx_offers_job ON offers(job_id);
 CREATE INDEX IF NOT EXISTS idx_lead_unlocks_auftraggeber_month ON lead_unlocks(auftraggeber_id, unlocked_at);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewee ON reviews(reviewee_id);

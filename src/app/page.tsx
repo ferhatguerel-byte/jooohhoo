@@ -12,9 +12,30 @@ import {
   Handshake,
   ShieldCheck,
   Wrench,
+  Star,
+  Bell,
+  Zap,
 } from 'lucide-react'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { GEWERKE } from '@/lib/gewerke'
+
+const USPS = [
+  {
+    icon: <Star size={22} />,
+    title: 'Bewertungssystem',
+    desc: 'Jeder Subunternehmer wird nach Auftragsabschluss bewertet – Sie sehen Sterne-Bewertungen schon vor der Kontaktfreischaltung. Mehr Transparenz als bei klassischen Vermittlungsportalen.',
+  },
+  {
+    icon: <Bell size={22} />,
+    title: 'Sofort-Benachrichtigungen',
+    desc: 'Neues Angebot? Sie erfahren es per E-Mail in Echtzeit – kein Nachschauen im Portal nötig.',
+  },
+  {
+    icon: <Zap size={22} />,
+    title: 'Einfache Auftragsvergabe',
+    desc: 'Ein Klick auf „Auftrag vergeben“ genügt – alle anderen Angebote werden automatisch geschlossen, der Subunternehmer wird informiert.',
+  },
+]
 
 const STEPS_AUFTRAGGEBER = [
   { icon: <FileText size={22} />, title: 'Auftrag einstellen', desc: 'Beschreiben Sie Ihr Gewerk, Ort und Umfang – in wenigen Minuten online.' },
@@ -41,6 +62,7 @@ function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+          <a href="#vorteile" className="hover:text-blue-900 transition">Vorteile</a>
           <a href="#so-funktionierts" className="hover:text-blue-900 transition">Wie es funktioniert</a>
           <a href="#gewerke" className="hover:text-blue-900 transition">Gewerke</a>
           <a href="#preise" className="hover:text-blue-900 transition">Preise</a>
@@ -69,6 +91,7 @@ function Header() {
 
       {open && (
         <div id="mobile-menu" className="md:hidden border-t border-slate-200 px-6 py-4 flex flex-col gap-4 bg-white">
+          <a href="#vorteile" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Vorteile</a>
           <a href="#so-funktionierts" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Wie es funktioniert</a>
           <a href="#gewerke" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Gewerke</a>
           <a href="#preise" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Preise</a>
@@ -114,6 +137,23 @@ export default function HomePage() {
               Ich bin Subunternehmer
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* USPs */}
+      <section id="vorteile" className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Was uns von anderen Portalen unterscheidet</h2>
+          <p className="text-slate-500">Mehr Transparenz, weniger Aufwand – für Auftraggeber und Subunternehmer.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {USPS.map((u) => (
+            <div key={u.title} className="border border-slate-200 rounded-2xl p-6 hover:border-blue-900/40 hover:shadow-md transition">
+              <div className="text-orange-500 mb-4">{u.icon}</div>
+              <h3 className="font-bold text-lg text-slate-900 mb-2">{u.title}</h3>
+              <p className="text-slate-500 text-sm">{u.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { TIERS } from '@/lib/tiers'
+import { sendLeadUnlockedEmail } from '@/lib/email'
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: offerId } = await params
@@ -16,8 +17,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const db = getDb()
 
   const offer = await db.query(
-    `SELECT o.id FROM offers o
+    `SELECT o.id, u.email, u.company_name FROM offers o
      JOIN jobs j ON j.id = o.job_id
+     JOIN users u ON u.id = o.subunternehmer_id
      WHERE o.id = $1 AND j.auftraggeber_id = $2`,
     [offerId, user.id]
   )
@@ -47,6 +49,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   }
 
   await db.query('INSERT INTO lead_unlocks (auftraggeber_id, offer_id) VALUES ($1, $2)', [user.id, offerId])
+
+  try {
+    await sendLeadUnlockedEmail(offer.rows[0].email, offer.rows[0].company_name)
+  } catch (emailErr) {
+    console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+  }
 
   return NextResponse.json({ ok: true })
 }

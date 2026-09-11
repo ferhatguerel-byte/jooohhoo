@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
+import { sendNewOfferEmail } from '@/lib/email'
 
 const offerSchema = z.object({
   price: z.number().int().positive(),
@@ -19,7 +20,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = offerSchema.parse(await req.json())
     const db = getDb()
 
-    const job = await db.query("SELECT id FROM jobs WHERE id = $1 AND status = 'open'", [jobId])
+    const job = await db.query(
+      `SELECT j.id, j.title, u.email
+       FROM jobs j JOIN users u ON u.id = j.auftraggeber_id
+       WHERE j.id = $1 AND j.status = 'open'`,
+      [jobId]
+    )
     if (job.rows.length === 0) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden oder nicht mehr offen.' }, { status: 404 })
     }
@@ -30,6 +36,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
        ON CONFLICT (job_id, subunternehmer_id) DO UPDATE SET price = $3, message = $4`,
       [jobId, user.id, body.price, body.message || null]
     )
+
+    try {
+      await sendNewOfferEmail(job.rows[0].email, job.rows[0].title, body.price, user.companyName)
+    } catch (emailErr) {
+      console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
