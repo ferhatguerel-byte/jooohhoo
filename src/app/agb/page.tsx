@@ -12,9 +12,10 @@ export default function AgbPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich</h2>
         <p>
-          Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge zwischen der RundumWerk24 GmbH
-          (nachfolgend „Auftragnehmer“) und ihren Kunden über die Erbringung von Leistungen in den
-          Bereichen Umzug, Transport, Reinigung sowie Bau- und Renovierungsarbeiten.
+          Diese Allgemeinen Geschäftsbedingungen gelten für alle Verträge zwischen der GGV BAU GmbH
+          (Handelsmarke „RundumWerk24“, nachfolgend „Auftragnehmer“) und ihren Kunden über die
+          Erbringung von Leistungen in den Bereichen Umzug, Transport, Reinigung sowie Bau- und
+          Renovierungsarbeiten.
         </p>
       </section>
 

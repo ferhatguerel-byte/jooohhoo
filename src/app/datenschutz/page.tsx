@@ -13,7 +13,7 @@ export default function DatenschutzPage() {
         <h2 className="font-bold text-slate-900 mb-2">1. Verantwortlicher</h2>
         <p>
           Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-          RundumWerk24 GmbH, Musterstraße 1, 10115 Berlin, E-Mail: anfrage@rundumwerk24.de
+          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: anfrage@rundumwerk24.de
         </p>
       </section>
 

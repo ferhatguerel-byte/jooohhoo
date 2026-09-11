@@ -485,7 +485,7 @@ export default function HomePage() {
             <ul className="space-y-3 text-sm text-blue-200">
               <li className="flex items-center gap-2"><Phone size={14} /> 030 / 123 456 789</li>
               <li className="flex items-center gap-2"><Mail size={14} /> anfrage@rundumwerk24.de</li>
-              <li className="flex items-center gap-2"><MapPin size={14} /> Musterstraße 1, 10115 Berlin</li>
+              <li className="flex items-center gap-2"><MapPin size={14} /> Mühlenstr. 8a, 14167 Berlin</li>
             </ul>
           </div>
         </div>
