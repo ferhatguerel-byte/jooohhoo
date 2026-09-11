@@ -31,7 +31,10 @@ export const metadata: Metadata = {
     "Bauarbeiten",
     "Festpreis Umzug",
   ],
-  alternates: { canonical: "/" },
+  alternates: {
+    canonical: "/",
+    languages: { de: "/", en: "/en" },
+  },
   openGraph: {
     type: "website",
     locale: "de_DE",
