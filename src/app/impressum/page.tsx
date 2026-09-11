@@ -25,14 +25,14 @@ export default function ImpressumPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">Vertreten durch</h2>
         <p>
-          [Name Geschäftsführer/in einfügen]
+          Ferhat Gürel (Geschäftsführer)
         </p>
       </section>
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">Kontakt</h2>
         <p>
-          Telefon: [Telefonnummer einfügen]<br />
+          Telefon: 0152 / 52968818<br />
           E-Mail: anfrage@rundumwerk24.de
         </p>
       </section>
@@ -42,7 +42,7 @@ export default function ImpressumPage() {
         <p>
           Eintragung im Handelsregister.<br />
           Registergericht: Amtsgericht Charlottenburg (Berlin)<br />
-          Registernummer: [HRB-Nummer einfügen]
+          Registernummer: HRB 265074 B
         </p>
       </section>
 
@@ -50,14 +50,14 @@ export default function ImpressumPage() {
         <h2 className="font-bold text-slate-900 mb-2">Umsatzsteuer-ID</h2>
         <p>
           Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz:<br />
-          [USt-IdNr. einfügen]
+          DE 455975127
         </p>
       </section>
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
         <p>
-          [Name Geschäftsführer/in einfügen]<br />
+          Ferhat Gürel<br />
           Mühlenstr. 8a<br />
           14167 Berlin
         </p>

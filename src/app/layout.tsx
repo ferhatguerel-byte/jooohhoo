@@ -53,7 +53,7 @@ const localBusinessJsonLd = {
   name: SITE_NAME,
   legalName: "GGV BAU GmbH",
   url: SITE_URL,
-  telephone: "+4930123456789",
+  telephone: "+4915252968818",
   email: "anfrage@rundumwerk24.de",
   areaServed: "DE",
   address: {

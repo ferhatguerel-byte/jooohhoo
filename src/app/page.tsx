@@ -124,8 +124,8 @@ function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <a href="tel:+4930123456789" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-900">
-            <Phone size={16} /> 030 / 123 456 789
+          <a href="tel:+4915252968818" className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-900">
+            <Phone size={16} /> 0152 / 52968818
           </a>
           <button
             onClick={() => scrollTo('anfrage')}
@@ -147,8 +147,8 @@ function Header() {
               {l.label}
             </button>
           ))}
-          <a href="tel:+4930123456789" className="flex items-center gap-2 text-slate-700 font-semibold">
-            <Phone size={16} /> 030 / 123 456 789
+          <a href="tel:+4915252968818" className="flex items-center gap-2 text-slate-700 font-semibold">
+            <Phone size={16} /> 0152 / 52968818
           </a>
           <button
             onClick={() => scrollTo('anfrage')}
@@ -424,7 +424,7 @@ export default function HomePage() {
             </p>
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-slate-700">
-                <Phone size={18} className="text-blue-900" /> 030 / 123 456 789
+                <Phone size={18} className="text-blue-900" /> 0152 / 52968818
               </div>
               <div className="flex items-center gap-3 text-slate-700">
                 <Mail size={18} className="text-blue-900" /> anfrage@rundumwerk24.de
@@ -483,7 +483,7 @@ export default function HomePage() {
           <div>
             <div className="font-bold text-white mb-4">Kontakt</div>
             <ul className="space-y-3 text-sm text-blue-200">
-              <li className="flex items-center gap-2"><Phone size={14} /> 030 / 123 456 789</li>
+              <li className="flex items-center gap-2"><Phone size={14} /> 0152 / 52968818</li>
               <li className="flex items-center gap-2"><Mail size={14} /> anfrage@rundumwerk24.de</li>
               <li className="flex items-center gap-2"><MapPin size={14} /> Mühlenstr. 8a, 14167 Berlin</li>
             </ul>
