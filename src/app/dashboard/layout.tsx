@@ -26,14 +26,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-black text-lg text-slate-900">
-            <span className="bg-blue-900 text-white rounded-lg w-8 h-8 flex items-center justify-center">
+            <span className="bg-brand text-white rounded-lg w-8 h-8 flex items-center justify-center">
               <HardHat size={16} />
             </span>
-            BauPartner<span className="text-orange-500">24</span>
+            BAU<span className="text-accent">CONNECT</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-slate-600">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} className="hover:text-blue-900">{l.label}</Link>
+              <Link key={l.href} href={l.href} className="hover:text-brand">{l.label}</Link>
             ))}
           </nav>
           <div className="flex items-center gap-4">
@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
         <nav className="sm:hidden flex items-center gap-4 px-6 pb-3 text-sm font-medium text-slate-600 overflow-x-auto">
           {links.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-blue-900 whitespace-nowrap">{l.label}</Link>
+            <Link key={l.href} href={l.href} className="hover:text-brand whitespace-nowrap">{l.label}</Link>
           ))}
         </nav>
       </header>

@@ -25,7 +25,7 @@ export default async function ProfilPage() {
 
       {rating && (
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex items-center gap-2 max-w-lg">
-          <Star size={20} className="fill-orange-400 text-orange-400" />
+          <Star size={20} className="fill-accent text-accent" />
           <span className="font-bold text-slate-900">{rating.avg} / 5</span>
           <span className="text-sm text-slate-500">({rating.count} Bewertung{rating.count === 1 ? '' : 'en'} von Auftraggebern)</span>
         </div>

@@ -40,7 +40,7 @@ export default async function AuftraegePage() {
           <p className="text-slate-700 mb-4">
             Sie benötigen ein aktives Abo, um Aufträge einzustellen und Subunternehmer-Kontakte freizuschalten.
           </p>
-          <Link href="/dashboard/abo" className="bg-blue-900 hover:bg-blue-800 text-white font-bold py-2.5 px-6 rounded-lg inline-block">
+          <Link href="/dashboard/abo" className="bg-brand hover:bg-brand-hover text-white font-bold py-2.5 px-6 rounded-lg inline-block">
             Abo auswählen
           </Link>
         </div>
@@ -54,7 +54,7 @@ export default async function AuftraegePage() {
           <Link
             key={job.id}
             href={`/dashboard/auftraege/${job.id}`}
-            className="block bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-900/40 hover:shadow-sm transition"
+            className="block bg-white border border-slate-200 rounded-xl p-5 hover:border-brand/40 hover:shadow-sm transition"
           >
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-bold text-slate-900">{job.title}</h3>

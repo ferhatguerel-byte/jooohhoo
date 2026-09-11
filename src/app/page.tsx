@@ -3,78 +3,71 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import {
-  HardHat,
   Menu,
   X,
   CheckCircle,
-  Users,
-  FileText,
-  Handshake,
   ShieldCheck,
+  Sparkles,
+  FileText,
   Wrench,
-  Star,
-  Bell,
-  Zap,
 } from 'lucide-react'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { GEWERKE } from '@/lib/gewerke'
 
-const USPS = [
+const STEPS = [
   {
-    icon: <Star size={22} />,
-    title: 'Bewertungssystem',
-    desc: 'Jeder Subunternehmer wird nach Auftragsabschluss bewertet – Sie sehen Sterne-Bewertungen schon vor der Kontaktfreischaltung. Mehr Transparenz als bei klassischen Vermittlungsportalen.',
+    n: '01',
+    title: 'Projekt beschreiben',
+    desc: 'Beschreibe dein Vorhaben in normaler Sprache. Unsere KI erstellt daraus automatisch ein strukturiertes Leistungsverzeichnis.',
   },
   {
-    icon: <Bell size={22} />,
-    title: 'Sofort-Benachrichtigungen',
-    desc: 'Neues Angebot? Sie erfahren es per E-Mail in Echtzeit – kein Nachschauen im Portal nötig.',
+    n: '02',
+    title: 'Passende Anbieter',
+    desc: 'Geprüfte Handwerksbetriebe mit passendem Gewerk, Region und Kapazität erhalten deinen Auftrag.',
   },
   {
-    icon: <Zap size={22} />,
-    title: 'Einfache Auftragsvergabe',
-    desc: 'Ein Klick auf „Auftrag vergeben“ genügt – alle anderen Angebote werden automatisch geschlossen, der Subunternehmer wird informiert.',
+    n: '03',
+    title: 'Angebote vergleichen',
+    desc: 'Alle Angebote beziehen sich auf denselben Leistungsumfang – Position für Position direkt vergleichbar.',
   },
 ]
 
-const STEPS_AUFTRAGGEBER = [
-  { icon: <FileText size={22} />, title: 'Auftrag einstellen', desc: 'Beschreiben Sie Ihr Gewerk, Ort und Umfang – in wenigen Minuten online.' },
-  { icon: <Users size={22} />, title: 'Angebote erhalten', desc: 'Geprüfte Subunternehmer aus Polen geben Angebote auf Ihren Auftrag ab.' },
-  { icon: <Handshake size={22} />, title: 'Direkt beauftragen', desc: 'Kontaktdaten freischalten und die Zusammenarbeit direkt vereinbaren.' },
+const COMPARE_ROWS = [
+  { label: 'Geprüfte Anbieter', bc: true, boerse: 'teilweise', phone: '–' },
+  { label: 'Angebote vergleichbar', bc: true, boerse: '–', phone: '–' },
+  { label: 'KI-Leistungsverzeichnis', bc: true, boerse: '–', phone: '–' },
+  { label: 'Festpreis-Kennzeichnung', bc: true, boerse: 'teilweise', phone: '–' },
+  { label: 'Bewertungssystem', bc: true, boerse: 'teilweise', phone: '–' },
+  { label: 'Nachunternehmer-Börse', bc: true, boerse: 'selten', phone: '–' },
 ]
 
-const STEPS_SUBUNTERNEHMER = [
-  { icon: <Wrench size={22} />, title: 'Profil anlegen', desc: 'Gewerke, Region und Firmendaten hinterlegen – kostenlos.' },
-  { icon: <FileText size={22} />, title: 'Aufträge durchsuchen', desc: 'Passende Bauaufträge deutscher Unternehmen nach Gewerk und Region filtern.' },
-  { icon: <Handshake size={22} />, title: 'Angebot abgeben', desc: 'Direkt online ein Angebot einreichen und mit dem Auftraggeber in Kontakt treten.' },
+const VORTEILE = [
+  { icon: <ShieldCheck size={22} />, title: 'Verifizierte Profile', desc: 'Gewerbe, Haftpflicht, Qualifikationsnachweise und Bewertungen strukturiert dargestellt.' },
+  { icon: <FileText size={22} />, title: 'Transparente Preise', desc: 'Leistungspositionen statt schwer vergleichbarer Gesamtpreise – inklusive Festpreis-Kennzeichnung.' },
+  { icon: <Sparkles size={22} />, title: 'Alles an einem Ort', desc: 'Auftrag, Leistungsverzeichnis, Angebote, Nachrichten und Vergabe – zentral organisiert.' },
 ]
 
 function Header() {
   const [open, setOpen] = useState(false)
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-black text-xl text-slate-900">
-          <span className="bg-blue-900 text-white rounded-lg w-9 h-9 flex items-center justify-center">
-            <HardHat size={18} />
-          </span>
-          BauPartner<span className="text-orange-500">24</span>
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 h-[76px] flex items-center">
+      <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-between">
+        <Link href="/" className="font-black text-2xl tracking-tight text-[#17202a]">
+          BAU<span className="text-accent">CONNECT</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-          <a href="#vorteile" className="hover:text-blue-900 transition">Vorteile</a>
-          <a href="#so-funktionierts" className="hover:text-blue-900 transition">Wie es funktioniert</a>
-          <a href="#gewerke" className="hover:text-blue-900 transition">Gewerke</a>
-          <a href="#preise" className="hover:text-blue-900 transition">Preise</a>
+        <nav className="hidden md:flex items-center gap-8 text-sm text-slate-600">
+          <a href="#so-funktionierts" className="hover:text-[#17202a] transition">So funktioniert&apos;s</a>
+          <a href="#vorteile" className="hover:text-[#17202a] transition">Vorteile</a>
+          <a href="#unternehmen" className="hover:text-[#17202a] transition">Für Unternehmen</a>
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-blue-900">Anmelden</Link>
-          <Link
-            href="/registrieren"
-            className="bg-orange-500 hover:bg-orange-400 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition"
-          >
-            Kostenlos registrieren
+          <Link href="/login" className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-slate-400 transition">
+            Anmelden
+          </Link>
+          <Link href="/registrieren" className="bg-accent hover:bg-accent-hover text-white rounded-lg px-4 py-2.5 text-sm font-bold transition">
+            Auftrag starten
           </Link>
         </div>
 
@@ -90,14 +83,13 @@ function Header() {
       </div>
 
       {open && (
-        <div id="mobile-menu" className="md:hidden border-t border-slate-200 px-6 py-4 flex flex-col gap-4 bg-white">
+        <div id="mobile-menu" className="md:hidden absolute top-[76px] left-0 right-0 border-t border-slate-200 px-6 py-4 flex flex-col gap-4 bg-white">
+          <a href="#so-funktionierts" onClick={() => setOpen(false)} className="text-slate-700 font-medium">So funktioniert&apos;s</a>
           <a href="#vorteile" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Vorteile</a>
-          <a href="#so-funktionierts" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Wie es funktioniert</a>
-          <a href="#gewerke" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Gewerke</a>
-          <a href="#preise" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Preise</a>
+          <a href="#unternehmen" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Für Unternehmen</a>
           <Link href="/login" onClick={() => setOpen(false)} className="text-slate-700 font-semibold">Anmelden</Link>
-          <Link href="/registrieren" onClick={() => setOpen(false)} className="bg-orange-500 text-white font-bold py-3 rounded-lg text-sm text-center">
-            Kostenlos registrieren
+          <Link href="/registrieren" onClick={() => setOpen(false)} className="bg-accent text-white font-bold py-3 rounded-lg text-sm text-center">
+            Auftrag starten
           </Link>
         </div>
       )}
@@ -107,180 +99,206 @@ function Header() {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-slate-800">
+    <div className="min-h-screen bg-white text-[#17202a]">
       <Header />
 
       {/* Hero */}
-      <section className="bg-gradient-to-b from-blue-950 to-blue-900 text-white">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1 text-sm mb-6">
-            <ShieldCheck size={14} /> Für deutsche Bauunternehmen & polnische Subunternehmer
+      <section className="bg-gradient-to-br from-slate-50 to-white py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
+          <div>
+            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-4">
+              Die neue Plattform für Bau &amp; Handwerk
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black leading-[1.03] tracking-tight mb-6 max-w-xl">
+              Gute Handwerker finden.{' '}
+              <span className="text-accent">Faire Angebote vergleichen.</span>
+            </h1>
+            <p className="text-lg text-slate-500 leading-relaxed max-w-xl mb-8">
+              BAUCONNECT bringt Auftraggeber und geprüfte Fachbetriebe zusammen – mit einem KI-Leistungsverzeichnis,
+              transparenten Angeboten und einem Matching, das wirklich zu deinem Projekt passt.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/registrieren?rolle=auftraggeber" className="bg-accent hover:bg-accent-hover text-white font-bold py-3.5 px-7 rounded-lg text-center transition">
+                Kostenlos Auftrag erstellen →
+              </Link>
+              <a href="#so-funktionierts" className="border border-slate-300 hover:border-slate-400 text-[#17202a] font-bold py-3.5 px-7 rounded-lg text-center transition">
+                Mehr erfahren
+              </a>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black leading-tight mb-6 max-w-3xl mx-auto">
-            Der Marktplatz für <span className="text-orange-400">Subunternehmer</span> im Baugewerbe
-          </h1>
-          <p className="text-lg text-blue-100 mb-10 max-w-2xl mx-auto">
-            BauPartner24 verbindet deutsche Bauunternehmen mit qualifizierten Subunternehmern für Trockenbau,
-            Elektro, Sanitär, Fassade, Rohbau und mehr. Auftrag einstellen, Angebote erhalten, direkt beauftragen.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/registrieren?rolle=auftraggeber"
-              className="bg-orange-500 hover:bg-orange-400 text-white font-bold py-3.5 px-7 rounded-lg text-center transition"
-            >
-              Ich suche Subunternehmer
-            </Link>
-            <Link
-              href="/registrieren?rolle=subunternehmer"
-              className="border border-white/40 hover:border-white text-white font-bold py-3.5 px-7 rounded-lg text-center transition"
-            >
-              Ich bin Subunternehmer
-            </Link>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl shadow-slate-200/50">
+            <h3 className="font-bold text-lg mb-4">Beispiel: Wohnung renovieren</h3>
+            <div className="border border-slate-200 rounded-lg p-3.5 mb-3">
+              <strong className="block text-sm text-[#17202a] mb-0.5">Projekt</strong>
+              <span className="text-sm text-slate-500">120 m² Wohnung komplett renovieren</span>
+            </div>
+            <div className="border border-slate-200 rounded-lg p-3.5 mb-3">
+              <strong className="block text-sm text-[#17202a] mb-0.5">Ort</strong>
+              <span className="text-sm text-slate-500">Berlin · 120 m² · Start flexibel</span>
+            </div>
+            <div className="bg-[#f6faf7] rounded-lg p-4 mt-4">
+              <div className="text-3xl font-black text-[#17202a] mb-1">96 % Match</div>
+              <div className="text-sm text-slate-500">
+                Passende geprüfte Fachbetriebe werden anhand von Qualifikation, Erfahrung, Entfernung, Kapazität und
+                Preisniveau bewertet.
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* USPs */}
-      <section id="vorteile" className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Was uns von anderen Portalen unterscheidet</h2>
-          <p className="text-slate-500">Mehr Transparenz, weniger Aufwand – für Auftraggeber und Subunternehmer.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {USPS.map((u) => (
-            <div key={u.title} className="border border-slate-200 rounded-2xl p-6 hover:border-blue-900/40 hover:shadow-md transition">
-              <div className="text-orange-500 mb-4">{u.icon}</div>
-              <h3 className="font-bold text-lg text-slate-900 mb-2">{u.title}</h3>
-              <p className="text-slate-500 text-sm">{u.desc}</p>
+      {/* How it works */}
+      <section id="so-funktionierts" className="max-w-6xl mx-auto px-6 py-20 text-center">
+        <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Einfacher Ablauf</div>
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Von der Idee bis zum passenden Betrieb.</h2>
+        <p className="text-slate-500 max-w-xl mx-auto mb-14">
+          Kein Durchtelefonieren. Keine unübersichtlichen Angebote. Ein strukturierter Prozess.
+        </p>
+        <div className="grid md:grid-cols-3 gap-6 text-left">
+          {STEPS.map((s) => (
+            <div key={s.n} className="border border-slate-200 rounded-2xl p-7">
+              <div className="text-3xl font-black text-slate-200 mb-3">{s.n}</div>
+              <h3 className="font-bold text-lg mb-2">{s.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="so-funktionierts" className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">So funktioniert BauPartner24</h2>
-          <p className="text-slate-500">Für Auftraggeber und Subunternehmer – jeweils in drei einfachen Schritten.</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-10">
+      {/* Compare */}
+      <section className="bg-[#17202a] text-white py-20">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-[0.8fr_1.2fr] gap-14 items-center">
           <div>
-            <h3 className="font-bold text-lg text-blue-900 mb-6 text-center">Für Bauunternehmen (Auftraggeber)</h3>
-            <div className="space-y-6">
-              {STEPS_AUFTRAGGEBER.map((s, i) => (
-                <div key={s.title} className="flex gap-4">
-                  <div className="shrink-0 w-10 h-10 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center font-bold">
-                    {i + 1}
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900 mb-1 flex items-center gap-2">{s.icon} {s.title}</div>
-                    <div className="text-sm text-slate-500">{s.desc}</div>
-                  </div>
-                </div>
-              ))}
+            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Unser Unterschied</div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">
+              Nicht möglichst viele Kontakte. Sondern die richtigen.
+            </h2>
+            <p className="text-slate-300 leading-relaxed">
+              BAUCONNECT setzt auf Qualität, Transparenz und passende Anbieter statt auf eine möglichst große Liste
+              von Handwerkern.
+            </p>
+          </div>
+          <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-4 px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
+              <div>Kriterium</div>
+              <div>BAUCONNECT</div>
+              <div>Klassische Börse</div>
+              <div>Telefon/Google</div>
             </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-lg text-orange-500 mb-6 text-center">Für Subunternehmer</h3>
-            <div className="space-y-6">
-              {STEPS_SUBUNTERNEHMER.map((s, i) => (
-                <div key={s.title} className="flex gap-4">
-                  <div className="shrink-0 w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center font-bold">
-                    {i + 1}
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900 mb-1 flex items-center gap-2">{s.icon} {s.title}</div>
-                    <div className="text-sm text-slate-500">{s.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Gewerke */}
-      <section id="gewerke" className="bg-slate-50 border-y border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-20">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Verfügbare Gewerke</h2>
-            <p className="text-slate-500">Von Rohbau bis Photovoltaik – finden Sie den passenden Subunternehmer.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
-            {GEWERKE.map((g) => (
-              <span key={g} className="bg-white border border-slate-200 rounded-full px-4 py-2 text-sm font-medium text-slate-700">
-                {g}
-              </span>
+            {COMPARE_ROWS.map((row) => (
+              <div key={row.label} className="grid grid-cols-4 px-5 py-4 text-sm border-b border-slate-100 last:border-0">
+                <div>{row.label}</div>
+                <div className="font-extrabold text-green-700">✓</div>
+                <div className="text-slate-500">{row.boerse}</div>
+                <div className="text-slate-400">{row.phone}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="preise" className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">Preise für Auftraggeber</h2>
-          <p className="text-slate-500">Monatlich kündbar. Für Subunternehmer ist die Registrierung dauerhaft kostenlos.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {TIER_ORDER.map((tierId) => {
-            const tier = TIERS[tierId]
-            const popular = tierId === 'pro'
-            return (
-              <div
-                key={tier.id}
-                className={`rounded-2xl p-8 border-2 relative ${popular ? 'border-blue-900 shadow-lg' : 'border-slate-200'}`}
-              >
-                {popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-900 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    BELIEBTESTE WAHL
-                  </div>
-                )}
-                <div className="text-lg font-bold text-slate-900 mb-1">{tier.name}</div>
-                <div className="text-4xl font-black text-slate-900 mb-1">€{tier.priceEuro}</div>
-                <div className="text-slate-400 text-sm mb-6">/Monat</div>
-                <ul className="space-y-3 mb-8">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                      <CheckCircle size={16} className="text-orange-500 shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/registrieren?rolle=auftraggeber"
-                  className={`block text-center w-full py-3 rounded-xl font-bold transition-all ${
-                    popular ? 'bg-blue-900 hover:bg-blue-800 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
-                  }`}
-                >
-                  Jetzt starten
-                </Link>
-              </div>
-            )
-          })}
+      {/* Vorteile */}
+      <section id="vorteile" className="max-w-6xl mx-auto px-6 py-20 text-center">
+        <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Auftraggeber</div>
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-14">Mehr Kontrolle. Weniger Risiko.</h2>
+        <div className="grid md:grid-cols-3 gap-6 text-left">
+          {VORTEILE.map((v) => (
+            <div key={v.title} className="border border-slate-200 rounded-2xl p-7 hover:border-[#17202a]/30 hover:shadow-md transition">
+              <div className="text-accent mb-4">{v.icon}</div>
+              <h3 className="font-bold text-lg mb-2">{v.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{v.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-blue-950 text-blue-100">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row justify-between gap-6">
-          <div className="flex items-center gap-2 font-black text-xl text-white">
-            <span className="bg-orange-500 text-white rounded-lg w-9 h-9 flex items-center justify-center">
-              <HardHat size={18} />
-            </span>
-            BauPartner24
+      {/* Für Unternehmen / Nachunternehmer-Börse */}
+      <section id="unternehmen" className="max-w-6xl mx-auto px-6 pb-20">
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 border border-slate-200 rounded-2xl p-8 bg-slate-50">
+            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Bauunternehmen</div>
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-3">Nachunternehmer finden – professionell.</h2>
+            <p className="text-slate-500 mb-6 max-w-lg">
+              Leistungsverzeichnis hochladen, Anforderungen definieren und passende Fachfirmen bzw. Kolonnen für dein
+              Projekt erreichen.
+            </p>
+            <Link href="/registrieren?rolle=auftraggeber" className="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-6 rounded-lg inline-block transition">
+              Nachunternehmer suchen →
+            </Link>
           </div>
-          <div className="flex gap-6 text-sm text-blue-200">
-            <Link href="/impressum" className="hover:text-white">Impressum</Link>
-            <Link href="/datenschutz" className="hover:text-white">Datenschutz</Link>
-            <Link href="/agb" className="hover:text-white">AGB</Link>
+          <div className="border border-slate-200 rounded-2xl p-8 flex flex-col justify-center">
+            <div className="flex items-center gap-2 mb-3">
+              <Wrench size={20} className="text-accent" />
+              <h3 className="font-bold text-lg">Alle Gewerke</h3>
+            </div>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              {GEWERKE.join(' · ')}
+            </p>
           </div>
         </div>
-        <div className="border-t border-white/10">
-          <div className="max-w-6xl mx-auto px-6 py-6 text-center text-xs text-blue-300">
-            © {new Date().getFullYear()} BauPartner24 – eine Marke der GGV BAU GmbH. Alle Rechte vorbehalten.
+      </section>
+
+      {/* Pricing */}
+      <section id="preise" className="bg-slate-50 border-y border-slate-200 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Auftraggeber</div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Preise</h2>
+            <p className="text-slate-500">Monatlich kündbar. Für Handwerksbetriebe ist die Registrierung dauerhaft kostenlos.</p>
           </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {TIER_ORDER.map((tierId) => {
+              const tier = TIERS[tierId]
+              const popular = tierId === 'pro'
+              return (
+                <div key={tier.id} className={`bg-white rounded-2xl p-8 border-2 relative ${popular ? 'border-[#17202a] shadow-lg' : 'border-slate-200'}`}>
+                  {popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#17202a] text-white text-xs font-bold px-3 py-1 rounded-full">
+                      BELIEBTESTE WAHL
+                    </div>
+                  )}
+                  <div className="text-lg font-bold mb-1">{tier.name}</div>
+                  <div className="text-4xl font-black mb-1">€{tier.priceEuro}</div>
+                  <div className="text-slate-400 text-sm mb-6">/Monat</div>
+                  <ul className="space-y-3 mb-8">
+                    {tier.features.map((f) => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle size={16} className="text-accent shrink-0" /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href="/registrieren?rolle=auftraggeber"
+                    className={`block text-center w-full py-3 rounded-xl font-bold transition ${
+                      popular ? 'bg-[#17202a] hover:bg-brand-hover text-white' : 'bg-slate-100 hover:bg-slate-200 text-[#17202a]'
+                    }`}
+                  >
+                    Jetzt starten
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="bg-accent text-white py-20 text-center px-6">
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Dein Projekt. Die richtigen Fachleute.</h2>
+        <p className="text-white/90 mb-6">Erstelle deinen ersten Auftrag kostenlos.</p>
+        <Link href="/registrieren?rolle=auftraggeber" className="bg-white text-[#17202a] font-bold py-3.5 px-8 rounded-lg inline-block hover:bg-slate-100 transition">
+          Jetzt Auftrag erstellen →
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer className="px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-slate-500 max-w-6xl mx-auto">
+        <div>© {new Date().getFullYear()} BAUCONNECT – eine Marke der GGV BAU GmbH.</div>
+        <div className="flex gap-4">
+          <Link href="/impressum" className="hover:text-[#17202a]">Impressum</Link>
+          <Link href="/datenschutz" className="hover:text-[#17202a]">Datenschutz</Link>
+          <Link href="/agb" className="hover:text-[#17202a]">AGB</Link>
         </div>
       </footer>
     </div>

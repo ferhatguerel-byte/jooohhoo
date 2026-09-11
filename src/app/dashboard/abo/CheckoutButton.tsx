@@ -30,7 +30,7 @@ export default function CheckoutButton({ tier, label }: { tier: TierId; label: s
       <button
         onClick={handleClick}
         disabled={loading}
-        className="w-full bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold py-3 rounded-lg"
+        className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold py-3 rounded-lg"
       >
         {loading ? 'Weiterleitung…' : label}
       </button>

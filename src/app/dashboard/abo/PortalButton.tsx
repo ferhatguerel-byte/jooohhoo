@@ -22,7 +22,7 @@ export default function PortalButton() {
 
   return (
     <div>
-      <button onClick={handleClick} disabled={loading} className="text-sm font-semibold text-blue-900 hover:underline disabled:opacity-50">
+      <button onClick={handleClick} disabled={loading} className="text-sm font-semibold text-brand hover:underline disabled:opacity-50">
         {loading ? 'Weiterleitung…' : 'Abo verwalten / kündigen'}
       </button>
       {error && <p role="alert" className="text-xs text-red-600 mt-2">{error}</p>}

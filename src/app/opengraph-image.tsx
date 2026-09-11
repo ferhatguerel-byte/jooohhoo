@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const alt = 'BauPartner24 – Subunternehmer für Ihre Bauprojekte finden'
+export const alt = 'BAUCONNECT – Geprüfte Handwerker. Vergleichbare Angebote.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -15,7 +15,7 @@ export default async function Image() {
           flexDirection: 'column',
           justifyContent: 'center',
           padding: '0 80px',
-          background: 'linear-gradient(135deg, #172554 0%, #1e3a8a 100%)',
+          background: '#17202a',
           fontFamily: 'sans-serif',
         }}
       >
@@ -25,7 +25,7 @@ export default async function Image() {
               width: 56,
               height: 56,
               borderRadius: 12,
-              background: '#f97316',
+              background: '#f47b20',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -37,14 +37,14 @@ export default async function Image() {
             B
           </div>
           <div style={{ display: 'flex', fontSize: 34, fontWeight: 900, color: 'white' }}>
-            BauPartner<span style={{ color: '#f97316' }}>24</span>
+            BAU<span style={{ color: '#f47b20' }}>CONNECT</span>
           </div>
         </div>
         <div style={{ fontSize: 52, fontWeight: 900, color: 'white', lineHeight: 1.15, maxWidth: 950 }}>
-          Der Marktplatz für Subunternehmer im Baugewerbe
+          Geprüfte Handwerker. Vergleichbare Angebote.
         </div>
-        <div style={{ fontSize: 28, color: '#bfdbfe', marginTop: 24 }}>
-          Auftrag einstellen · Angebote erhalten · Direkt beauftragen
+        <div style={{ fontSize: 28, color: '#9aa5b1', marginTop: 24 }}>
+          KI-Leistungsverzeichnis · Festpreis-Schutz · Bewertungssystem
         </div>
       </div>
     ),

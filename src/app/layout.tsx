@@ -12,23 +12,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://www.baupartner24.de";
-const SITE_NAME = "BauPartner24";
-const TITLE = "BauPartner24 – Subunternehmer für Ihre Bauprojekte finden";
+const SITE_URL = "https://www.bauconnect.de";
+const SITE_NAME = "BAUCONNECT";
+const TITLE = "BAUCONNECT – Geprüfte Handwerker. Vergleichbare Angebote.";
 const DESCRIPTION =
-  "BauPartner24 vermittelt deutschen Bauunternehmen qualifizierte Subunternehmer für Trockenbau, Elektro, Sanitär, Fassade, Rohbau und mehr. Auftrag einstellen, Angebote erhalten, direkt beauftragen.";
+  "BAUCONNECT verbindet Auftraggeber mit geprüften Handwerksbetrieben. KI-gestütztes Leistungsverzeichnis macht Angebote direkt vergleichbar. Für Bauunternehmen zusätzlich: Nachunternehmer-Börse.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: TITLE, template: `%s – ${SITE_NAME}` },
   description: DESCRIPTION,
   keywords: [
+    "Handwerker finden",
+    "Handwerker Vergleich",
+    "Angebote vergleichen Bau",
+    "Leistungsverzeichnis erstellen",
     "Subunternehmer finden",
-    "Bauaufträge vergeben",
-    "Gewerke vermitteln",
-    "Trockenbau Subunternehmer",
     "Nachunternehmer Bau",
-    "Bauleistungen ausschreiben",
+    "Festpreis Renovierung",
   ],
   alternates: { canonical: "/" },
   openGraph: {
@@ -52,7 +53,7 @@ const organizationJsonLd = {
   name: SITE_NAME,
   legalName: "GGV BAU GmbH",
   url: SITE_URL,
-  email: "kontakt@baupartner24.de",
+  email: "kontakt@bauconnect.de",
   telephone: "+4915252968818",
   address: {
     "@type": "PostalAddress",

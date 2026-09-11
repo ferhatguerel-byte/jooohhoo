@@ -1,19 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Datenschutzerklärung – BauPartner24' }
+export const metadata: Metadata = { title: 'Datenschutzerklärung – BAUCONNECT' }
 
 export default function DatenschutzPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 text-slate-700">
-      <Link href="/" className="text-sm text-blue-900 hover:underline">← Zurück zur Startseite</Link>
+      <Link href="/" className="text-sm text-brand hover:underline">← Zurück zur Startseite</Link>
       <h1 className="text-3xl font-black text-slate-900 mt-6 mb-8">Datenschutzerklärung</h1>
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">1. Verantwortlicher</h2>
         <p>
           Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: kontakt@baupartner24.de
+          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: kontakt@bauconnect.de
         </p>
       </section>
 

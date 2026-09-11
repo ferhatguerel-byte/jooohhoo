@@ -27,7 +27,7 @@ export default function UnlockButton({ offerId }: { offerId: string }) {
       <button
         onClick={handleUnlock}
         disabled={loading}
-        className="bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-bold text-sm py-2 px-4 rounded-lg"
+        className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-bold text-sm py-2 px-4 rounded-lg"
       >
         {loading ? 'Wird freigeschaltet…' : 'Kontakt freischalten'}
       </button>

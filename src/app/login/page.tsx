@@ -38,10 +38,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center gap-2 font-black text-xl text-slate-900 justify-center mb-8">
-          <span className="bg-blue-900 text-white rounded-lg w-9 h-9 flex items-center justify-center">
+          <span className="bg-brand text-white rounded-lg w-9 h-9 flex items-center justify-center">
             <HardHat size={18} />
           </span>
-          BauPartner<span className="text-orange-500">24</span>
+          BAU<span className="text-accent">CONNECT</span>
         </Link>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
@@ -50,11 +50,11 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1">E-Mail</label>
-              <input id="email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+              <input id="email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1">Passwort</label>
-              <input id="password" name="password" type="password" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+              <input id="password" name="password" type="password" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
             </div>
 
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
@@ -62,7 +62,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold py-3.5 rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading ? 'Wird geprüft…' : 'Anmelden'} <ArrowRight size={18} />
             </button>
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
           <p className="text-sm text-slate-500 text-center mt-6">
             Noch kein Konto?{' '}
-            <Link href="/registrieren" className="text-blue-900 font-semibold hover:underline">Jetzt registrieren</Link>
+            <Link href="/registrieren" className="text-brand font-semibold hover:underline">Jetzt registrieren</Link>
           </p>
         </div>
       </div>

@@ -59,10 +59,10 @@ function RegisterForm() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         <Link href="/" className="flex items-center gap-2 font-black text-xl text-slate-900 justify-center mb-8">
-          <span className="bg-blue-900 text-white rounded-lg w-9 h-9 flex items-center justify-center">
+          <span className="bg-brand text-white rounded-lg w-9 h-9 flex items-center justify-center">
             <HardHat size={18} />
           </span>
-          BauPartner<span className="text-orange-500">24</span>
+          BAU<span className="text-accent">CONNECT</span>
         </Link>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
@@ -72,14 +72,14 @@ function RegisterForm() {
             <button
               type="button"
               onClick={() => setRole('auftraggeber')}
-              className={`py-2.5 rounded-md text-sm font-bold transition ${role === 'auftraggeber' ? 'bg-white shadow text-blue-900' : 'text-slate-500'}`}
+              className={`py-2.5 rounded-md text-sm font-bold transition ${role === 'auftraggeber' ? 'bg-white shadow text-brand' : 'text-slate-500'}`}
             >
               Ich bin Auftraggeber
             </button>
             <button
               type="button"
               onClick={() => setRole('subunternehmer')}
-              className={`py-2.5 rounded-md text-sm font-bold transition ${role === 'subunternehmer' ? 'bg-white shadow text-orange-500' : 'text-slate-500'}`}
+              className={`py-2.5 rounded-md text-sm font-bold transition ${role === 'subunternehmer' ? 'bg-white shadow text-accent' : 'text-slate-500'}`}
             >
               Ich bin Subunternehmer
             </button>
@@ -88,32 +88,32 @@ function RegisterForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="companyName" className="block text-sm font-semibold text-slate-700 mb-1">Firmenname *</label>
-              <input id="companyName" name="companyName" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+              <input id="companyName" name="companyName" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1">E-Mail *</label>
-                <input id="email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+                <input id="email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1">Passwort *</label>
-                <input id="password" name="password" type="password" required minLength={8} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+                <input id="password" name="password" type="password" required minLength={8} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
               </div>
             </div>
 
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="phone" className="block text-sm font-semibold text-slate-700 mb-1">Telefon</label>
-                <input id="phone" name="phone" type="tel" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+                <input id="phone" name="phone" type="tel" className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
               </div>
               <div>
                 <label htmlFor="plz" className="block text-sm font-semibold text-slate-700 mb-1">PLZ *</label>
-                <input id="plz" name="plz" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+                <input id="plz" name="plz" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
               </div>
               <div>
                 <label htmlFor="ort" className="block text-sm font-semibold text-slate-700 mb-1">Ort *</label>
-                <input id="ort" name="ort" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900" />
+                <input id="ort" name="ort" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
               </div>
             </div>
 
@@ -128,7 +128,7 @@ function RegisterForm() {
                       onClick={() => toggleGewerk(g)}
                       className={`px-3 py-1.5 rounded-full text-sm border transition ${
                         gewerke.includes(g)
-                          ? 'bg-orange-500 border-orange-500 text-white'
+                          ? 'bg-accent border-accent text-white'
                           : 'border-slate-300 text-slate-600 hover:border-slate-400'
                       }`}
                     >
@@ -144,7 +144,7 @@ function RegisterForm() {
             <button
               type="submit"
               disabled={loading || (role === 'subunternehmer' && gewerke.length === 0)}
-              className="w-full bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold py-3.5 rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading ? 'Wird erstellt…' : 'Konto erstellen'} <ArrowRight size={18} />
             </button>
@@ -152,7 +152,7 @@ function RegisterForm() {
 
           <p className="text-sm text-slate-500 text-center mt-6">
             Bereits registriert?{' '}
-            <Link href="/login" className="text-blue-900 font-semibold hover:underline">Jetzt anmelden</Link>
+            <Link href="/login" className="text-brand font-semibold hover:underline">Jetzt anmelden</Link>
           </p>
         </div>
       </div>

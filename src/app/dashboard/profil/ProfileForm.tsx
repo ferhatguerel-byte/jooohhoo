@@ -87,7 +87,7 @@ export default function ProfileForm({ role, companyName, phone, plz, ort, gewerk
                 key={g}
                 onClick={() => toggleGewerk(g)}
                 className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                  gewerke.includes(g) ? 'bg-orange-500 border-orange-500 text-white' : 'border-slate-300 text-slate-600'
+                  gewerke.includes(g) ? 'bg-accent border-accent text-white' : 'border-slate-300 text-slate-600'
                 }`}
               >
                 {g}
@@ -100,7 +100,7 @@ export default function ProfileForm({ role, companyName, phone, plz, ort, gewerk
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {saved && <p className="text-sm text-green-700">✓ Gespeichert</p>}
 
-      <button type="submit" disabled={loading} className="bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-lg">
+      <button type="submit" disabled={loading} className="bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-lg">
         {loading ? 'Wird gespeichert…' : 'Speichern'}
       </button>
     </form>

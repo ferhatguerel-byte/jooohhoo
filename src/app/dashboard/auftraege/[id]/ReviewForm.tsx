@@ -51,10 +51,10 @@ export default function ReviewForm({
         <p className="text-sm font-semibold text-green-800 mb-1">✓ Bewertung gespeichert</p>
         <div className="flex gap-0.5 mb-1">
           {[1, 2, 3, 4, 5].map((i) => (
-            <Star key={i} size={16} className={i <= rating ? 'fill-orange-400 text-orange-400' : 'text-slate-300'} />
+            <Star key={i} size={16} className={i <= rating ? 'fill-accent text-accent' : 'text-slate-300'} />
           ))}
         </div>
-        <button onClick={() => setSaved(false)} className="text-xs text-blue-900 hover:underline">Bearbeiten</button>
+        <button onClick={() => setSaved(false)} className="text-xs text-brand hover:underline">Bearbeiten</button>
       </div>
     )
   }
@@ -74,7 +74,7 @@ export default function ReviewForm({
           >
             <Star
               size={28}
-              className={i <= (hoverRating || rating) ? 'fill-orange-400 text-orange-400' : 'text-slate-300'}
+              className={i <= (hoverRating || rating) ? 'fill-accent text-accent' : 'text-slate-300'}
             />
           </button>
         ))}
@@ -87,7 +87,7 @@ export default function ReviewForm({
         className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-3"
       />
       {error && <p role="alert" className="text-xs text-red-600 mb-2">{error}</p>}
-      <button type="submit" disabled={loading} className="bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white font-bold text-sm py-2 px-4 rounded-lg">
+      <button type="submit" disabled={loading} className="bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold text-sm py-2 px-4 rounded-lg">
         {loading ? 'Wird gespeichert…' : 'Bewertung speichern'}
       </button>
     </form>

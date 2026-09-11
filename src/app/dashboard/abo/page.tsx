@@ -27,7 +27,7 @@ export default async function AboPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-sm text-slate-500">Aktuelles Abo</p>
-            <p className="text-xl font-black text-blue-900">{TIERS[user.subscriptionTier!].name}</p>
+            <p className="text-xl font-black text-brand">{TIERS[user.subscriptionTier!].name}</p>
             <p className="text-sm text-slate-500 mt-1">
               {leadsUsed} / {TIERS[user.subscriptionTier!].leadsPerMonth} Kontakte diesen Monat freigeschaltet
             </p>
@@ -41,7 +41,7 @@ export default async function AboPage() {
           const tier = TIERS[tierId]
           const isCurrent = user.subscriptionTier === tierId && hasActiveSub
           return (
-            <div key={tier.id} className={`rounded-2xl p-6 border-2 ${isCurrent ? 'border-blue-900' : 'border-slate-200'} bg-white`}>
+            <div key={tier.id} className={`rounded-2xl p-6 border-2 ${isCurrent ? 'border-brand' : 'border-slate-200'} bg-white`}>
               <div className="text-lg font-bold text-slate-900 mb-1">{tier.name}</div>
               <div className="text-3xl font-black text-slate-900 mb-1">€{tier.priceEuro}</div>
               <div className="text-slate-400 text-sm mb-4">/Monat</div>
@@ -49,7 +49,7 @@ export default async function AboPage() {
                 {tier.features.map((f) => <li key={f}>✓ {f}</li>)}
               </ul>
               {isCurrent ? (
-                <div className="text-center text-sm font-bold text-blue-900 py-3">Aktueller Plan</div>
+                <div className="text-center text-sm font-bold text-brand py-3">Aktueller Plan</div>
               ) : (
                 <CheckoutButton tier={tier.id} label={hasActiveSub ? 'Wechseln' : 'Abo abschließen'} />
               )}

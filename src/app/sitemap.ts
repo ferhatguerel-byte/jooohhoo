@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const BASE_URL = 'https://www.baupartner24.de'
+const BASE_URL = 'https://www.bauconnect.de'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

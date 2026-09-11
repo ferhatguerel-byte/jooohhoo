@@ -1,22 +1,26 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'AGB – BauPartner24' }
+export const metadata: Metadata = { title: 'AGB – BAUCONNECT' }
 
 export default function AgbPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 text-slate-700">
-      <Link href="/" className="text-sm text-blue-900 hover:underline">← Zurück zur Startseite</Link>
+      <Link href="/" className="text-sm text-brand hover:underline">← Zurück zur Startseite</Link>
       <h1 className="text-3xl font-black text-slate-900 mt-6 mb-8">Allgemeine Geschäftsbedingungen</h1>
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich und Leistungsbeschreibung</h2>
         <p>
-          Diese AGB gelten für die Nutzung der Vermittlungsplattform BauPartner24 (Betreiber: GGV BAU GmbH,
-          nachfolgend „Betreiber“). BauPartner24 vermittelt Kontakte zwischen Bauunternehmen, die
-          Bauleistungen ausschreiben („Auftraggeber“), und Subunternehmen, die entsprechende Leistungen
-          anbieten („Subunternehmer“). Der Betreiber ist selbst nicht Vertragspartei der zwischen
-          Auftraggeber und Subunternehmer geschlossenen Werk- oder Dienstverträge.
+          Diese AGB gelten für die Nutzung der Vermittlungsplattform BAUCONNECT (Betreiber: GGV BAU GmbH,
+          nachfolgend „Betreiber“). BAUCONNECT vermittelt Kontakte zwischen Auftraggebern – Privatpersonen
+          oder Unternehmen, die Bau-, Renovierungs- oder Handwerksleistungen ausschreiben – und
+          Handwerks- bzw. Subunternehmerbetrieben, die entsprechende Leistungen anbieten (gemeinsam
+          „Anbieter“). Das Leistungsverzeichnis eines Auftrags kann automatisiert mithilfe künstlicher
+          Intelligenz aus der Projektbeschreibung des Auftraggebers erstellt werden; der Auftraggeber ist
+          für die Richtigkeit und Vollständigkeit der finalen, von ihm veröffentlichten Fassung
+          verantwortlich. Der Betreiber ist selbst nicht Vertragspartei der zwischen Auftraggeber und
+          Anbieter geschlossenen Werk- oder Dienstverträge.
         </p>
       </section>
 
