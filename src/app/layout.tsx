@@ -12,11 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://www.bauconnect.de";
-const SITE_NAME = "BAUCONNECT";
-const TITLE = "BAUCONNECT – Geprüfte Handwerker. Vergleichbare Angebote.";
+const SITE_URL = "https://www.bauversus.de";
+const SITE_NAME = "BAUVERSUS";
+const TITLE = "BAUVERSUS – Geprüfte Handwerker. Vergleichbare Angebote.";
 const DESCRIPTION =
-  "BAUCONNECT verbindet Auftraggeber mit geprüften Handwerksbetrieben. KI-gestütztes Leistungsverzeichnis macht Angebote direkt vergleichbar. Für Bauunternehmen zusätzlich: Nachunternehmer-Börse.";
+  "BAUVERSUS verbindet Auftraggeber mit geprüften Handwerksbetrieben. KI-gestütztes Leistungsverzeichnis macht Angebote direkt vergleichbar. Für Bauunternehmen zusätzlich: Nachunternehmer-Börse.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -53,7 +53,7 @@ const organizationJsonLd = {
   name: SITE_NAME,
   legalName: "GGV BAU GmbH",
   url: SITE_URL,
-  email: "kontakt@bauconnect.de",
+  email: "kontakt@bauversus.de",
   telephone: "+4915252968818",
   address: {
     "@type": "PostalAddress",

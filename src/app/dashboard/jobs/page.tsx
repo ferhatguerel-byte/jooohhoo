@@ -1,26 +1,28 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
-import { GEWERKE } from '@/lib/gewerke'
+import { estimatePlzDistanceKm } from '@/lib/plz-geo'
+import JobFilters from './JobFilters'
 import OfferForm from './OfferForm'
 
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gewerk?: string }>
+  searchParams: Promise<{ gewerke?: string; plz?: string; radius?: string }>
 }) {
-  const { gewerk } = await searchParams
+  const { gewerke: gewerkeParam, plz, radius } = await searchParams
   const user = await getCurrentUser()
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
 
+  const selectedGewerke = gewerkeParam ? gewerkeParam.split(',').filter(Boolean) : []
+
   const db = getDb()
   const params: unknown[] = [user.id]
   let filterClause = ''
-  if (gewerk) {
-    params.push(gewerk)
-    filterClause = 'AND j.gewerk = $2'
+  if (selectedGewerke.length > 0) {
+    params.push(selectedGewerke)
+    filterClause = 'AND j.gewerk = ANY($2)'
   }
 
   const jobsResult = await db.query(
@@ -32,7 +34,18 @@ export default async function JobsPage({
     params
   )
 
-  const jobIds = jobsResult.rows.map((j) => j.id)
+  let jobs = jobsResult.rows.map((job) => ({
+    ...job,
+    distanceKm: plz ? estimatePlzDistanceKm(plz, job.plz) : null,
+  }))
+
+  if (plz && radius) {
+    const radiusNum = Number(radius)
+    jobs = jobs.filter((job) => job.distanceKm !== null && job.distanceKm <= radiusNum)
+    jobs.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity))
+  }
+
+  const jobIds = jobs.map((j) => j.id)
   const lineItemsResult = jobIds.length
     ? await db.query(
         `SELECT id, job_id, title, gewerk FROM job_line_items WHERE job_id = ANY($1) ORDER BY position_order`,
@@ -50,27 +63,11 @@ export default async function JobsPage({
     <div>
       <h1 className="text-2xl font-black text-[#17202a] mb-6">Offene Aufträge</h1>
 
-      <div className="flex flex-wrap gap-2 mb-8">
-        <Link
-          href="/dashboard/jobs"
-          className={`px-3 py-1.5 rounded-full text-sm border ${!gewerk ? 'bg-[#17202a] border-[#17202a] text-white' : 'border-slate-300 text-slate-600'}`}
-        >
-          Alle
-        </Link>
-        {GEWERKE.map((g) => (
-          <Link
-            key={g}
-            href={`/dashboard/jobs?gewerk=${encodeURIComponent(g)}`}
-            className={`px-3 py-1.5 rounded-full text-sm border ${gewerk === g ? 'bg-[#17202a] border-[#17202a] text-white' : 'border-slate-300 text-slate-600'}`}
-          >
-            {g}
-          </Link>
-        ))}
-      </div>
+      <JobFilters initialGewerke={selectedGewerke} initialPlz={plz || user.plz || ''} initialRadius={radius || ''} />
 
       <div className="space-y-4">
-        {jobsResult.rows.length === 0 && <p className="text-slate-500">Aktuell keine passenden Aufträge.</p>}
-        {jobsResult.rows.map((job) => {
+        {jobs.length === 0 && <p className="text-slate-500">Aktuell keine passenden Aufträge.</p>}
+        {jobs.map((job) => {
           const lineItems = lineItemsByJob.get(job.id) || []
           return (
             <div key={job.id} className="bg-white border border-slate-200 rounded-xl p-5">
@@ -82,7 +79,10 @@ export default async function JobsPage({
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-500 mb-3">{job.gewerk} · {job.plz} {job.ort}</p>
+              <p className="text-sm text-slate-500 mb-3">
+                {job.gewerk} · {job.plz} {job.ort}
+                {job.distanceKm !== null && <span className="text-slate-400"> · ca. {job.distanceKm} km entfernt</span>}
+              </p>
               <p className="text-sm text-slate-600 mb-4">{job.description}</p>
 
               {lineItems.length > 0 && (
@@ -91,7 +91,7 @@ export default async function JobsPage({
                   <ul className="space-y-1">
                     {lineItems.map((li) => (
                       <li key={li.id} className="text-sm text-slate-700 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#f47b20] shrink-0" /> {li.title}
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" /> {li.title}
                         <span className="text-slate-400 text-xs">({li.gewerk})</span>
                       </li>
                     ))}

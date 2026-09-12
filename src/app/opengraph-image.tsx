@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const alt = 'BAUCONNECT – Geprüfte Handwerker. Vergleichbare Angebote.'
+export const alt = 'BAUVERSUS – Geprüfte Handwerker. Vergleichbare Angebote.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -37,7 +37,7 @@ export default async function Image() {
             B
           </div>
           <div style={{ display: 'flex', fontSize: 34, fontWeight: 900, color: 'white' }}>
-            BAU<span style={{ color: '#f47b20' }}>CONNECT</span>
+            BAU<span style={{ color: '#f47b20' }}>VERSUS</span>
           </div>
         </div>
         <div style={{ fontSize: 52, fontWeight: 900, color: 'white', lineHeight: 1.15, maxWidth: 950 }}>

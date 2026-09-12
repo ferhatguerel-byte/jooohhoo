@@ -1,4 +1,4 @@
-# BAUCONNECT – Setup-Anleitung
+# BAUVERSUS – Setup-Anleitung
 
 ## Was das Projekt ist
 

@@ -29,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <span className="bg-brand text-white rounded-lg w-8 h-8 flex items-center justify-center">
               <HardHat size={16} />
             </span>
-            BAU<span className="text-accent">CONNECT</span>
+            BAU<span className="text-accent">VERSUS</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-slate-600">
             {links.map((l) => (

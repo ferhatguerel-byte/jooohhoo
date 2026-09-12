@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'AGB – BAUCONNECT' }
+export const metadata: Metadata = { title: 'AGB – BAUVERSUS' }
 
 export default function AgbPage() {
   return (
@@ -12,8 +12,8 @@ export default function AgbPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 1 Geltungsbereich und Leistungsbeschreibung</h2>
         <p>
-          Diese AGB gelten für die Nutzung der Vermittlungsplattform BAUCONNECT (Betreiber: GGV BAU GmbH,
-          nachfolgend „Betreiber“). BAUCONNECT vermittelt Kontakte zwischen Auftraggebern – Privatpersonen
+          Diese AGB gelten für die Nutzung der Vermittlungsplattform BAUVERSUS (Betreiber: GGV BAU GmbH,
+          nachfolgend „Betreiber“). BAUVERSUS vermittelt Kontakte zwischen Auftraggebern – Privatpersonen
           oder Unternehmen, die Bau-, Renovierungs- oder Handwerksleistungen ausschreiben – und
           Handwerks- bzw. Subunternehmerbetrieben, die entsprechende Leistungen anbieten (gemeinsam
           „Anbieter“). Das Leistungsverzeichnis eines Auftrags kann automatisiert mithilfe künstlicher

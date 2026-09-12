@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Datenschutzerklärung – BAUCONNECT' }
+export const metadata: Metadata = { title: 'Datenschutzerklärung – BAUVERSUS' }
 
 export default function DatenschutzPage() {
   return (
@@ -13,7 +13,7 @@ export default function DatenschutzPage() {
         <h2 className="font-bold text-slate-900 mb-2">1. Verantwortlicher</h2>
         <p>
           Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br />
-          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: kontakt@bauconnect.de
+          GGV BAU GmbH, Mühlenstr. 8a, 14167 Berlin, E-Mail: kontakt@bauversus.de
         </p>
       </section>
 

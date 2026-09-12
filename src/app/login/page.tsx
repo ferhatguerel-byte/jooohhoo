@@ -41,7 +41,7 @@ export default function LoginPage() {
           <span className="bg-brand text-white rounded-lg w-9 h-9 flex items-center justify-center">
             <HardHat size={18} />
           </span>
-          BAU<span className="text-accent">CONNECT</span>
+          BAU<span className="text-accent">VERSUS</span>
         </Link>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">

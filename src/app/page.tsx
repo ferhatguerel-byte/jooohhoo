@@ -53,7 +53,7 @@ function Header() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200 h-[76px] flex items-center">
       <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="font-black text-2xl tracking-tight text-[#17202a]">
-          BAU<span className="text-accent">CONNECT</span>
+          BAU<span className="text-accent">VERSUS</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-slate-600">
@@ -114,7 +114,7 @@ export default function HomePage() {
               <span className="text-accent">Faire Angebote vergleichen.</span>
             </h1>
             <p className="text-lg text-slate-500 leading-relaxed max-w-xl mb-8">
-              BAUCONNECT bringt Auftraggeber und geprüfte Fachbetriebe zusammen – mit einem KI-Leistungsverzeichnis,
+              BAUVERSUS bringt Auftraggeber und geprüfte Fachbetriebe zusammen – mit einem KI-Leistungsverzeichnis,
               transparenten Angeboten und einem Matching, das wirklich zu deinem Projekt passt.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -175,14 +175,14 @@ export default function HomePage() {
               Nicht möglichst viele Kontakte. Sondern die richtigen.
             </h2>
             <p className="text-slate-300 leading-relaxed">
-              BAUCONNECT setzt auf Qualität, Transparenz und passende Anbieter statt auf eine möglichst große Liste
+              BAUVERSUS setzt auf Qualität, Transparenz und passende Anbieter statt auf eine möglichst große Liste
               von Handwerkern.
             </p>
           </div>
           <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden">
             <div className="grid grid-cols-4 px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
               <div>Kriterium</div>
-              <div>BAUCONNECT</div>
+              <div>BAUVERSUS</div>
               <div>Klassische Börse</div>
               <div>Telefon/Google</div>
             </div>
@@ -294,7 +294,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-slate-500 max-w-6xl mx-auto">
-        <div>© {new Date().getFullYear()} BAUCONNECT – eine Marke der GGV BAU GmbH.</div>
+        <div>© {new Date().getFullYear()} BAUVERSUS – eine Marke der GGV BAU GmbH.</div>
         <div className="flex gap-4">
           <Link href="/impressum" className="hover:text-[#17202a]">Impressum</Link>
           <Link href="/datenschutz" className="hover:text-[#17202a]">Datenschutz</Link>

@@ -1,4 +1,4 @@
--- BAUCONNECT – Datenbankschema
+-- BAUVERSUS – Datenbankschema
 -- Ausführen mit: psql "$DATABASE_URL" -f src/lib/schema.sql
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

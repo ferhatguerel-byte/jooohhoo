@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard', '/api'],
     },
-    sitemap: 'https://www.bauconnect.de/sitemap.xml',
+    sitemap: 'https://www.bauversus.de/sitemap.xml',
   }
 }

@@ -5,7 +5,7 @@ let pool: Pool | undefined
 export function getDb(): Pool {
   if (!pool) {
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgres://postgres:devpassword@localhost:5432/bauconnect',
+      connectionString: process.env.DATABASE_URL || 'postgres://postgres:devpassword@localhost:5432/bauversus',
     })
   }
   return pool

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'Impressum – BAUCONNECT' }
+export const metadata: Metadata = { title: 'Impressum – BAUVERSUS' }
 
 export default function ImpressumPage() {
   return (
@@ -18,7 +18,7 @@ export default function ImpressumPage() {
           Deutschland
         </p>
         <p className="text-sm text-slate-400 mt-2">
-          BAUCONNECT ist eine Marke der GGV BAU GmbH.
+          BAUVERSUS ist eine Marke der GGV BAU GmbH.
         </p>
       </section>
 
@@ -33,7 +33,7 @@ export default function ImpressumPage() {
         <h2 className="font-bold text-slate-900 mb-2">Kontakt</h2>
         <p>
           Telefon: 0152 / 52968818<br />
-          E-Mail: kontakt@bauconnect.de
+          E-Mail: kontakt@bauversus.de
         </p>
       </section>
 
