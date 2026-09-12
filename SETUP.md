@@ -1,139 +1,91 @@
-# AutoBusiness Pro - Setup Anleitung
+# BAUVERSUS – Setup-Anleitung
 
-## Was du bekommst
+## Was das Projekt ist
 
-Ein vollautomatisiertes SaaS-Business mit:
-- **Landing Page** mit Verkaufstexten und 3 Preisplänen
-- **Stripe Integration** für automatische Zahlungen (Kreditkarte + SEPA)
-- **Affiliate System** - andere verkaufen für dich, 30% Provision automatisch
-- **E-Mail Automatisierung** - Welcome, Bestätigung, Affiliate-Benachrichtigung
-- **Admin Dashboard** - Echtzeit Umsatz, Kunden, Charts
-- **Datenbank** - alle Kunden, Käufe, Provisionen gespeichert
+Eine Marktplatz-Plattform für Bau und Handwerk mit zwei Bereichen:
 
-## Schritt-für-Schritt Setup (ca. 2 Stunden)
+- **Privat-/Gewerbekunden ↔ Handwerksbetriebe**: Kunde beschreibt sein Projekt
+  in Alltagssprache, eine KI erstellt daraus ein strukturiertes
+  Leistungsverzeichnis (Positionen je Gewerk). Handwerksbetriebe geben
+  Angebote je Position ab – dadurch werden Angebote direkt vergleichbar
+  (Positions- und Gesamtpreis-Tabelle).
+- **Bauunternehmen ↔ Nachunternehmer**: dieselbe Plattform, für die
+  Vermittlung von Subunternehmern (z. B. für polnische Fachfirmen).
 
-### 1. Accounts erstellen (kostenlos)
+Beide Seiten nutzen dieselben Rollen: **Auftraggeber** (zahlt ein Abo,
+stellt Aufträge ein) und **Anbieter/Subunternehmer** (kostenlos, gibt
+Angebote ab).
 
-- **Stripe**: https://stripe.com → Account erstellen → API Keys holen
-- **Resend**: https://resend.com → Account erstellen → API Key holen → Domain verifizieren
-- **Vercel**: https://vercel.com → Account erstellen (kostenloses Hosting)
+## 1. Datenbank einrichten (Postgres)
 
-### 2. Stripe Produkte anlegen
-
-Im Stripe Dashboard:
-1. Produkte → Neues Produkt
-2. "Starter" → €29/Monat wiederkehrend → Price ID kopieren
-3. "Pro" → €79/Monat wiederkehrend → Price ID kopieren
-4. "Enterprise" → €199/Monat wiederkehrend → Price ID kopieren
-
-### 3. .env.local ausfüllen
-
-```
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_PUBLISHABLE_KEY=pk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_STARTER=price_...
-STRIPE_PRICE_PRO=price_...
-STRIPE_PRICE_ENTERPRISE=price_...
-RESEND_API_KEY=re_...
-FROM_EMAIL=noreply@deinedomain.de
-NEXT_PUBLIC_APP_URL=https://deinedomain.de
-ADMIN_SECRET=waehle-ein-starkes-passwort
-DATABASE_URL="file:./dev.db"
-```
-
-### 4. Datenbank initialisieren
+1. Vercel-Dashboard → Projekt → Storage → "Create Database" → Postgres
+2. `DATABASE_URL` wird automatisch gesetzt
+3. Schema einspielen:
 
 ```bash
-npx prisma generate
-npx prisma db push
+psql "$DATABASE_URL" -f src/lib/schema.sql
 ```
 
-### 5. Lokal testen
+## 2. Session-Secret
 
 ```bash
+openssl rand -base64 32
+```
+→ als `SESSION_SECRET` eintragen.
+
+## 3. KI-Leistungsverzeichnis (Anthropic API)
+
+1. Account auf https://console.anthropic.com erstellen
+2. API-Key erstellen → als `ANTHROPIC_API_KEY` eintragen
+3. Optional: `ANTHROPIC_MODEL` anpassen (Standard: `claude-haiku-4-5-20251001`,
+   günstig und schnell genug für strukturierte Textextraktion)
+
+**Ohne diesen Key** funktioniert die Plattform weiterhin – Auftraggeber können
+dann nur "Ohne Leistungsverzeichnis veröffentlichen" wählen, die
+KI-Funktion zeigt einen Fehler an.
+
+## 4. Stripe einrichten (Zahlungen der Auftraggeber)
+
+1. Account auf https://stripe.com erstellen
+2. Drei Produkte mit wiederkehrender monatlicher Zahlung anlegen:
+   Basic 49 €, Pro 149 €, Premium 399 €/Monat
+3. Price-IDs als `STRIPE_PRICE_BASIC`, `STRIPE_PRICE_PRO`,
+   `STRIPE_PRICE_PREMIUM` eintragen
+4. API-Key als `STRIPE_SECRET_KEY` eintragen
+5. Webhook: `https://deine-domain.de/api/billing/webhook`,
+   Events: `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted` → Signing Secret als
+   `STRIPE_WEBHOOK_SECRET`
+
+## 5. E-Mail-Benachrichtigungen (optional)
+
+Account auf https://resend.com, `RESEND_API_KEY` und `FROM_EMAIL` eintragen.
+Ohne diese Variablen werden Benachrichtigungen nur ins Server-Log
+geschrieben (kein Absturz).
+
+## 6. Lokal testen
+
+```bash
+npm install
+cp .env.example .env.local
+# .env.local ausfüllen (lokale Postgres-DB reicht zum Testen)
 npm run dev
-# → http://localhost:3000
 ```
 
-### 6. Stripe Webhook einrichten (für automatische Verarbeitung)
+## 7. Deployment (Vercel)
 
 ```bash
-# Stripe CLI installieren und testen:
-stripe listen --forward-to localhost:3000/api/webhook
-```
-
-Im Stripe Dashboard:
-- Webhooks → Endpoint hinzufügen
-- URL: `https://deinedomain.de/api/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.deleted`
-
-### 7. Auf Vercel deployen
-
-```bash
-npm install -g vercel
 vercel --prod
 ```
 
-Alle .env Variablen in Vercel Dashboard eintragen.
+Alle Umgebungsvariablen aus `.env.example` im Vercel-Dashboard eintragen.
 
-### 8. Domain verbinden
+## 8. Rechtliches – Checkliste vor Livegang
 
-In Vercel → Domain hinzufügen → DNS bei deinem Registrar setzen
-
-## Wie du €500/Tag erreichst
-
-### Rechenbeispiel
-- 7 Pro-Kunden (€79/Monat) = €553/Monat ≈ €18/Tag
-- **Für €500/Tag brauchst du ~190 aktive Pro-Kunden**
-
-### Strategie
-
-1. **Affiliate Marketing starten** (0€ Kosten)
-   - Deinen Affiliate-Link in Facebook-Gruppen teilen
-   - YouTube Video über das Tool machen
-   - Reddit Posts in relevanten Subreddits
-
-2. **SEO Content** (0€ Kosten, Zeit: 2-3 Monate)
-   - Blog-Artikel über Business-Automatisierung schreiben
-   - Keywords: "business automatisieren", "passive einnahmen online"
-
-3. **Paid Ads** (Budget nötig)
-   - Facebook/Instagram Ads: €5-10/Tag Budget
-   - Google Ads auf Keywords wie "business software"
-   - Erwarteter CAC: €20-50 pro Kunde
-
-4. **Cold Outreach**
-   - LinkedIn Nachrichten an Unternehmer
-   - E-Mail Kampagnen mit kostenlosem Trial
-
-### Monatliches Wachstumsziel
-
-| Monat | Kunden | MRR | Tages-Ø |
-|-------|--------|-----|---------|
-| 1     | 10     | €790 | €26 |
-| 3     | 50     | €3.950 | €130 |
-| 6     | 150    | €11.850 | €395 |
-| 12    | 250    | €19.750 | €658 |
-
-## Admin Dashboard
-
-Gehe zu: `https://deinedomain.de/dashboard`
-Passwort: das was du in ADMIN_SECRET gesetzt hast
-
-Siehst du:
-- Tagesumsatz
-- Gesamtumsatz
-- Kundenanzahl
-- Umsatz-Chart
-- Fortschrittsbalken zur €500/Tag Ziel
-
-## Wichtig: Rechtliches
-
-Du brauchst noch:
-- **Impressum** (`/impressum`)
-- **Datenschutzerklärung** (`/datenschutz`) - DSGVO-konform
-- **AGB** (`/agb`)
-- Steuerberater für die Einnahmen
-
-Nutze Generator-Tools wie: https://www.e-recht24.de/muster-datenschutzerklaerung.html
+- [ ] Impressum mit echten Firmendaten
+- [ ] Datenschutzerklärung DSGVO-konform (u. a. Auftragsverarbeitung mit
+      Anthropic, Stripe, Hosting-Anbieter)
+- [ ] AGB juristisch geprüft (Vermittlungsplattform-Modell, KI-generierte
+      Inhalte, Widerrufsrecht bei Abo-Abschluss, Haftungsausschluss)
+- [ ] Prüfen, ob eine Gewerbeanmeldung/Erlaubnis für Vermittlungstätigkeit
+      nötig ist
