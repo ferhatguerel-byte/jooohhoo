@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
+import { randomBytes, createHash } from 'crypto'
 
 const SESSION_COOKIE = 'bp24_session'
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30 // 30 Tage
@@ -59,6 +60,16 @@ export async function getSession(): Promise<SessionPayload | null> {
   } catch {
     return null
   }
+}
+
+export function generateResetToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString('hex')
+  const tokenHash = createHash('sha256').update(token).digest('hex')
+  return { token, tokenHash }
+}
+
+export function hashResetToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
 }
 
 export { SESSION_COOKIE }

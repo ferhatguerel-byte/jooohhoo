@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { HardHat, ArrowRight } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const justReset = searchParams.get('reset') === '1'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -47,13 +49,22 @@ export default function LoginPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
           <h1 className="text-2xl font-black text-slate-900 mb-6 text-center">Anmelden</h1>
 
+          {justReset && (
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-4 text-center">
+              Passwort erfolgreich geändert. Bitte melden Sie sich mit dem neuen Passwort an.
+            </p>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1">E-Mail</label>
               <input id="email" name="email" type="email" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1">Passwort</label>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700">Passwort</label>
+                <Link href="/passwort-vergessen" className="text-xs text-brand font-semibold hover:underline">Passwort vergessen?</Link>
+              </div>
               <input id="password" name="password" type="password" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
             </div>
 
@@ -75,5 +86,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

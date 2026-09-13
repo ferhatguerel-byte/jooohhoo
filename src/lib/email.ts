@@ -45,6 +45,25 @@ export async function sendNewMessageEmail(to: string, senderName: string, messag
   )
 }
 
+export async function sendPasswordResetEmail(to: string, resetUrl: string) {
+  await send(
+    to,
+    `Passwort zurücksetzen – BAUVERSUS`,
+    `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #17202a;">Passwort zurücksetzen</h1>
+      <p>Sie haben angefragt, Ihr Passwort zurückzusetzen. Klicken Sie auf den folgenden Link, um ein neues
+      Passwort zu vergeben. Der Link ist eine Stunde gültig.</p>
+      <a href="${resetUrl}"
+         style="display: inline-block; background: #f47b20; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
+        Neues Passwort vergeben →
+      </a>
+      <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+        Falls Sie diese Anfrage nicht gestellt haben, können Sie diese E-Mail ignorieren.
+      </p>
+    </div>`
+  )
+}
+
 export async function sendOfferAwardedEmail(to: string, companyName: string) {
   await send(
     to,
