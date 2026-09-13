@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
+import OfferChat, { ChatMessage } from '@/components/OfferChat'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -54,6 +55,27 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   for (const row of offerLineItemsResult.rows) {
     if (!priceMap.has(row.offer_id)) priceMap.set(row.offer_id, new Map())
     priceMap.get(row.offer_id)!.set(row.job_line_item_id, row.price)
+  }
+
+  const messagesResult = offerIds.length
+    ? await db.query(
+        `SELECT m.id, m.offer_id, m.sender_id, m.body, m.created_at, u.company_name AS sender_name
+         FROM offer_messages m JOIN users u ON u.id = m.sender_id
+         WHERE m.offer_id = ANY($1) ORDER BY m.created_at ASC`,
+        [offerIds]
+      )
+    : { rows: [] as { offer_id: string; id: string; sender_id: string; body: string; created_at: string; sender_name: string }[] }
+
+  const messagesByOffer = new Map<string, ChatMessage[]>()
+  for (const row of messagesResult.rows) {
+    if (!messagesByOffer.has(row.offer_id)) messagesByOffer.set(row.offer_id, [])
+    messagesByOffer.get(row.offer_id)!.push({
+      id: row.id,
+      senderId: row.sender_id,
+      senderName: row.sender_name,
+      body: row.body,
+      createdAt: row.created_at,
+    })
   }
 
   let existingReview = null
@@ -206,6 +228,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 <div>📧 {offer.email}</div>
                 {offer.phone && <div>📞 {offer.phone}</div>}
               </div>
+
+              <OfferChat offerId={offer.id} messages={messagesByOffer.get(offer.id) || []} currentUserId={user.id} />
 
               {!job.awarded_subunternehmer_id && offer.status === 'pending' && (
                 <div className="mt-3">

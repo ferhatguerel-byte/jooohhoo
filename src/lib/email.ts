@@ -33,15 +33,14 @@ export async function sendNewOfferEmail(to: string, jobTitle: string, price: num
   )
 }
 
-export async function sendLeadUnlockedEmail(to: string, companyName: string) {
+export async function sendNewMessageEmail(to: string, senderName: string, message: string) {
   await send(
     to,
-    `🔓 Ein Auftraggeber hat Ihre Kontaktdaten freigeschaltet`,
+    `💬 Neue Nachricht von ${senderName}`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #1e3a8a;">Ihre Kontaktdaten wurden freigeschaltet</h1>
-      <p>Ein Auftraggeber hat Ihre Kontaktdaten zu Ihrem Angebot freigeschaltet und wird sich voraussichtlich
-      in Kürze bei Ihnen melden.</p>
-      <p>Firma: <strong>${companyName}</strong></p>
+      <h1 style="color: #1e3a8a;">Neue Nachricht</h1>
+      <p><strong>${senderName}</strong> hat Ihnen geschrieben:</p>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
     </div>`
   )
 }

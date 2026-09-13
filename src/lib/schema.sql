@@ -102,6 +102,16 @@ CREATE TABLE IF NOT EXISTS reviews (
   UNIQUE(job_id, reviewer_id, reviewee_id)
 );
 
+-- Nachrichten zwischen Auftraggeber und Unternehmer zu einem Angebot
+CREATE TABLE IF NOT EXISTS offer_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_offer_messages_offer ON offer_messages(offer_id, created_at);
+
 -- Festpreis vs. Preis nach Aufmaß je Angebot
 DO $$ BEGIN
   CREATE TYPE pricing_type AS ENUM ('fixed', 'estimate');

@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { estimatePlzDistanceKm } from '@/lib/plz-geo'
 import JobFilters from './JobFilters'
 import OfferForm from './OfferForm'
+import OfferChat, { ChatMessage } from '@/components/OfferChat'
 
 export default async function JobsPage({
   searchParams,
@@ -91,6 +92,27 @@ export default async function JobsPage({
     myOfferPricesByOffer.get(row.offer_id)![row.job_line_item_id] = row.price
   }
 
+  const myMessagesResult = myOfferIds.length
+    ? await db.query(
+        `SELECT m.id, m.offer_id, m.sender_id, m.body, m.created_at, u.company_name AS sender_name
+         FROM offer_messages m JOIN users u ON u.id = m.sender_id
+         WHERE m.offer_id = ANY($1) ORDER BY m.created_at ASC`,
+        [myOfferIds]
+      )
+    : { rows: [] as { offer_id: string; id: string; sender_id: string; body: string; created_at: string; sender_name: string }[] }
+
+  const myMessagesByOffer = new Map<string, ChatMessage[]>()
+  for (const row of myMessagesResult.rows) {
+    if (!myMessagesByOffer.has(row.offer_id)) myMessagesByOffer.set(row.offer_id, [])
+    myMessagesByOffer.get(row.offer_id)!.push({
+      id: row.id,
+      senderId: row.sender_id,
+      senderName: row.sender_name,
+      body: row.body,
+      createdAt: row.created_at,
+    })
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-black text-[#17202a] mb-6">Offene Aufträge</h1>
@@ -169,6 +191,14 @@ export default async function JobsPage({
                     : undefined
                 }
               />
+
+              {job.my_offer_id && (
+                <OfferChat
+                  offerId={job.my_offer_id}
+                  messages={myMessagesByOffer.get(job.my_offer_id) || []}
+                  currentUserId={user.id}
+                />
+              )}
             </div>
           )
         })}
