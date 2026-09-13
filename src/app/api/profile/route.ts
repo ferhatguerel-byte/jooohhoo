@@ -30,7 +30,11 @@ export async function POST(req: NextRequest) {
     const gewerke = user.role === 'subunternehmer' ? body.gewerke || [] : []
     const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
 
-    if (user.role === 'subunternehmer' && qualificationFiles.length > 0) {
+    const filesChanged =
+      JSON.stringify([...qualificationFiles].sort((a, b) => a.url.localeCompare(b.url))) !==
+      JSON.stringify([...user.qualificationFiles].sort((a, b) => a.url.localeCompare(b.url)))
+
+    if (user.role === 'subunternehmer' && qualificationFiles.length > 0 && filesChanged) {
       await getDb().query(
         `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5,
          qualification_files = $6, verification_status = 'pending' WHERE id = $7`,

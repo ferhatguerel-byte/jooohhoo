@@ -39,14 +39,43 @@ export default function DatenschutzPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">4. Zahlungsabwicklung</h2>
         <p>
-          Für die Abrechnung der Abo-Gebühren von Auftraggebern setzen wir den Zahlungsdienstleister
+          Für die Abrechnung der Abo-Gebühren von Unternehmern setzen wir den Zahlungsdienstleister
           Stripe ein. Hierbei werden die zur Zahlungsabwicklung erforderlichen Daten (u. a. E-Mail-Adresse,
           Zahlungsinformationen) an Stripe übermittelt. Weitere Informationen: stripe.com/de/privacy.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">5. Speicherdauer</h2>
+        <h2 className="font-bold text-slate-900 mb-2">5. KI-Leistungsverzeichnis und Kostenschätzung</h2>
+        <p>
+          Beschreibt ein Auftraggeber sein Projekt in freier Sprache, kann daraus mithilfe der Anthropic
+          API (Anthropic PBC, USA) automatisiert ein strukturiertes Leistungsverzeichnis sowie eine
+          unverbindliche Kostenschätzung erstellt werden. Dabei wird der eingegebene Projekttext an
+          Anthropic übermittelt und verarbeitet. Weitere Informationen: anthropic.com/legal/privacy.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">6. Datei-Uploads</h2>
+        <p>
+          Bilder und Dokumente, die Auftraggeber einem Auftrag beifügen, sowie Verifizierungsnachweise
+          (z. B. Gewerbeanmeldung, Qualifikationsnachweis, Haftpflichtversicherung), die Unternehmer
+          hochladen, werden über den Dienst Vercel Blob (Vercel Inc., USA) gespeichert. Verifizierungsnachweise
+          sind ausschließlich für den jeweiligen Nutzer und den Betreiber zur Prüfung einsehbar.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">7. E-Mail-Versand</h2>
+        <p>
+          Benachrichtigungen (z. B. über neue Angebote, Nachrichten oder zum Zurücksetzen des Passworts)
+          versenden wir über den Dienst Resend. Hierbei werden Ihre E-Mail-Adresse sowie der jeweilige
+          Nachrichteninhalt an Resend übermittelt.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">8. Speicherdauer</h2>
         <p>
           Wir speichern Ihre Daten, solange Ihr Nutzerkonto besteht, bzw. so lange, wie dies zur Erfüllung
           gesetzlicher Aufbewahrungspflichten erforderlich ist. Nach Löschung des Kontos werden Daten
@@ -55,7 +84,7 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">6. Ihre Rechte</h2>
+        <h2 className="font-bold text-slate-900 mb-2">9. Ihre Rechte</h2>
         <p>
           Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
           Datenübertragbarkeit sowie Widerspruch gegen die Verarbeitung Ihrer personenbezogenen Daten.
@@ -64,7 +93,7 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">7. Cookies</h2>
+        <h2 className="font-bold text-slate-900 mb-2">10. Cookies</h2>
         <p>
           Diese Website verwendet ein technisch notwendiges Session-Cookie zur Anmeldung im Nutzerkonto.
           Es werden keine Tracking- oder Marketing-Cookies eingesetzt.
