@@ -61,7 +61,7 @@ export default function ReviewForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-5">
-      <h3 className="font-bold text-slate-900 mb-3">Subunternehmer bewerten</h3>
+      <h3 className="font-bold text-slate-900 mb-3">Unternehmer bewerten</h3>
       <div className="flex gap-1 mb-3">
         {[1, 2, 3, 4, 5].map((i) => (
           <button

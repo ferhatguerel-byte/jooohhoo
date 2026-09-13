@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
     const revieweeId = job.rows[0]?.awarded_subunternehmer_id
     if (!revieweeId) {
-      return NextResponse.json({ error: 'Für diesen Auftrag wurde noch kein Subunternehmer beauftragt.' }, { status: 400 })
+      return NextResponse.json({ error: 'Für diesen Auftrag wurde noch kein Unternehmer beauftragt.' }, { status: 400 })
     }
 
     await db.query(

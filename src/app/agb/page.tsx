@@ -15,7 +15,7 @@ export default function AgbPage() {
           Diese AGB gelten für die Nutzung der Vermittlungsplattform BAUVERSUS (Betreiber: GGV BAU GmbH,
           nachfolgend „Betreiber“). BAUVERSUS vermittelt Kontakte zwischen Auftraggebern – Privatpersonen
           oder Unternehmen, die Bau-, Renovierungs- oder Handwerksleistungen ausschreiben – und
-          Handwerks- bzw. Subunternehmerbetrieben, die entsprechende Leistungen anbieten (gemeinsam
+          Handwerksbetrieben bzw. Unternehmern, die entsprechende Leistungen anbieten (gemeinsam
           „Anbieter“). Das Leistungsverzeichnis eines Auftrags kann automatisiert mithilfe künstlicher
           Intelligenz aus der Projektbeschreibung des Auftraggebers erstellt werden; der Auftraggeber ist
           für die Richtigkeit und Vollständigkeit der finalen, von ihm veröffentlichten Fassung
@@ -28,16 +28,16 @@ export default function AgbPage() {
         <h2 className="font-bold text-slate-900 mb-2">§ 2 Registrierung</h2>
         <p>
           Die Registrierung als Auftraggeber ist kostenlos; die Einstellung von Aufträgen ist für
-          Auftraggeber dauerhaft kostenfrei. Die Registrierung als Subunternehmer ist ebenfalls
+          Auftraggeber dauerhaft kostenfrei. Die Registrierung als Unternehmer ist ebenfalls
           kostenlos; das Einsehen offener Aufträge sowie die Kontaktaufnahme zu Auftraggebern und die
           Abgabe von Angeboten setzen ein aktives, kostenpflichtiges Abonnement voraus.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Subunternehmer</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Unternehmer</h2>
         <p>
-          Subunternehmer können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
+          Unternehmer können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
           hinsichtlich der Anzahl monatlich kontaktierbarer Aufträge unterscheiden. Die jeweils aktuellen
           Preise und Leistungsumfänge sind auf der Website unter „Preise" einsehbar. Nicht genutzte
           Kontingente verfallen zum Ende der Abrechnungsperiode und werden nicht in den Folgemonat
@@ -68,7 +68,7 @@ export default function AgbPage() {
         <p>
           Der Betreiber übernimmt keine Gewähr für die Richtigkeit der von Nutzern eingestellten Inhalte,
           die Bonität oder Qualifikation der Nutzer sowie für den erfolgreichen Abschluss oder die
-          ordnungsgemäße Durchführung von Verträgen zwischen Auftraggebern und Subunternehmern. Für Schäden
+          ordnungsgemäße Durchführung von Verträgen zwischen Auftraggebern und Unternehmern. Für Schäden
           aus der Durchführung vermittelter Aufträge haftet ausschließlich das jeweils beauftragte
           Unternehmen.
         </p>

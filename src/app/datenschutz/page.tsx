@@ -20,7 +20,7 @@ export default function DatenschutzPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">2. Registrierung und Nutzerkonto</h2>
         <p>
-          Bei der Registrierung als Auftraggeber oder Subunternehmer erheben wir die von Ihnen angegebenen
+          Bei der Registrierung als Auftraggeber oder Unternehmer erheben wir die von Ihnen angegebenen
           Daten (Firmenname, E-Mail-Adresse, Telefonnummer, Adresse, ggf. Gewerke) sowie ein verschlüsselt
           gespeichertes Passwort. Die Verarbeitung erfolgt zur Erfüllung des Nutzungsvertrags gemäß
           Art. 6 Abs. 1 lit. b DSGVO.
@@ -31,9 +31,8 @@ export default function DatenschutzPage() {
         <h2 className="font-bold text-slate-900 mb-2">3. Aufträge und Angebote</h2>
         <p>
           Von Auftraggebern eingestellte Aufträge (Titel, Gewerk, Ort, Beschreibung, Budget) sind für
-          registrierte Subunternehmer sichtbar. Von Subunternehmern abgegebene Angebote (Preis, Nachricht)
-          sind für den jeweiligen Auftraggeber sichtbar; Kontaktdaten des Subunternehmers werden dem
-          Auftraggeber erst nach expliziter Freischaltung im Rahmen seines Abo-Kontingents offengelegt.
+          Unternehmer mit aktivem Abo sichtbar. Von Unternehmern abgegebene Angebote (Preis, Nachricht,
+          Kontaktdaten) sind für den jeweiligen Auftraggeber sichtbar, sobald ein Angebot abgegeben wurde.
         </p>
       </section>
 

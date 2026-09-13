@@ -81,7 +81,7 @@ function RegisterForm() {
               onClick={() => setRole('subunternehmer')}
               className={`py-2.5 rounded-md text-sm font-bold transition ${role === 'subunternehmer' ? 'bg-white shadow text-accent' : 'text-slate-500'}`}
             >
-              Ich bin Subunternehmer
+              Ich bin Unternehmer
             </button>
           </div>
           <p className="text-xs text-slate-500 text-center mb-6">

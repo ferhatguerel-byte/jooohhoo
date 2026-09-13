@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id: jobId } = await params
   const user = await getCurrentUser()
   if (!user || user.role !== 'subunternehmer') {
-    return NextResponse.json({ error: 'Nur Subunternehmer können Angebote abgeben.' }, { status: 403 })
+    return NextResponse.json({ error: 'Nur Unternehmer können Angebote abgeben.' }, { status: 403 })
   }
   if (user.subscriptionStatus !== 'active' || !user.subscriptionTier) {
     return NextResponse.json(

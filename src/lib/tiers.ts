@@ -1,4 +1,4 @@
-export type TierId = 'basic' | 'pro' | 'premium'
+export type TierId = 'pro' | 'premium'
 
 export interface TierDefinition {
   id: TierId
@@ -10,14 +10,6 @@ export interface TierDefinition {
 }
 
 export const TIERS: Record<TierId, TierDefinition> = {
-  basic: {
-    id: 'basic',
-    name: 'Basic',
-    priceEuro: 29,
-    leadsPerMonth: 5,
-    features: ['5 Aufträge pro Monat sehen & kontaktieren', 'Angebote abgeben', 'E-Mail-Support'],
-    priceEnv: 'STRIPE_PRICE_BASIC',
-  },
   pro: {
     id: 'pro',
     name: 'Pro',
@@ -36,4 +28,4 @@ export const TIERS: Record<TierId, TierDefinition> = {
   },
 }
 
-export const TIER_ORDER: TierId[] = ['basic', 'pro', 'premium']
+export const TIER_ORDER: TierId[] = ['pro', 'premium']

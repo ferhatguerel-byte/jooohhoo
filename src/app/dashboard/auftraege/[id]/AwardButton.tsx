@@ -9,7 +9,7 @@ export default function AwardButton({ jobId, offerId }: { jobId: string; offerId
   const [error, setError] = useState('')
 
   async function handleAward() {
-    if (!confirm('Diesen Subunternehmer beauftragen? Alle anderen Angebote werden automatisch abgelehnt.')) return
+    if (!confirm('Diesen Unternehmer beauftragen? Alle anderen Angebote werden automatisch abgelehnt.')) return
     setLoading(true)
     setError('')
     try {

@@ -34,7 +34,7 @@ export default async function ProfilPage() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg">
         <p className="text-sm text-slate-400 mb-4">
           E-Mail: <span className="text-slate-700 font-semibold">{user.email}</span> ·{' '}
-          Rolle: <span className="text-slate-700 font-semibold">{user.role === 'auftraggeber' ? 'Auftraggeber' : 'Subunternehmer'}</span>
+          Rolle: <span className="text-slate-700 font-semibold">{user.role === 'auftraggeber' ? 'Auftraggeber' : 'Unternehmer'}</span>
         </p>
         <ProfileForm
           role={user.role}

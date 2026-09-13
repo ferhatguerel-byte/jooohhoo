@@ -10,11 +10,11 @@ Eine Marktplatz-Plattform für Bau und Handwerk mit zwei Bereichen:
   Angebote je Position ab – dadurch werden Angebote direkt vergleichbar
   (Positions- und Gesamtpreis-Tabelle).
 - **Bauunternehmen ↔ Nachunternehmer**: dieselbe Plattform, für die
-  Vermittlung von Subunternehmern (z. B. für polnische Fachfirmen).
+  Vermittlung von Nachunternehmern (z. B. für polnische Fachfirmen).
 
 Beide Seiten nutzen dieselben Rollen: **Auftraggeber** (kostenlos, stellt
-Aufträge ein) und **Anbieter/Subunternehmer** (zahlt ein Abo, um Aufträge
-zu sehen, zu kontaktieren und Angebote abzugeben).
+Aufträge ein) und **Unternehmer** (zahlt ein Abo, um Aufträge zu sehen,
+zu kontaktieren und Angebote abzugeben).
 
 ## 1. Datenbank einrichten (Postgres)
 
@@ -44,13 +44,12 @@ openssl rand -base64 32
 dann nur "Ohne Leistungsverzeichnis veröffentlichen" wählen, die
 KI-Funktion zeigt einen Fehler an.
 
-## 4. Stripe einrichten (Zahlungen der Subunternehmer)
+## 4. Stripe einrichten (Zahlungen der Unternehmer)
 
 1. Account auf https://stripe.com erstellen
-2. Drei Produkte mit wiederkehrender monatlicher Zahlung anlegen:
-   Basic 29 €, Pro 79 €, Premium 149 €/Monat
-3. Price-IDs als `STRIPE_PRICE_BASIC`, `STRIPE_PRICE_PRO`,
-   `STRIPE_PRICE_PREMIUM` eintragen
+2. Zwei Produkte mit wiederkehrender monatlicher Zahlung anlegen:
+   Pro 79 €, Premium 149 €/Monat
+3. Price-IDs als `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM` eintragen
 4. API-Key als `STRIPE_SECRET_KEY` eintragen
 5. Webhook: `https://deine-domain.de/api/billing/webhook`,
    Events: `checkout.session.completed`, `customer.subscription.updated`,

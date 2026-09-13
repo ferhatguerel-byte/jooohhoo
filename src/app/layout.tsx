@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "Handwerker Vergleich",
     "Angebote vergleichen Bau",
     "Leistungsverzeichnis erstellen",
-    "Subunternehmer finden",
+    "Unternehmer finden",
     "Nachunternehmer Bau",
     "Festpreis Renovierung",
   ],

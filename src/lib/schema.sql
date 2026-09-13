@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS offers (
   UNIQUE(job_id, subunternehmer_id)
 );
 
--- Auftrag vergeben: welcher Subunternehmer hat den Zuschlag erhalten
+-- Auftrag vergeben: welcher Unternehmer hat den Zuschlag erhalten
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS awarded_subunternehmer_id UUID REFERENCES users(id);
 
 -- Gegenseitige Bewertungen nach Auftragsabschluss

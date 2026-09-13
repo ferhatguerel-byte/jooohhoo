@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth'
 import { getDb } from '@/lib/db'
+import type { TierId } from '@/lib/tiers'
 
 export interface CurrentUser {
   id: string
@@ -10,7 +11,7 @@ export interface CurrentUser {
   plz: string
   ort: string
   gewerke: string[]
-  subscriptionTier: 'basic' | 'pro' | 'premium' | null
+  subscriptionTier: TierId | null
   subscriptionStatus: 'inactive' | 'active' | 'canceled' | 'past_due'
   stripeCustomerId: string | null
 }

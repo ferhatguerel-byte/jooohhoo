@@ -13,6 +13,9 @@ export const GEWERKE = [
   'Gerüstbau',
   'Metallbau',
   'Abbruch & Entkernung',
+  'Gebäudereinigung',
+  'Baureinigung',
+  'Fensterreinigung',
 ] as const
 
 export type Gewerk = (typeof GEWERKE)[number]
