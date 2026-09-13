@@ -17,6 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       ]
     : [
         { href: '/dashboard/jobs', label: 'Aufträge durchsuchen' },
+        { href: '/dashboard/angebote', label: 'Meine Angebote' },
         { href: '/dashboard/abo', label: 'Abo' },
         { href: '/dashboard/profil', label: 'Profil' },
       ]
