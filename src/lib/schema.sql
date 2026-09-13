@@ -66,14 +66,6 @@ CREATE TABLE IF NOT EXISTS offers (
   UNIQUE(job_id, subunternehmer_id)
 );
 
-CREATE TABLE IF NOT EXISTS lead_unlocks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  auftraggeber_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  offer_id UUID NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
-  unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE(auftraggeber_id, offer_id)
-);
-
 -- Auftrag vergeben: welcher Subunternehmer hat den Zuschlag erhalten
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS awarded_subunternehmer_id UUID REFERENCES users(id);
 
@@ -120,7 +112,7 @@ CREATE TABLE IF NOT EXISTS offer_line_items (
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_gewerk ON jobs(gewerk);
 CREATE INDEX IF NOT EXISTS idx_offers_job ON offers(job_id);
-CREATE INDEX IF NOT EXISTS idx_lead_unlocks_auftraggeber_month ON lead_unlocks(auftraggeber_id, unlocked_at);
+CREATE INDEX IF NOT EXISTS idx_offers_subunternehmer_month ON offers(subunternehmer_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_reviews_reviewee ON reviews(reviewee_id);
 CREATE INDEX IF NOT EXISTS idx_job_line_items_job ON job_line_items(job_id);
 CREATE INDEX IF NOT EXISTS idx_offer_line_items_offer ON offer_line_items(offer_id);

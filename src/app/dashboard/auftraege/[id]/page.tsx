@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { Star, ShieldCheck, Ruler } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
-import UnlockButton from './UnlockButton'
 import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
 
@@ -27,19 +26,17 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const offersResult = await db.query(
     `SELECT o.id, o.price, o.message, o.status, o.pricing_type, o.created_at,
             u.id AS subunternehmer_id, u.company_name, u.email, u.phone, u.plz, u.ort,
-            (lu.id IS NOT NULL) AS unlocked,
             COALESCE(r.avg_rating, 0) AS avg_rating,
             COALESCE(r.review_count, 0) AS review_count
      FROM offers o
      JOIN users u ON u.id = o.subunternehmer_id
-     LEFT JOIN lead_unlocks lu ON lu.offer_id = o.id AND lu.auftraggeber_id = $1
      LEFT JOIN (
        SELECT reviewee_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
        FROM reviews GROUP BY reviewee_id
      ) r ON r.reviewee_id = u.id
-     WHERE o.job_id = $2
+     WHERE o.job_id = $1
      ORDER BY o.price ASC`,
-    [user.id, id]
+    [id]
   )
   const offers = offersResult.rows
 
@@ -97,9 +94,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="text-left font-bold text-slate-700 px-4 py-3">Position</th>
-                  {offers.map((offer, i) => (
+                  {offers.map((offer) => (
                     <th key={offer.id} className="text-right font-bold text-[#17202a] px-4 py-3 whitespace-nowrap">
-                      {offer.unlocked ? offer.company_name : `Anbieter ${i + 1}`}
+                      {offer.company_name}
                       <div className="flex items-center justify-end gap-1 mt-1 font-normal text-xs text-slate-500">
                         {offer.pricing_type === 'fixed' ? (
                           <span className="flex items-center gap-1 text-green-700"><ShieldCheck size={12} /> Festpreis</span>
@@ -150,7 +147,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="font-bold text-[#17202a] flex items-center gap-2 flex-wrap">
-                    {offer.unlocked ? offer.company_name : 'Subunternehmer'}
+                    {offer.company_name}
                     {isAwarded && <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Beauftragt</span>}
                     {offer.pricing_type === 'fixed' ? (
                       <span className="text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -174,16 +171,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               </div>
               {offer.message && <p className="text-sm text-slate-600 mt-3">{offer.message}</p>}
 
-              {offer.unlocked ? (
-                <div className="mt-4 pt-4 border-t border-slate-100 text-sm text-slate-700 space-y-1">
-                  <div>📧 {offer.email}</div>
-                  {offer.phone && <div>📞 {offer.phone}</div>}
-                </div>
-              ) : (
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <UnlockButton offerId={offer.id} />
-                </div>
-              )}
+              <div className="mt-4 pt-4 border-t border-slate-100 text-sm text-slate-700 space-y-1">
+                <div>📧 {offer.email}</div>
+                {offer.phone && <div>📞 {offer.phone}</div>}
+              </div>
 
               {!job.awarded_subunternehmer_id && offer.status === 'pending' && (
                 <div className="mt-3">

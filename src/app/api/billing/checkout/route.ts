@@ -9,8 +9,8 @@ const checkoutSchema = z.object({ tier: z.enum(TIER_ORDER as [string, ...string[
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'auftraggeber') {
-    return NextResponse.json({ error: 'Nur Auftraggeber können ein Abo abschließen.' }, { status: 403 })
+  if (!user || user.role !== 'subunternehmer') {
+    return NextResponse.json({ error: 'Nur Subunternehmer können ein Abo abschließen.' }, { status: 403 })
   }
 
   try {

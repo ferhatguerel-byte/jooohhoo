@@ -27,20 +27,21 @@ export default function AgbPage() {
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 2 Registrierung</h2>
         <p>
-          Die Registrierung als Subunternehmer ist kostenlos. Die Registrierung als Auftraggeber ist
-          kostenlos; die Einstellung von Aufträgen sowie die Freischaltung von Subunternehmer-Kontakten
-          setzt ein aktives, kostenpflichtiges Abonnement voraus.
+          Die Registrierung als Auftraggeber ist kostenlos; die Einstellung von Aufträgen ist für
+          Auftraggeber dauerhaft kostenfrei. Die Registrierung als Subunternehmer ist ebenfalls
+          kostenlos; das Einsehen offener Aufträge sowie die Kontaktaufnahme zu Auftraggebern und die
+          Abgabe von Angeboten setzen ein aktives, kostenpflichtiges Abonnement voraus.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Auftraggeber</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Subunternehmer</h2>
         <p>
-          Auftraggeber können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
-          hinsichtlich der Anzahl gleichzeitig aktiver Aufträge sowie der Anzahl monatlich freischaltbarer
-          Subunternehmer-Kontakte unterscheiden. Die jeweils aktuellen Preise und Leistungsumfänge sind auf
-          der Website unter „Preise“ einsehbar. Nicht genutzte Kontingente verfallen zum Ende der
-          Abrechnungsperiode und werden nicht in den Folgemonat übertragen.
+          Subunternehmer können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
+          hinsichtlich der Anzahl monatlich kontaktierbarer Aufträge unterscheiden. Die jeweils aktuellen
+          Preise und Leistungsumfänge sind auf der Website unter „Preise" einsehbar. Nicht genutzte
+          Kontingente verfallen zum Ende der Abrechnungsperiode und werden nicht in den Folgemonat
+          übertragen.
         </p>
       </section>
 

@@ -4,7 +4,6 @@ export interface TierDefinition {
   id: TierId
   name: string
   priceEuro: number
-  maxActiveJobs: number
   leadsPerMonth: number
   features: string[]
   priceEnv: string
@@ -14,28 +13,25 @@ export const TIERS: Record<TierId, TierDefinition> = {
   basic: {
     id: 'basic',
     name: 'Basic',
-    priceEuro: 49,
-    maxActiveJobs: 2,
+    priceEuro: 29,
     leadsPerMonth: 5,
-    features: ['2 aktive Aufträge gleichzeitig', '5 Subunternehmer-Kontakte pro Monat', 'E-Mail-Support'],
+    features: ['5 Aufträge pro Monat sehen & kontaktieren', 'Angebote abgeben', 'E-Mail-Support'],
     priceEnv: 'STRIPE_PRICE_BASIC',
   },
   pro: {
     id: 'pro',
     name: 'Pro',
-    priceEuro: 149,
-    maxActiveJobs: 10,
+    priceEuro: 79,
     leadsPerMonth: 25,
-    features: ['10 aktive Aufträge gleichzeitig', '25 Subunternehmer-Kontakte pro Monat', 'Priorisierter Support'],
+    features: ['25 Aufträge pro Monat sehen & kontaktieren', 'Angebote abgeben', 'Priorisierter Support'],
     priceEnv: 'STRIPE_PRICE_PRO',
   },
   premium: {
     id: 'premium',
     name: 'Premium',
-    priceEuro: 399,
-    maxActiveJobs: 999,
+    priceEuro: 149,
     leadsPerMonth: 999,
-    features: ['Unbegrenzte aktive Aufträge', 'Unbegrenzte Subunternehmer-Kontakte', 'Persönlicher Ansprechpartner'],
+    features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Angebote abgeben', 'Persönlicher Ansprechpartner'],
     priceEnv: 'STRIPE_PRICE_PREMIUM',
   },
 }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
-import { TIERS } from '@/lib/tiers'
 import { GEWERKE } from '@/lib/gewerke'
 
 const lineItemSchema = z.object({
@@ -29,28 +28,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge einstellen.' }, { status: 403 })
   }
 
-  if (user.subscriptionStatus !== 'active' || !user.subscriptionTier) {
-    return NextResponse.json(
-      { error: 'Bitte wählen Sie zuerst ein Abo, um Aufträge einzustellen.' },
-      { status: 402 }
-    )
-  }
-
   try {
     const body = jobSchema.parse(await req.json())
     const pool = getDb()
-
-    const activeCount = await pool.query(
-      "SELECT COUNT(*)::int AS count FROM jobs WHERE auftraggeber_id = $1 AND status = 'open'",
-      [user.id]
-    )
-    const limit = TIERS[user.subscriptionTier].maxActiveJobs
-    if (activeCount.rows[0].count >= limit) {
-      return NextResponse.json(
-        { error: `Sie haben das Limit von ${limit} aktiven Aufträgen für Ihr ${TIERS[user.subscriptionTier].name}-Abo erreicht.` },
-        { status: 402 }
-      )
-    }
 
     const client = await pool.connect()
     let jobId: string

@@ -1,16 +1,13 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
-import { TIERS } from '@/lib/tiers'
 import NewJobForm from './NewJobForm'
 
 export default async function AuftraegePage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
   if (user.role !== 'auftraggeber') redirect('/dashboard')
-
-  const hasActiveSub = user.subscriptionStatus === 'active' && user.subscriptionTier
 
   const db = getDb()
   const jobsResult = await db.query(
@@ -23,30 +20,14 @@ export default async function AuftraegePage() {
     [user.id]
   )
   const jobs = jobsResult.rows
-  const activeJobCount = jobs.filter((j) => j.status === 'open').length
-  const limit = hasActiveSub ? TIERS[user.subscriptionTier!].maxActiveJobs : 0
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-black text-slate-900">Meine Aufträge</h1>
-        {hasActiveSub && (
-          <span className="text-sm text-slate-500">{activeJobCount} / {limit} aktive Aufträge</span>
-        )}
       </div>
 
-      {!hasActiveSub ? (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 mb-8">
-          <p className="text-slate-700 mb-4">
-            Sie benötigen ein aktives Abo, um Aufträge einzustellen und Subunternehmer-Kontakte freizuschalten.
-          </p>
-          <Link href="/dashboard/abo" className="bg-brand hover:bg-brand-hover text-white font-bold py-2.5 px-6 rounded-lg inline-block">
-            Abo auswählen
-          </Link>
-        </div>
-      ) : (
-        <NewJobForm disabled={activeJobCount >= limit} />
-      )}
+      <NewJobForm />
 
       <div className="space-y-4">
         {jobs.length === 0 && <p className="text-slate-500">Noch keine Aufträge eingestellt.</p>}

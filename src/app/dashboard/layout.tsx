@@ -13,11 +13,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const links = user.role === 'auftraggeber'
     ? [
         { href: '/dashboard/auftraege', label: 'Meine Aufträge' },
-        { href: '/dashboard/abo', label: 'Abo' },
         { href: '/dashboard/profil', label: 'Profil' },
       ]
     : [
         { href: '/dashboard/jobs', label: 'Aufträge durchsuchen' },
+        { href: '/dashboard/abo', label: 'Abo' },
         { href: '/dashboard/profil', label: 'Profil' },
       ]
 

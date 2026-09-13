@@ -68,7 +68,7 @@ function RegisterForm() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
           <h1 className="text-2xl font-black text-slate-900 mb-6 text-center">Kostenlos registrieren</h1>
 
-          <div className="grid grid-cols-2 gap-2 mb-6 bg-slate-100 rounded-lg p-1">
+          <div className="grid grid-cols-2 gap-2 mb-2 bg-slate-100 rounded-lg p-1">
             <button
               type="button"
               onClick={() => setRole('auftraggeber')}
@@ -84,6 +84,11 @@ function RegisterForm() {
               Ich bin Subunternehmer
             </button>
           </div>
+          <p className="text-xs text-slate-500 text-center mb-6">
+            {role === 'auftraggeber'
+              ? 'Aufträge einstellen ist für Auftraggeber dauerhaft kostenlos.'
+              : 'Registrierung kostenlos – für den Zugriff auf Aufträge ist ein Abo erforderlich.'}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

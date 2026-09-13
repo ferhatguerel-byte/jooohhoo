@@ -243,9 +243,9 @@ export default function HomePage() {
       <section id="preise" className="bg-slate-50 border-y border-slate-200 py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Auftraggeber</div>
+            <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Handwerksbetriebe</div>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Preise</h2>
-            <p className="text-slate-500">Monatlich kündbar. Für Handwerksbetriebe ist die Registrierung dauerhaft kostenlos.</p>
+            <p className="text-slate-500">Monatlich kündbar. Für Auftraggeber ist die Registrierung und Auftragserstellung dauerhaft kostenlos.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {TIER_ORDER.map((tierId) => {
@@ -269,7 +269,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                   <Link
-                    href="/registrieren?rolle=auftraggeber"
+                    href="/registrieren?rolle=subunternehmer"
                     className={`block text-center w-full py-3 rounded-xl font-bold transition ${
                       popular ? 'bg-[#17202a] hover:bg-brand-hover text-white' : 'bg-slate-100 hover:bg-slate-200 text-[#17202a]'
                     }`}

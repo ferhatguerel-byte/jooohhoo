@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewOfferEmail } from '@/lib/email'
+import { TIERS } from '@/lib/tiers'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -17,6 +18,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user || user.role !== 'subunternehmer') {
     return NextResponse.json({ error: 'Nur Subunternehmer können Angebote abgeben.' }, { status: 403 })
   }
+  if (user.subscriptionStatus !== 'active' || !user.subscriptionTier) {
+    return NextResponse.json(
+      { error: 'Bitte wählen Sie zuerst ein Abo, um Aufträge zu kontaktieren.' },
+      { status: 402 }
+    )
+  }
 
   try {
     const body = offerSchema.parse(await req.json())
@@ -30,6 +37,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
     if (job.rows.length === 0) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden oder nicht mehr offen.' }, { status: 404 })
+    }
+
+    const alreadyContacted = await pool.query(
+      'SELECT id FROM offers WHERE job_id = $1 AND subunternehmer_id = $2',
+      [jobId, user.id]
+    )
+    if (alreadyContacted.rows.length === 0) {
+      const contactedThisMonth = await pool.query(
+        `SELECT COUNT(*)::int AS count FROM offers
+         WHERE subunternehmer_id = $1 AND created_at >= date_trunc('month', now())`,
+        [user.id]
+      )
+      const limit = TIERS[user.subscriptionTier].leadsPerMonth
+      if (contactedThisMonth.rows[0].count >= limit) {
+        return NextResponse.json(
+          { error: `Sie haben Ihr monatliches Kontingent von ${limit} Aufträgen für Ihr ${TIERS[user.subscriptionTier].name}-Abo erreicht.` },
+          { status: 402 }
+        )
+      }
     }
 
     const hasLineItems = body.lineItemPrices && body.lineItemPrices.length > 0

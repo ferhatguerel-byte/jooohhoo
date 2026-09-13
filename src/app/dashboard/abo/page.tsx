@@ -8,13 +8,13 @@ import PortalButton from './PortalButton'
 export default async function AboPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  if (user.role !== 'auftraggeber') redirect('/dashboard')
+  if (user.role !== 'subunternehmer') redirect('/dashboard')
 
   const hasActiveSub = user.subscriptionStatus === 'active' && user.subscriptionTier
 
   const leadsUsedResult = await getDb().query(
-    `SELECT COUNT(*)::int AS count FROM lead_unlocks
-     WHERE auftraggeber_id = $1 AND unlocked_at >= date_trunc('month', now())`,
+    `SELECT COUNT(*)::int AS count FROM offers
+     WHERE subunternehmer_id = $1 AND created_at >= date_trunc('month', now())`,
     [user.id]
   )
   const leadsUsed = leadsUsedResult.rows[0].count
@@ -29,7 +29,7 @@ export default async function AboPage() {
             <p className="text-sm text-slate-500">Aktuelles Abo</p>
             <p className="text-xl font-black text-brand">{TIERS[user.subscriptionTier!].name}</p>
             <p className="text-sm text-slate-500 mt-1">
-              {leadsUsed} / {TIERS[user.subscriptionTier!].leadsPerMonth} Kontakte diesen Monat freigeschaltet
+              {leadsUsed} / {TIERS[user.subscriptionTier!].leadsPerMonth} Aufträge diesen Monat kontaktiert
             </p>
           </div>
           <PortalButton />

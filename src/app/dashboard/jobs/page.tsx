@@ -15,6 +15,23 @@ export default async function JobsPage({
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
 
+  const hasActiveSub = user.subscriptionStatus === 'active' && user.subscriptionTier
+  if (!hasActiveSub) {
+    return (
+      <div>
+        <h1 className="text-2xl font-black text-[#17202a] mb-6">Offene Aufträge</h1>
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
+          <p className="text-slate-700 mb-4">
+            Sie benötigen ein aktives Abo, um Aufträge zu sehen und Auftraggeber zu kontaktieren.
+          </p>
+          <a href="/dashboard/abo" className="bg-brand hover:bg-brand-hover text-white font-bold py-2.5 px-6 rounded-lg inline-block">
+            Abo auswählen
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   const selectedGewerke = gewerkeParam ? gewerkeParam.split(',').filter(Boolean) : []
 
   const db = getDb()

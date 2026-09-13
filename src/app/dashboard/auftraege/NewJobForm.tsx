@@ -13,7 +13,7 @@ interface DraftLineItem {
 
 type Phase = 'closed' | 'describe' | 'review'
 
-export default function NewJobForm({ disabled }: { disabled: boolean }) {
+export default function NewJobForm() {
   const router = useRouter()
   const [phase, setPhase] = useState<Phase>('closed')
   const [loading, setLoading] = useState(false)
@@ -104,8 +104,7 @@ export default function NewJobForm({ disabled }: { disabled: boolean }) {
     return (
       <button
         onClick={() => setPhase('describe')}
-        disabled={disabled}
-        className="bg-[#17202a] hover:bg-[#232f3b] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition"
+        className="bg-[#17202a] hover:bg-[#232f3b] text-white font-bold py-3 px-6 rounded-lg transition"
       >
         + Neuen Auftrag einstellen
       </button>
