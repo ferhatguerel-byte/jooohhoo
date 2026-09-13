@@ -6,19 +6,26 @@ export interface GeneratedLineItem {
   description: string
 }
 
-const SYSTEM_PROMPT = `Du bist ein Bausachverständiger, der aus einer Kundenbeschreibung ein strukturiertes Leistungsverzeichnis (LV) für Bau- und Renovierungsarbeiten erstellt.
+export interface GeneratedLv {
+  items: GeneratedLineItem[]
+  estimatedCostMin: number | null
+  estimatedCostMax: number | null
+}
+
+const SYSTEM_PROMPT = `Du bist ein Bausachverständiger, der aus einer Kundenbeschreibung ein strukturiertes Leistungsverzeichnis (LV) für Bau- und Renovierungsarbeiten erstellt und die Gesamtkosten grob schätzt.
 
 Regeln:
 - Zerlege das Projekt in einzelne Gewerke/Positionen (z.B. Abbruch, Elektro, Sanitär, Trockenbau, Boden, Maler).
 - Nutze für "gewerk" ausschließlich einen dieser Werte: ${GEWERKE.join(', ')}.
 - Jede Position bekommt einen kurzen Titel und eine knappe, konkrete Beschreibung des Leistungsumfangs.
 - Erfinde keine Mengen oder Maße, die nicht aus der Beschreibung hervorgehen oder branchenüblich sind.
-- Antworte AUSSCHLIESSLICH mit einem JSON-Array, keine Erklärungen, kein Markdown, kein Codeblock.
+- Schätze zusätzlich anhand branchenüblicher Preise in Deutschland eine grobe Kostenspanne (estimatedCostMin, estimatedCostMax) in Euro für das Gesamtprojekt. Das ist eine unverbindliche Orientierung, keine verbindliche Kalkulation.
+- Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, keine Erklärungen, kein Markdown, kein Codeblock.
 
 Format:
-[{"gewerk": "Elektro", "title": "Elektroinstallation komplett", "description": "Neuverkabelung, Steckdosen, Schalter, Sicherungskasten prüfen"}]`
+{"items": [{"gewerk": "Elektro", "title": "Elektroinstallation komplett", "description": "Neuverkabelung, Steckdosen, Schalter, Sicherungskasten prüfen"}], "estimatedCostMin": 8000, "estimatedCostMax": 12000}`
 
-export async function generateLeistungsverzeichnis(description: string): Promise<GeneratedLineItem[]> {
+export async function generateLeistungsverzeichnis(description: string): Promise<GeneratedLv> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     throw new Error('KI-Funktion ist noch nicht konfiguriert (ANTHROPIC_API_KEY fehlt).')
@@ -48,22 +55,23 @@ export async function generateLeistungsverzeichnis(description: string): Promise
   }
 
   const data = await res.json()
-  const text: string = data.content?.[0]?.text || '[]'
+  const text: string = data.content?.[0]?.text || '{}'
 
   let parsed: unknown
   try {
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
     parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text)
   } catch {
     throw new Error('Antwort der KI konnte nicht verarbeitet werden.')
   }
 
-  if (!Array.isArray(parsed)) {
+  if (typeof parsed !== 'object' || parsed === null || !Array.isArray((parsed as Record<string, unknown>).items)) {
     throw new Error('Unerwartetes Antwortformat der KI.')
   }
 
+  const raw = parsed as { items: unknown[]; estimatedCostMin?: unknown; estimatedCostMax?: unknown }
   const validGewerke = new Set<string>(GEWERKE)
-  const items: GeneratedLineItem[] = parsed
+  const items: GeneratedLineItem[] = raw.items
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
     .map((item) => ({
       gewerk: validGewerke.has(String(item.gewerk)) ? String(item.gewerk) : GEWERKE[0],
@@ -76,5 +84,8 @@ export async function generateLeistungsverzeichnis(description: string): Promise
     throw new Error('Es konnten keine Leistungspositionen aus der Beschreibung erstellt werden.')
   }
 
-  return items
+  const estimatedCostMin = Number.isFinite(Number(raw.estimatedCostMin)) ? Math.round(Number(raw.estimatedCostMin)) : null
+  const estimatedCostMax = Number.isFinite(Number(raw.estimatedCostMax)) ? Math.round(Number(raw.estimatedCostMax)) : null
+
+  return { items, estimatedCostMin, estimatedCostMax }
 }

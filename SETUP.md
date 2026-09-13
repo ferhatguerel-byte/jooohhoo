@@ -62,6 +62,25 @@ Account auf https://resend.com, `RESEND_API_KEY` und `FROM_EMAIL` eintragen.
 Ohne diese Variablen werden Benachrichtigungen nur ins Server-Log
 geschrieben (kein Absturz).
 
+## 5b. Datei-Upload einrichten (Bilder/Dateien bei Aufträgen, Nachweise)
+
+1. Vercel-Dashboard → Projekt → Storage → "Create Database" → **Blob**
+2. Mit dem Projekt verbinden → `BLOB_READ_WRITE_TOKEN` wird automatisch gesetzt
+
+**Ohne diesen Store** funktioniert die Plattform weiterhin, nur der
+Datei-Upload (Auftragsbilder, Verifizierungsnachweise) zeigt einen Fehler.
+
+## 5c. Verifizierung der Unternehmer
+
+Unternehmer laden in ihrem Profil Nachweise hoch (Gewerbeanmeldung,
+Meisterbrief/Qualifikationsnachweis, Haftpflichtversicherung). Der Status
+wird dadurch auf "Prüfung läuft" gesetzt. Eine E-Mail-Adresse als
+`ADMIN_EMAIL` eintragen – dieser Account sieht unter
+`/dashboard/admin/verifizierungen` alle offenen Anfragen mit den
+hochgeladenen Dateien und kann sie verifizieren oder ablehnen. Erst nach
+Freigabe erscheint das "Verifiziert"-Abzeichen bei den Angeboten des
+Unternehmers.
+
 ## 6. Lokal testen
 
 ```bash

@@ -23,6 +23,10 @@ DO $$ BEGIN
   CREATE TYPE subscription_status AS ENUM ('inactive', 'active', 'canceled', 'past_due');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE verification_status AS ENUM ('unverified', 'pending', 'verified', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
@@ -37,6 +41,8 @@ CREATE TABLE IF NOT EXISTS users (
   stripe_subscription_id TEXT,
   subscription_tier subscription_tier,
   subscription_status subscription_status NOT NULL DEFAULT 'inactive',
+  verification_status verification_status NOT NULL DEFAULT 'unverified',
+  qualification_files JSONB NOT NULL DEFAULT '[]',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -52,6 +58,9 @@ CREATE TABLE IF NOT EXISTS jobs (
   budget_max INTEGER,
   deadline DATE,
   status job_status NOT NULL DEFAULT 'open',
+  attachments JSONB NOT NULL DEFAULT '[]',
+  estimated_cost_min INTEGER,
+  estimated_cost_max INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -68,6 +77,13 @@ CREATE TABLE IF NOT EXISTS offers (
 
 -- Auftrag vergeben: welcher Unternehmer hat den Zuschlag erhalten
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS awarded_subunternehmer_id UUID REFERENCES users(id);
+
+-- Bilder/Dateien des Kunden, KI-Kostenschätzung und Verifizierung der Unternehmer
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS attachments JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS estimated_cost_min INTEGER;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS estimated_cost_max INTEGER;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_status verification_status NOT NULL DEFAULT 'unverified';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS qualification_files JSONB NOT NULL DEFAULT '[]';
 
 -- Gegenseitige Bewertungen nach Auftragsabschluss
 CREATE TABLE IF NOT EXISTS reviews (

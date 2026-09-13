@@ -102,6 +102,29 @@ export default async function JobsPage({
               </p>
               <p className="text-sm text-slate-600 mb-4">{job.description}</p>
 
+              {(job.estimated_cost_min || job.estimated_cost_max) && (
+                <p className="text-sm text-slate-500 mb-4">
+                  Geschätzte Kosten (Kundenangabe): {job.estimated_cost_min ? `€${Number(job.estimated_cost_min).toLocaleString('de-DE')}` : '?'}
+                  {job.estimated_cost_max ? ` – €${Number(job.estimated_cost_max).toLocaleString('de-DE')}` : ''}
+                </p>
+              )}
+
+              {job.attachments && job.attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {job.attachments.map((f: { url: string; name: string }) => (
+                    <a
+                      key={f.url}
+                      href={f.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-brand border border-slate-200 rounded-lg px-3 py-1.5 hover:border-brand/40"
+                    >
+                      📎 {f.name}
+                    </a>
+                  ))}
+                </div>
+              )}
+
               {lineItems.length > 0 && (
                 <div className="bg-slate-50 rounded-lg p-3 mb-4">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Leistungsverzeichnis</p>

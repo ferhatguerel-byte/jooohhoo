@@ -4,12 +4,19 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE } from '@/lib/gewerke'
 
+const qualificationFileSchema = z.object({
+  url: z.string().url(),
+  name: z.string().max(255),
+  label: z.string().max(100),
+})
+
 const profileSchema = z.object({
   companyName: z.string().min(2),
   phone: z.string().optional(),
   plz: z.string().min(4),
   ort: z.string().min(2),
   gewerke: z.array(z.enum(GEWERKE)).optional(),
+  qualificationFiles: z.array(qualificationFileSchema).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -21,11 +28,20 @@ export async function POST(req: NextRequest) {
   try {
     const body = profileSchema.parse(await req.json())
     const gewerke = user.role === 'subunternehmer' ? body.gewerke || [] : []
+    const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
 
-    await getDb().query(
-      `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5 WHERE id = $6`,
-      [body.companyName, body.phone || null, body.plz, body.ort, gewerke, user.id]
-    )
+    if (user.role === 'subunternehmer' && qualificationFiles.length > 0) {
+      await getDb().query(
+        `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5,
+         qualification_files = $6, verification_status = 'pending' WHERE id = $7`,
+        [body.companyName, body.phone || null, body.plz, body.ort, gewerke, JSON.stringify(qualificationFiles), user.id]
+      )
+    } else {
+      await getDb().query(
+        `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5 WHERE id = $6`,
+        [body.companyName, body.phone || null, body.plz, body.ort, gewerke, user.id]
+      )
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

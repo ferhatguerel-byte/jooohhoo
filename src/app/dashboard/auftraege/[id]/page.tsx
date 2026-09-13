@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Star, ShieldCheck, Ruler } from 'lucide-react'
+import { Star, ShieldCheck, Ruler, BadgeCheck, Paperclip } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 import AwardButton from './AwardButton'
@@ -26,6 +26,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const offersResult = await db.query(
     `SELECT o.id, o.price, o.message, o.status, o.pricing_type, o.created_at,
             u.id AS subunternehmer_id, u.company_name, u.email, u.phone, u.plz, u.ort,
+            u.verification_status,
             COALESCE(r.avg_rating, 0) AS avg_rating,
             COALESCE(r.review_count, 0) AS review_count
      FROM offers o
@@ -73,10 +74,31 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </div>
         <p className="text-slate-500 mb-4">{job.gewerk} · {job.plz} {job.ort}</p>
         <p className="text-slate-700 whitespace-pre-wrap mb-4">{job.description}</p>
-        <div className="flex gap-6 text-sm text-slate-500">
+        <div className="flex gap-6 text-sm text-slate-500 mb-4">
           {job.budget_min && <span>Budget: €{job.budget_min}{job.budget_max ? ` – €${job.budget_max}` : ''}</span>}
           {job.deadline && <span>Frist: {new Date(job.deadline).toLocaleDateString('de-DE')}</span>}
+          {(job.estimated_cost_min || job.estimated_cost_max) && (
+            <span>
+              KI-Schätzung: €{Number(job.estimated_cost_min || 0).toLocaleString('de-DE')}
+              {job.estimated_cost_max ? ` – €${Number(job.estimated_cost_max).toLocaleString('de-DE')}` : ''}
+            </span>
+          )}
         </div>
+        {job.attachments && job.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {job.attachments.map((f: { url: string; name: string }) => (
+              <a
+                key={f.url}
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold text-brand border border-slate-200 rounded-lg px-3 py-1.5 hover:border-brand/40 flex items-center gap-1"
+              >
+                <Paperclip size={12} /> {f.name}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {job.awarded_subunternehmer_id && (
@@ -148,6 +170,11 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 <div>
                   <div className="font-bold text-[#17202a] flex items-center gap-2 flex-wrap">
                     {offer.company_name}
+                    {offer.verification_status === 'verified' && (
+                      <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <BadgeCheck size={12} /> Verifiziert
+                      </span>
+                    )}
                     {isAwarded && <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Beauftragt</span>}
                     {offer.pricing_type === 'fixed' ? (
                       <span className="text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Trash2, Plus } from 'lucide-react'
 import { GEWERKE } from '@/lib/gewerke'
+import FileUploader, { UploadedFile } from '@/components/FileUploader'
 
 interface DraftLineItem {
   gewerk: string
@@ -26,6 +27,9 @@ export default function NewJobForm() {
   const [description, setDescription] = useState('')
   const [deadline, setDeadline] = useState('')
   const [lineItems, setLineItems] = useState<DraftLineItem[]>([])
+  const [attachments, setAttachments] = useState<UploadedFile[]>([])
+  const [estimatedCostMin, setEstimatedCostMin] = useState<number | null>(null)
+  const [estimatedCostMax, setEstimatedCostMax] = useState<number | null>(null)
 
   async function handleGenerateLV() {
     setError('')
@@ -43,6 +47,8 @@ export default function NewJobForm() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Leistungsverzeichnis konnte nicht erstellt werden.')
       setLineItems(json.items.map((i: DraftLineItem) => ({ ...i, description: i.description || '' })))
+      setEstimatedCostMin(json.estimatedCostMin ?? null)
+      setEstimatedCostMax(json.estimatedCostMax ?? null)
       setPhase('review')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
@@ -80,6 +86,9 @@ export default function NewJobForm() {
       description,
       deadline: deadline || undefined,
       lineItems: withLineItems ? lineItems.filter((li) => li.title.trim().length > 0) : undefined,
+      attachments,
+      estimatedCostMin: withLineItems ? estimatedCostMin ?? undefined : undefined,
+      estimatedCostMax: withLineItems ? estimatedCostMax ?? undefined : undefined,
     }
 
     try {
@@ -92,6 +101,7 @@ export default function NewJobForm() {
       if (!res.ok) throw new Error(json.error || 'Auftrag konnte nicht erstellt werden.')
       setPhase('closed')
       setTitle(''); setGewerk(''); setPlz(''); setOrt(''); setDescription(''); setDeadline(''); setLineItems([])
+      setAttachments([]); setEstimatedCostMin(null); setEstimatedCostMax(null)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
@@ -160,6 +170,13 @@ export default function NewJobForm() {
           <input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-full sm:w-64 border border-slate-300 rounded-lg px-4 py-2.5" />
         </div>
 
+        <FileUploader
+          files={attachments}
+          onChange={setAttachments}
+          label="Bilder & Dateien (optional) – hilft Fachbetrieben, den Umfang besser einzuschätzen"
+          accept="image/*,.pdf,.doc,.docx"
+        />
+
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
@@ -192,6 +209,16 @@ export default function NewJobForm() {
       <p className="text-sm text-slate-500">
         So erhalten alle Fachbetriebe denselben Leistungsumfang – ihre Angebote werden dadurch direkt vergleichbar.
       </p>
+
+      {(estimatedCostMin || estimatedCostMax) && (
+        <div className="bg-[#f6faf7] border border-green-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Geschätzte Kosten (unverbindlich)</p>
+          <p className="text-xl font-black text-[#17202a]">
+            {estimatedCostMin ? `€${estimatedCostMin.toLocaleString('de-DE')}` : '?'}
+            {estimatedCostMax ? ` – €${estimatedCostMax.toLocaleString('de-DE')}` : ''}
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {lineItems.map((li, i) => (

@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const { description } = schema.parse(await req.json())
-    const items = await generateLeistungsverzeichnis(description)
-    return NextResponse.json({ items })
+    const result = await generateLeistungsverzeichnis(description)
+    return NextResponse.json(result)
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })

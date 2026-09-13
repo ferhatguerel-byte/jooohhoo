@@ -10,6 +10,8 @@ const lineItemSchema = z.object({
   description: z.string().max(1000).optional(),
 })
 
+const attachmentSchema = z.object({ url: z.string().url(), name: z.string().max(255) })
+
 const jobSchema = z.object({
   title: z.string().min(5),
   gewerk: z.enum(GEWERKE),
@@ -20,6 +22,9 @@ const jobSchema = z.object({
   budgetMax: z.number().int().positive().optional(),
   deadline: z.string().optional(),
   lineItems: z.array(lineItemSchema).optional(),
+  attachments: z.array(attachmentSchema).optional(),
+  estimatedCostMin: z.number().int().positive().optional(),
+  estimatedCostMax: z.number().int().positive().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -38,8 +43,8 @@ export async function POST(req: NextRequest) {
       await client.query('BEGIN')
 
       const result = await client.query(
-        `INSERT INTO jobs (auftraggeber_id, title, gewerk, plz, ort, description, budget_min, budget_max, deadline)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO jobs (auftraggeber_id, title, gewerk, plz, ort, description, budget_min, budget_max, deadline, attachments, estimated_cost_min, estimated_cost_max)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING id`,
         [
           user.id,
@@ -51,6 +56,9 @@ export async function POST(req: NextRequest) {
           body.budgetMin || null,
           body.budgetMax || null,
           body.deadline || null,
+          JSON.stringify(body.attachments || []),
+          body.estimatedCostMin || null,
+          body.estimatedCostMax || null,
         ]
       )
       jobId = result.rows[0].id

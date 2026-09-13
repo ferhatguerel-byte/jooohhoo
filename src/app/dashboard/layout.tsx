@@ -21,6 +21,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         { href: '/dashboard/profil', label: 'Profil' },
       ]
 
+  if (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL) {
+    links.push({ href: '/dashboard/admin/verifizierungen', label: 'Verifizierungen' })
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">

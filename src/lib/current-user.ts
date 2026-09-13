@@ -14,6 +14,8 @@ export interface CurrentUser {
   subscriptionTier: TierId | null
   subscriptionStatus: 'inactive' | 'active' | 'canceled' | 'past_due'
   stripeCustomerId: string | null
+  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected'
+  qualificationFiles: { url: string; name: string; label: string }[]
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -23,7 +25,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const db = getDb()
   const result = await db.query(
     `SELECT id, email, role, company_name, phone, plz, ort, gewerke,
-            subscription_tier, subscription_status, stripe_customer_id
+            subscription_tier, subscription_status, stripe_customer_id,
+            verification_status, qualification_files
      FROM users WHERE id = $1`,
     [session.userId]
   )
@@ -42,5 +45,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     subscriptionTier: row.subscription_tier,
     subscriptionStatus: row.subscription_status,
     stripeCustomerId: row.stripe_customer_id,
+    verificationStatus: row.verification_status,
+    qualificationFiles: row.qualification_files || [],
   }
 }
