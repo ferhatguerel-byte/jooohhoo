@@ -92,8 +92,16 @@ function RegisterForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="companyName" className="block text-sm font-semibold text-slate-700 mb-1">Firmenname *</label>
-              <input id="companyName" name="companyName" required className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
+              <label htmlFor="companyName" className="block text-sm font-semibold text-slate-700 mb-1">
+                {role === 'auftraggeber' ? 'Name / Firmenname *' : 'Firmenname *'}
+              </label>
+              <input
+                id="companyName"
+                name="companyName"
+                required
+                placeholder={role === 'auftraggeber' ? 'z. B. Max Mustermann oder Hausverwaltung Müller' : undefined}
+                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand"
+              />
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">

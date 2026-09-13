@@ -91,7 +91,9 @@ export default function ProfileForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="companyName" className="block text-sm font-semibold text-slate-700 mb-1">Firmenname</label>
+        <label htmlFor="companyName" className="block text-sm font-semibold text-slate-700 mb-1">
+          {role === 'auftraggeber' ? 'Name / Firmenname' : 'Firmenname'}
+        </label>
         <input id="companyName" name="companyName" defaultValue={companyName} required className="w-full border border-slate-300 rounded-lg px-4 py-2.5" />
       </div>
       <div className="grid sm:grid-cols-3 gap-4">
