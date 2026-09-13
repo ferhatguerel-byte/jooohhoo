@@ -23,6 +23,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   )
   const lineItems = lineItemsResult.rows
 
+  // Ab jetzt gilt der Auftraggeber als informiert – der Unternehmer kann sein
+  // Angebot danach nicht mehr korrigieren.
+  await db.query("UPDATE offers SET viewed_at = now() WHERE job_id = $1 AND viewed_at IS NULL", [id])
+
   const offersResult = await db.query(
     `SELECT o.id, o.price, o.message, o.status, o.pricing_type, o.created_at,
             u.id AS subunternehmer_id, u.company_name, u.email, u.phone, u.plz, u.ort,

@@ -72,8 +72,13 @@ CREATE TABLE IF NOT EXISTS offers (
   message TEXT,
   status offer_status NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  viewed_at TIMESTAMPTZ,
   UNIQUE(job_id, subunternehmer_id)
 );
+
+-- Solange der Auftraggeber ein Angebot noch nicht angesehen hat, darf der
+-- Unternehmer es noch korrigieren.
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS viewed_at TIMESTAMPTZ;
 
 -- Auftrag vergeben: welcher Unternehmer hat den Zuschlag erhalten
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS awarded_subunternehmer_id UUID REFERENCES users(id);

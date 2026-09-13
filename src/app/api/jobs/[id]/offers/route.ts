@@ -40,9 +40,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const alreadyContacted = await pool.query(
-      'SELECT id FROM offers WHERE job_id = $1 AND subunternehmer_id = $2',
+      'SELECT id, viewed_at FROM offers WHERE job_id = $1 AND subunternehmer_id = $2',
       [jobId, user.id]
     )
+    if (alreadyContacted.rows.length > 0 && alreadyContacted.rows[0].viewed_at !== null) {
+      return NextResponse.json(
+        { error: 'Der Auftraggeber hat Ihr Angebot bereits gesehen, eine Korrektur ist nicht mehr möglich.' },
+        { status: 409 }
+      )
+    }
     if (alreadyContacted.rows.length === 0) {
       const contactedThisMonth = await pool.query(
         `SELECT COUNT(*)::int AS count FROM offers

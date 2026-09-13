@@ -43,7 +43,8 @@ export default async function JobsPage({
   }
 
   const jobsResult = await db.query(
-    `SELECT j.*, o.price AS my_offer_price, o.message AS my_offer_message
+    `SELECT j.*, o.id AS my_offer_id, o.price AS my_offer_price, o.message AS my_offer_message,
+            o.pricing_type AS my_offer_pricing_type, o.viewed_at AS my_offer_viewed_at
      FROM jobs j
      LEFT JOIN offers o ON o.job_id = j.id AND o.subunternehmer_id = $1
      WHERE j.status = 'open' ${filterClause}
@@ -74,6 +75,20 @@ export default async function JobsPage({
   for (const li of lineItemsResult.rows) {
     if (!lineItemsByJob.has(li.job_id)) lineItemsByJob.set(li.job_id, [])
     lineItemsByJob.get(li.job_id)!.push({ id: li.id, title: li.title, gewerk: li.gewerk })
+  }
+
+  const myOfferIds = jobs.map((j) => j.my_offer_id).filter(Boolean)
+  const myOfferLineItemsResult = myOfferIds.length
+    ? await db.query(
+        `SELECT offer_id, job_line_item_id, price FROM offer_line_items WHERE offer_id = ANY($1)`,
+        [myOfferIds]
+      )
+    : { rows: [] as { offer_id: string; job_line_item_id: string; price: number }[] }
+
+  const myOfferPricesByOffer = new Map<string, Record<string, number>>()
+  for (const row of myOfferLineItemsResult.rows) {
+    if (!myOfferPricesByOffer.has(row.offer_id)) myOfferPricesByOffer.set(row.offer_id, {})
+    myOfferPricesByOffer.get(row.offer_id)![row.job_line_item_id] = row.price
   }
 
   return (
@@ -142,7 +157,17 @@ export default async function JobsPage({
               <OfferForm
                 jobId={job.id}
                 lineItems={lineItems}
-                existingOffer={job.my_offer_price ? { price: job.my_offer_price, message: job.my_offer_message } : undefined}
+                existingOffer={
+                  job.my_offer_price
+                    ? {
+                        price: job.my_offer_price,
+                        message: job.my_offer_message,
+                        pricingType: job.my_offer_pricing_type,
+                        viewedByAuftraggeber: job.my_offer_viewed_at !== null,
+                        lineItemPrices: myOfferPricesByOffer.get(job.my_offer_id) || {},
+                      }
+                    : undefined
+                }
               />
             </div>
           )

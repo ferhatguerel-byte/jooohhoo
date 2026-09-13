@@ -2,11 +2,20 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Pencil } from 'lucide-react'
 
 interface LineItem {
   id: string
   title: string
   gewerk: string
+}
+
+interface ExistingOffer {
+  price: number
+  message: string | null
+  pricingType: 'fixed' | 'estimate'
+  viewedByAuftraggeber: boolean
+  lineItemPrices: Record<string, number>
 }
 
 export default function OfferForm({
@@ -16,15 +25,18 @@ export default function OfferForm({
 }: {
   jobId: string
   lineItems: LineItem[]
-  existingOffer?: { price: number; message: string | null }
+  existingOffer?: ExistingOffer
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [pricingType, setPricingType] = useState<'fixed' | 'estimate'>('fixed')
-  const [itemPrices, setItemPrices] = useState<Record<string, string>>({})
+  const [pricingType, setPricingType] = useState<'fixed' | 'estimate'>(existingOffer?.pricingType || 'fixed')
+  const [itemPrices, setItemPrices] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(existingOffer?.lineItemPrices || {}).map(([k, v]) => [k, String(v)]))
+  )
+  const [price, setPrice] = useState(existingOffer && lineItems.length === 0 ? String(existingOffer.price) : '')
+  const [message, setMessage] = useState(existingOffer?.message || '')
 
   const total = useMemo(
     () => Object.values(itemPrices).reduce((sum, v) => sum + (Number(v) || 0), 0),
@@ -36,21 +48,20 @@ export default function OfferForm({
     setLoading(true)
     setError('')
 
-    const form = new FormData(e.currentTarget)
     const hasLineItems = lineItems.length > 0
 
     const body = hasLineItems
       ? {
           pricingType,
-          message: form.get('message') || undefined,
+          message: message || undefined,
           lineItemPrices: lineItems
             .map((li) => ({ lineItemId: li.id, price: Number(itemPrices[li.id]) }))
             .filter((li) => li.price > 0),
         }
       : {
           pricingType,
-          price: Number(form.get('price')),
-          message: form.get('message') || undefined,
+          price: Number(price),
+          message: message || undefined,
         }
 
     try {
@@ -61,7 +72,6 @@ export default function OfferForm({
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Angebot konnte nicht übermittelt werden.')
-      setSuccess(true)
       setOpen(false)
       router.refresh()
     } catch (err) {
@@ -71,11 +81,21 @@ export default function OfferForm({
     }
   }
 
-  if (success || existingOffer) {
+  if (existingOffer && !open) {
     return (
-      <p className="text-sm font-semibold text-green-700">
-        ✓ Angebot abgegeben{existingOffer ? `: €${existingOffer.price}` : ''}
-      </p>
+      <div className="flex items-center gap-3">
+        <p className="text-sm font-semibold text-green-700">✓ Angebot abgegeben: €{existingOffer.price}</p>
+        {existingOffer.viewedByAuftraggeber ? (
+          <span className="text-xs text-slate-400">Vom Auftraggeber bereits angesehen – keine Korrektur mehr möglich</span>
+        ) : (
+          <button
+            onClick={() => setOpen(true)}
+            className="text-xs font-semibold text-brand hover:underline flex items-center gap-1"
+          >
+            <Pencil size={12} /> Korrigieren
+          </button>
+        )}
+      </div>
     )
   }
 
@@ -113,7 +133,15 @@ export default function OfferForm({
           </div>
         </div>
       ) : (
-        <input name="price" type="number" min={1} required placeholder="Preis in €" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+        <input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          type="number"
+          min={1}
+          required
+          placeholder="Preis in €"
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+        />
       )}
 
       <div className="flex gap-4 text-sm">
@@ -127,12 +155,18 @@ export default function OfferForm({
         </label>
       </div>
 
-      <textarea name="message" rows={2} placeholder="Kurze Nachricht an den Auftraggeber (optional)" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={2}
+        placeholder="Kurze Nachricht an den Auftraggeber (optional)"
+        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+      />
 
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={loading} className="bg-[#f47b20] hover:bg-[#e06c14] disabled:opacity-50 text-white font-bold text-sm py-2 px-4 rounded-lg">
-          {loading ? 'Wird gesendet…' : 'Angebot senden'}
+          {loading ? 'Wird gesendet…' : existingOffer ? 'Angebot aktualisieren' : 'Angebot senden'}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="text-slate-500 text-sm px-2">Abbrechen</button>
       </div>
