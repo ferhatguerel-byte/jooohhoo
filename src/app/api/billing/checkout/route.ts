@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
+import { getAppUrl } from '@/lib/url'
 
 const checkoutSchema = z.object({ tier: z.enum(TIER_ORDER as [string, ...string[]]) })
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
       await getDb().query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, user.id])
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+    const appUrl = getAppUrl(req)
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

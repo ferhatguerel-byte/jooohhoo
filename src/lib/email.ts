@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { getAppUrl } from '@/lib/url'
 
 let resendClient: Resend | undefined
 
@@ -25,7 +26,7 @@ export async function sendNewOfferEmail(to: string, jobTitle: string, price: num
       <h1 style="color: #1e3a8a;">Neues Angebot erhalten</h1>
       <p><strong>${companyName}</strong> hat ein Angebot über <strong>€${price}</strong> für Ihren Auftrag
       „${jobTitle}“ abgegeben.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/auftraege"
+      <a href="${getAppUrl()}/dashboard/auftraege"
          style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
         Angebot ansehen →
       </a>
@@ -71,7 +72,7 @@ export async function sendOfferAwardedEmail(to: string, companyName: string) {
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #059669;">Herzlichen Glückwunsch, ${companyName}!</h1>
       <p>Ihr Angebot wurde vom Auftraggeber angenommen. Der Auftrag wurde Ihnen zugeteilt.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/jobs"
+      <a href="${getAppUrl()}/dashboard/jobs"
          style="display: inline-block; background: #059669; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
         Zum Dashboard →
       </a>

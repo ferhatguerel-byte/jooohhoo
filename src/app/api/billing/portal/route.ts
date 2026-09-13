@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
+import { getAppUrl } from '@/lib/url'
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Kein Abo vorhanden.' }, { status: 404 })
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+  const appUrl = getAppUrl(req)
   const stripe = getStripe()
 
   const session = await stripe.billingPortal.sessions.create({

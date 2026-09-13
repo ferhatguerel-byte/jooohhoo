@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { generateResetToken } from '@/lib/auth'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { getAppUrl } from '@/lib/url'
 
 const schema = z.object({ email: z.string().email() })
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
          VALUES ($1, $2, now() + interval '1 hour')`,
         [user.rows[0].id, tokenHash]
       )
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+      const appUrl = getAppUrl(req)
       const resetUrl = `${appUrl}/passwort-vergessen/neu?token=${token}`
       try {
         await sendPasswordResetEmail(email, resetUrl)
