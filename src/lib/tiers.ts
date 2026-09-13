@@ -21,7 +21,7 @@ export const TIERS: Record<TierId, TierDefinition> = {
   premium: {
     id: 'premium',
     name: 'Premium',
-    priceEuro: 149,
+    priceEuro: 129,
     leadsPerMonth: 999,
     features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Angebote abgeben', 'Persönlicher Ansprechpartner'],
     priceEnv: 'STRIPE_PRICE_PREMIUM',

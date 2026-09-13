@@ -48,7 +48,7 @@ KI-Funktion zeigt einen Fehler an.
 
 1. Account auf https://stripe.com erstellen
 2. Zwei Produkte mit wiederkehrender monatlicher Zahlung anlegen:
-   Pro 79 €, Premium 149 €/Monat
+   Pro 79 €, Premium 129 €/Monat
 3. Price-IDs als `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM` eintragen
 4. API-Key als `STRIPE_SECRET_KEY` eintragen
 5. Webhook: `https://deine-domain.de/api/billing/webhook`,
