@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
+      payment_method_types: ['card', 'paypal', 'sepa_debit'],
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId: user.id, tier },
       subscription_data: { metadata: { userId: user.id, tier } },
