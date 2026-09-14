@@ -182,6 +182,14 @@ CREATE TABLE IF NOT EXISTS support_ticket_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_support_ticket_messages_ticket ON support_ticket_messages(ticket_id, created_at);
 
+-- Unternehmer können uninteressante Aufträge aus ihrer eigenen Ansicht ausblenden
+CREATE TABLE IF NOT EXISTS hidden_jobs (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  hidden_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, job_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_gewerk ON jobs(gewerk);
 CREATE INDEX IF NOT EXISTS idx_offers_job ON offers(job_id);

@@ -1,17 +1,20 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 import { estimatePlzDistanceKm } from '@/lib/plz-geo'
 import JobFilters from './JobFilters'
 import OfferForm from './OfferForm'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
+import HideJobButton from './HideJobButton'
 
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gewerke?: string; plz?: string; radius?: string }>
+  searchParams: Promise<{ gewerke?: string; plz?: string; radius?: string; ausgeblendet?: string }>
 }) {
-  const { gewerke: gewerkeParam, plz, radius } = await searchParams
+  const { gewerke: gewerkeParam, plz, radius, ausgeblendet } = await searchParams
+  const showHidden = ausgeblendet === '1'
   const user = await getCurrentUser()
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
@@ -45,13 +48,22 @@ export default async function JobsPage({
 
   const jobsResult = await db.query(
     `SELECT j.*, o.id AS my_offer_id, o.price AS my_offer_price, o.message AS my_offer_message,
-            o.pricing_type AS my_offer_pricing_type, o.viewed_at AS my_offer_viewed_at
+            o.pricing_type AS my_offer_pricing_type, o.viewed_at AS my_offer_viewed_at,
+            h.job_id IS NOT NULL AS is_hidden
      FROM jobs j
      LEFT JOIN offers o ON o.job_id = j.id AND o.subunternehmer_id = $1
-     WHERE j.status = 'open' ${filterClause}
+     LEFT JOIN hidden_jobs h ON h.job_id = j.id AND h.user_id = $1
+     WHERE j.status = 'open' ${filterClause} ${showHidden ? 'AND h.job_id IS NOT NULL' : 'AND h.job_id IS NULL'}
      ORDER BY j.created_at DESC`,
     params
   )
+
+  const hiddenCountResult = await db.query(
+    `SELECT COUNT(*)::int AS count FROM hidden_jobs h JOIN jobs j ON j.id = h.job_id
+     WHERE h.user_id = $1 AND j.status = 'open'`,
+    [user.id]
+  )
+  const hiddenCount = hiddenCountResult.rows[0].count
 
   let jobs = jobsResult.rows.map((job) => ({
     ...job,
@@ -115,23 +127,42 @@ export default async function JobsPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-black text-[#17202a] mb-6">Offene Aufträge</h1>
+      <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+        <h1 className="text-2xl font-black text-[#17202a]">
+          {showHidden ? 'Ausgeblendete Aufträge' : 'Offene Aufträge'}
+        </h1>
+        {(showHidden || hiddenCount > 0) && (
+          <Link
+            href={showHidden ? '/dashboard/jobs' : '/dashboard/jobs?ausgeblendet=1'}
+            className="text-sm font-semibold text-brand hover:underline"
+          >
+            {showHidden ? '← Zurück zu offenen Aufträgen' : `Ausgeblendete Aufträge (${hiddenCount})`}
+          </Link>
+        )}
+      </div>
 
-      <JobFilters initialGewerke={selectedGewerke} initialPlz={plz || user.plz || ''} initialRadius={radius || ''} />
+      {!showHidden && <JobFilters initialGewerke={selectedGewerke} initialPlz={plz || user.plz || ''} initialRadius={radius || ''} />}
 
       <div className="space-y-4">
-        {jobs.length === 0 && <p className="text-slate-500">Aktuell keine passenden Aufträge.</p>}
+        {jobs.length === 0 && (
+          <p className="text-slate-500">
+            {showHidden ? 'Keine ausgeblendeten Aufträge.' : 'Aktuell keine passenden Aufträge.'}
+          </p>
+        )}
         {jobs.map((job) => {
           const lineItems = lineItemsByJob.get(job.id) || []
           return (
             <div key={job.id} className="bg-white border border-slate-200 rounded-xl p-5">
               <div className="flex items-start justify-between gap-4 mb-2">
                 <h3 className="font-bold text-[#17202a]">{job.title}</h3>
-                {(job.budget_min || job.budget_max) && (
-                  <span className="text-sm font-bold text-[#17202a] whitespace-nowrap">
-                    €{job.budget_min || '?'}{job.budget_max ? ` – €${job.budget_max}` : ''}
-                  </span>
-                )}
+                <div className="flex items-center gap-3 shrink-0">
+                  {(job.budget_min || job.budget_max) && (
+                    <span className="text-sm font-bold text-[#17202a] whitespace-nowrap">
+                      €{job.budget_min || '?'}{job.budget_max ? ` – €${job.budget_max}` : ''}
+                    </span>
+                  )}
+                  {!job.my_offer_id && <HideJobButton jobId={job.id} hidden={showHidden} />}
+                </div>
               </div>
               <p className="text-sm text-slate-500 mb-3">
                 {job.gewerk} · {job.plz} {job.ort}
