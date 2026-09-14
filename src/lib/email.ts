@@ -65,6 +65,37 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   )
 }
 
+export async function sendNewTicketEmail(to: string, companyName: string, category: string, subject: string, message: string) {
+  await send(
+    to,
+    `🆘 Neue Support-Anfrage: „${subject}“`,
+    `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #1e3a8a;">Neue Support-Anfrage</h1>
+      <p><strong>${companyName}</strong> hat eine neue Anfrage in der Kategorie <strong>${category}</strong> gestellt:</p>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
+      <a href="${getAppUrl()}/dashboard/admin/support"
+         style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
+        Ticket ansehen →
+      </a>
+    </div>`
+  )
+}
+
+export async function sendTicketReplyEmail(to: string, subject: string, isFromSupport: boolean, message: string) {
+  await send(
+    to,
+    isFromSupport ? `💬 Antwort zu deiner Anfrage: „${subject}“` : `💬 Neue Antwort im Support-Ticket: „${subject}“`,
+    `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #1e3a8a;">${isFromSupport ? 'Antwort vom Support' : 'Neue Nachricht im Support-Ticket'}</h1>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
+      <a href="${getAppUrl()}/dashboard/support"
+         style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
+        Zum Ticket →
+      </a>
+    </div>`
+  )
+}
+
 export async function sendOfferAwardedEmail(to: string, companyName: string) {
   await send(
     to,
