@@ -19,3 +19,22 @@ export const GEWERKE = [
 ] as const
 
 export type Gewerk = (typeof GEWERKE)[number]
+
+/**
+ * Zulassungspflichtige ("meisterpflichtige") Gewerke nach Anlage A der Handwerksordnung.
+ * Für diese darf ein Unternehmer erst Aufträge kontaktieren/anbieten, nachdem sein
+ * Meisterbrief/Qualifikationsnachweis hochgeladen und von uns verifiziert wurde.
+ */
+export const MEISTERPFLICHTIGE_GEWERKE: Gewerk[] = [
+  'Elektro',
+  'Sanitär & Heizung',
+  'Dachdecker',
+  'Maler & Lackierer',
+  'Gerüstbau',
+  'Metallbau',
+  'Tischler & Schreiner',
+]
+
+export function isMeisterpflichtig(gewerk: string): boolean {
+  return (MEISTERPFLICHTIGE_GEWERKE as string[]).includes(gewerk)
+}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
-import { GEWERKE } from '@/lib/gewerke'
+import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 
 const qualificationFileSchema = z.object({
   url: z.string().url(),
@@ -27,7 +27,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = profileSchema.parse(await req.json())
-    const gewerke = user.role === 'subunternehmer' ? body.gewerke || [] : []
+    let gewerke = user.role === 'subunternehmer' ? body.gewerke || [] : []
+
+    if (user.role === 'subunternehmer' && user.verificationStatus !== 'verified') {
+      gewerke = gewerke.filter((g) => !isMeisterpflichtig(g))
+    }
     const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
 
     const filesChanged =

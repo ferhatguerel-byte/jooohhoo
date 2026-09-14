@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { GEWERKE } from '@/lib/gewerke'
+import { Lock } from 'lucide-react'
+import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 import FileUploader, { UploadedFile } from '@/components/FileUploader'
 
 interface QualificationFile extends UploadedFile {
@@ -115,19 +116,36 @@ export default function ProfileForm({
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Gewerke</label>
           <div className="flex flex-wrap gap-2">
-            {GEWERKE.map((g) => (
-              <button
-                type="button"
-                key={g}
-                onClick={() => toggleGewerk(g)}
-                className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                  gewerke.includes(g) ? 'bg-accent border-accent text-white' : 'border-slate-300 text-slate-600'
-                }`}
-              >
-                {g}
-              </button>
-            ))}
+            {GEWERKE.map((g) => {
+              const locked = isMeisterpflichtig(g) && verificationStatus !== 'verified'
+              return (
+                <button
+                  type="button"
+                  key={g}
+                  disabled={locked}
+                  onClick={() => toggleGewerk(g)}
+                  title={locked ? 'Erst wählbar, sobald Ihr Meisterbrief/Qualifikationsnachweis verifiziert wurde.' : undefined}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition flex items-center gap-1.5 ${
+                    locked
+                      ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
+                      : gewerke.includes(g)
+                      ? 'bg-accent border-accent text-white'
+                      : 'border-slate-300 text-slate-600'
+                  }`}
+                >
+                  {locked && <Lock size={12} />}
+                  {g}
+                </button>
+              )
+            })}
           </div>
+          {GEWERKE.some((g) => isMeisterpflichtig(g)) && verificationStatus !== 'verified' && (
+            <p className="text-xs text-slate-400 mt-2">
+              🔒 Meisterpflichtige Gewerke (Elektro, Sanitär & Heizung, Dachdecker, Maler & Lackierer, Gerüstbau,
+              Metallbau, Tischler & Schreiner) werden erst freigeschaltet, sobald Ihr Meisterbrief/Qualifikationsnachweis
+              unten hochgeladen und verifiziert wurde.
+            </p>
+          )}
         </div>
       )}
 

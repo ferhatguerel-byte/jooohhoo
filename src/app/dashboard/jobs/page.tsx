@@ -7,6 +7,8 @@ import JobFilters from './JobFilters'
 import OfferForm from './OfferForm'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
 import HideJobButton from './HideJobButton'
+import { isMeisterpflichtig } from '@/lib/gewerke'
+import { Lock } from 'lucide-react'
 
 export default async function JobsPage({
   searchParams,
@@ -207,21 +209,33 @@ export default async function JobsPage({
                 </div>
               )}
 
-              <OfferForm
-                jobId={job.id}
-                lineItems={lineItems}
-                existingOffer={
-                  job.my_offer_price
-                    ? {
-                        price: job.my_offer_price,
-                        message: job.my_offer_message,
-                        pricingType: job.my_offer_pricing_type,
-                        viewedByAuftraggeber: job.my_offer_viewed_at !== null,
-                        lineItemPrices: myOfferPricesByOffer.get(job.my_offer_id) || {},
-                      }
-                    : undefined
-                }
-              />
+              {isMeisterpflichtig(job.gewerk) && user.verificationStatus !== 'verified' && !job.my_offer_id ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-start gap-2 text-sm text-slate-600">
+                  <Lock size={16} className="shrink-0 mt-0.5 text-slate-400" />
+                  <span>
+                    {job.gewerk} ist ein meisterpflichtiges Gewerk. Um hier Angebote abzugeben, laden Sie bitte Ihren
+                    Meisterbrief/Qualifikationsnachweis in{' '}
+                    <Link href="/dashboard/profil" className="font-semibold text-brand hover:underline">Ihrem Profil</Link>{' '}
+                    hoch und warten Sie die Verifizierung ab.
+                  </span>
+                </div>
+              ) : (
+                <OfferForm
+                  jobId={job.id}
+                  lineItems={lineItems}
+                  existingOffer={
+                    job.my_offer_price
+                      ? {
+                          price: job.my_offer_price,
+                          message: job.my_offer_message,
+                          pricingType: job.my_offer_pricing_type,
+                          viewedByAuftraggeber: job.my_offer_viewed_at !== null,
+                          lineItemPrices: myOfferPricesByOffer.get(job.my_offer_id) || {},
+                        }
+                      : undefined
+                  }
+                />
+              )}
 
               {job.my_offer_id && (
                 <OfferChat

@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewOfferEmail } from '@/lib/email'
 import { TIERS } from '@/lib/tiers'
+import { isMeisterpflichtig } from '@/lib/gewerke'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -31,13 +32,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const pool = getDb()
 
     const job = await pool.query(
-      `SELECT j.id, j.title, u.email, u.email_notifications
+      `SELECT j.id, j.title, j.gewerk, u.email, u.email_notifications
        FROM jobs j JOIN users u ON u.id = j.auftraggeber_id
        WHERE j.id = $1 AND j.status = 'open'`,
       [jobId]
     )
     if (job.rows.length === 0) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden oder nicht mehr offen.' }, { status: 404 })
+    }
+    if (isMeisterpflichtig(job.rows[0].gewerk) && user.verificationStatus !== 'verified') {
+      return NextResponse.json(
+        { error: 'Für dieses meisterpflichtige Gewerk müssen Sie zuerst Ihren Meisterbrief/Qualifikationsnachweis im Profil hochladen und verifizieren lassen.' },
+        { status: 403 }
+      )
     }
 
     const alreadyContacted = await pool.query(
