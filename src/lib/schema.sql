@@ -16,8 +16,10 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE subscription_tier AS ENUM ('basic', 'pro', 'premium');
+  CREATE TYPE subscription_tier AS ENUM ('basic', 'pro', 'premium', 'monthly', 'yearly');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TYPE subscription_tier ADD VALUE IF NOT EXISTS 'monthly';
+ALTER TYPE subscription_tier ADD VALUE IF NOT EXISTS 'yearly';
 
 DO $$ BEGIN
   CREATE TYPE subscription_status AS ENUM ('inactive', 'active', 'canceled', 'past_due');

@@ -29,7 +29,7 @@ export default async function AboPage() {
             <p className="text-sm text-slate-500">Aktuelles Abo</p>
             <p className="text-xl font-black text-brand">{TIERS[user.subscriptionTier!].name}</p>
             <p className="text-sm text-slate-500 mt-1">
-              {leadsUsed} / {TIERS[user.subscriptionTier!].leadsPerMonth} Aufträge diesen Monat kontaktiert
+              {leadsUsed} Aufträge diesen Monat kontaktiert · unbegrenzter Zugriff
             </p>
           </div>
           <PortalButton />
@@ -43,8 +43,8 @@ export default async function AboPage() {
           return (
             <div key={tier.id} className={`rounded-2xl p-6 border-2 ${isCurrent ? 'border-brand' : 'border-slate-200'} bg-white`}>
               <div className="text-lg font-bold text-slate-900 mb-1">{tier.name}</div>
-              <div className="text-3xl font-black text-slate-900 mb-1">€{tier.priceEuro}</div>
-              <div className="text-slate-400 text-sm mb-4">/Monat</div>
+              <div className="text-3xl font-black text-slate-900 mb-1">€{tier.priceEuroPerMonth}</div>
+              <div className="text-slate-400 text-sm mb-4">/Monat · {tier.billingNote}</div>
               <ul className="space-y-2 mb-6 text-sm text-slate-600">
                 {tier.features.map((f) => <li key={f}>✓ {f}</li>)}
               </ul>

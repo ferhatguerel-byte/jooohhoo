@@ -47,9 +47,10 @@ KI-Funktion zeigt einen Fehler an.
 ## 4. Stripe einrichten (Zahlungen der Unternehmer)
 
 1. Account auf https://stripe.com erstellen
-2. Zwei Produkte mit wiederkehrender monatlicher Zahlung anlegen:
-   Pro 79 €, Premium 129 €/Monat
-3. Price-IDs als `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM` eintragen
+2. Zwei Preise anlegen:
+   - Monatspaket: wiederkehrend monatlich, 119 €
+   - Jahrespaket: wiederkehrend jährlich, 1.068 € (= 89 €/Monat)
+3. Price-IDs als `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` eintragen
 4. API-Key als `STRIPE_SECRET_KEY` eintragen
 5. Webhook: `https://deine-domain.de/api/billing/webhook`,
    Events: `checkout.session.completed`, `customer.subscription.updated`,

@@ -1,31 +1,37 @@
-export type TierId = 'pro' | 'premium'
+export type TierId = 'monthly' | 'yearly'
 
 export interface TierDefinition {
   id: TierId
   name: string
-  priceEuro: number
+  priceEuroPerMonth: number
+  billingInterval: 'month' | 'year'
+  billingNote: string
   leadsPerMonth: number
   features: string[]
   priceEnv: string
 }
 
 export const TIERS: Record<TierId, TierDefinition> = {
-  pro: {
-    id: 'pro',
-    name: 'Pro',
-    priceEuro: 79,
-    leadsPerMonth: 25,
-    features: ['25 Aufträge pro Monat sehen & kontaktieren', 'Angebote abgeben', 'Priorisierter Support'],
-    priceEnv: 'STRIPE_PRICE_PRO',
-  },
-  premium: {
-    id: 'premium',
-    name: 'Premium',
-    priceEuro: 129,
+  monthly: {
+    id: 'monthly',
+    name: 'Monatspaket',
+    priceEuroPerMonth: 119,
+    billingInterval: 'month',
+    billingNote: 'monatlich abgerechnet · jederzeit kündbar',
     leadsPerMonth: 999,
-    features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Angebote abgeben', 'Persönlicher Ansprechpartner'],
-    priceEnv: 'STRIPE_PRICE_PREMIUM',
+    features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Direkter Kontakt zu Auftraggebern', 'Angebote abgeben', 'Jederzeit monatlich kündbar'],
+    priceEnv: 'STRIPE_PRICE_MONTHLY',
+  },
+  yearly: {
+    id: 'yearly',
+    name: 'Jahrespaket',
+    priceEuroPerMonth: 89,
+    billingInterval: 'year',
+    billingNote: 'jährliche Abrechnung · 12 Monate Laufzeit',
+    leadsPerMonth: 999,
+    features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Direkter Kontakt zu Auftraggebern', 'Angebote abgeben', 'Günstigster Monatspreis'],
+    priceEnv: 'STRIPE_PRICE_YEARLY',
   },
 }
 
-export const TIER_ORDER: TierId[] = ['pro', 'premium']
+export const TIER_ORDER: TierId[] = ['monthly', 'yearly']

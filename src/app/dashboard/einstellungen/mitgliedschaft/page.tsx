@@ -29,7 +29,9 @@ export default async function MitgliedschaftPage() {
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status.className}`}>{status.text}</span>
         </div>
         {hasActiveSub && (
-          <p className="text-sm text-slate-500">€{TIERS[user.subscriptionTier!].priceEuro} / Monat</p>
+          <p className="text-sm text-slate-500">
+            €{TIERS[user.subscriptionTier!].priceEuroPerMonth} / Monat · {TIERS[user.subscriptionTier!].billingNote}
+          </p>
         )}
       </div>
 

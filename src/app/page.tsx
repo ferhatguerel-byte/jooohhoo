@@ -245,22 +245,22 @@ export default function HomePage() {
           <div className="text-center max-w-2xl mx-auto mb-14">
             <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Handwerksbetriebe</div>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Preise</h2>
-            <p className="text-slate-500">Monatlich kündbar. Für Auftraggeber ist die Registrierung und Auftragserstellung dauerhaft kostenlos.</p>
+            <p className="text-slate-500">Für Auftraggeber sind Auftragserstellung und Suche dauerhaft kostenlos. Unternehmer wählen zwischen zwei Abrechnungsmodellen – beide mit unbegrenztem Zugriff auf alle Aufträge.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {TIER_ORDER.map((tierId) => {
               const tier = TIERS[tierId]
-              const popular = tierId === 'pro'
+              const popular = tierId === 'yearly'
               return (
                 <div key={tier.id} className={`bg-white rounded-2xl p-8 border-2 relative ${popular ? 'border-[#17202a] shadow-lg' : 'border-slate-200'}`}>
                   {popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#17202a] text-white text-xs font-bold px-3 py-1 rounded-full">
-                      BELIEBTESTE WAHL
+                      GÜNSTIGSTER PREIS
                     </div>
                   )}
                   <div className="text-lg font-bold mb-1">{tier.name}</div>
-                  <div className="text-4xl font-black mb-1">€{tier.priceEuro}</div>
-                  <div className="text-slate-400 text-sm mb-6">/Monat</div>
+                  <div className="text-4xl font-black mb-1">€{tier.priceEuroPerMonth}</div>
+                  <div className="text-slate-400 text-sm mb-6">/Monat · {tier.billingNote}</div>
                   <ul className="space-y-3 mb-8">
                     {tier.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
