@@ -28,11 +28,7 @@ export type Gewerk = (typeof GEWERKE)[number]
 export const MEISTERPFLICHTIGE_GEWERKE: Gewerk[] = [
   'Elektro',
   'Sanitär & Heizung',
-  'Dachdecker',
-  'Maler & Lackierer',
   'Gerüstbau',
-  'Metallbau',
-  'Tischler & Schreiner',
 ]
 
 export function isMeisterpflichtig(gewerk: string): boolean {
