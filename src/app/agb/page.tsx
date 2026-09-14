@@ -36,21 +36,39 @@ export default function AgbPage() {
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 3 Abo-Modelle für Unternehmer</h2>
+        <p className="mb-3">
+          Unternehmer können zwischen zwei Abo-Modellen wählen, die sich ausschließlich in der
+          Abrechnungsart unterscheiden – der Leistungsumfang (unbegrenztes Einsehen offener Aufträge,
+          Kontaktaufnahme und Angebotsabgabe) ist bei beiden identisch:
+        </p>
+        <ul className="list-disc pl-6 space-y-1 mb-3">
+          <li>
+            <strong>Monatspaket:</strong> monatliche Abrechnung ohne Mindestlaufzeit, jederzeit zum Ende der
+            laufenden Abrechnungsperiode kündbar.
+          </li>
+          <li>
+            <strong>Jahrespaket:</strong> ebenfalls monatliche Abbuchung, jedoch mit einer Mindestvertragslaufzeit
+            von 12 Monaten ab Vertragsschluss. Eine ordentliche Kündigung ist erstmals zum Ablauf dieser
+            Mindestlaufzeit möglich. Erfolgt innerhalb von einem Monat vor Ablauf der Mindestlaufzeit keine
+            Kündigung, verlängert sich das Jahrespaket automatisch um jeweils weitere 12 Monate, sofern es
+            nicht mit einer Frist von einem Monat zum Ende der jeweiligen Laufzeit gekündigt wird.
+          </li>
+        </ul>
         <p>
-          Unternehmer können zwischen verschiedenen, monatlich kündbaren Abo-Stufen wählen, die sich
-          hinsichtlich der Anzahl monatlich kontaktierbarer Aufträge unterscheiden. Die jeweils aktuellen
-          Preise und Leistungsumfänge sind auf der Website unter „Preise&rdquo; einsehbar. Nicht genutzte
-          Kontingente verfallen zum Ende der Abrechnungsperiode und werden nicht in den Folgemonat
-          übertragen.
+          Die jeweils aktuellen Preise sind auf der Website unter „Preise&rdquo; einsehbar. Das gesetzliche
+          Recht zur außerordentlichen Kündigung aus wichtigem Grund sowie ein gegebenenfalls bestehendes
+          gesetzliches Widerrufsrecht bleiben von einer vereinbarten Mindestlaufzeit unberührt.
         </p>
       </section>
 
       <section className="mb-8">
         <h2 className="font-bold text-slate-900 mb-2">§ 4 Zahlung und Kündigung</h2>
         <p>
-          Die Abo-Gebühr wird monatlich im Voraus über den Zahlungsdienstleister Stripe abgebucht. Das Abo
-          kann jederzeit zum Ende der laufenden Abrechnungsperiode über die Kontoverwaltung gekündigt
-          werden. Bereits gezahlte Gebühren werden nicht anteilig erstattet.
+          Die Abo-Gebühr wird monatlich im Voraus über den Zahlungsdienstleister Stripe abgebucht – auch beim
+          Jahrespaket erfolgt die Abbuchung monatlich, nicht als Jahresbetrag im Voraus. Das Monatspaket kann
+          jederzeit zum Ende der laufenden Abrechnungsperiode über die Kontoverwaltung gekündigt werden. Beim
+          Jahrespaket ist eine Kündigung unter Einhaltung der in § 3 genannten Mindestlaufzeit und
+          Kündigungsfrist möglich. Bereits gezahlte Gebühren werden nicht anteilig erstattet.
         </p>
       </section>
 

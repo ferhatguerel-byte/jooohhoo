@@ -31,6 +31,11 @@ export default async function AboPage() {
             <p className="text-sm text-slate-500 mt-1">
               {leadsUsed} Aufträge diesen Monat kontaktiert · unbegrenzter Zugriff
             </p>
+            {user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date() && (
+              <p className="text-sm text-orange-600 mt-1">
+                Mindestlaufzeit bis {new Date(user.subscriptionCommittedUntil).toLocaleDateString('de-DE')}
+              </p>
+            )}
           </div>
           <PortalButton />
         </div>

@@ -4,7 +4,7 @@ export interface TierDefinition {
   id: TierId
   name: string
   priceEuroPerMonth: number
-  billingInterval: 'month' | 'year'
+  minimumTermMonths: number
   billingNote: string
   leadsPerMonth: number
   features: string[]
@@ -16,8 +16,8 @@ export const TIERS: Record<TierId, TierDefinition> = {
     id: 'monthly',
     name: 'Monatspaket',
     priceEuroPerMonth: 119,
-    billingInterval: 'month',
-    billingNote: 'monatlich abgerechnet · jederzeit kündbar',
+    minimumTermMonths: 0,
+    billingNote: 'monatliche Abbuchung · jederzeit kündbar',
     leadsPerMonth: 999,
     features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Direkter Kontakt zu Auftraggebern', 'Angebote abgeben', 'Jederzeit monatlich kündbar'],
     priceEnv: 'STRIPE_PRICE_MONTHLY',
@@ -26,8 +26,8 @@ export const TIERS: Record<TierId, TierDefinition> = {
     id: 'yearly',
     name: 'Jahrespaket',
     priceEuroPerMonth: 89,
-    billingInterval: 'year',
-    billingNote: 'jährliche Abrechnung · 12 Monate Laufzeit',
+    minimumTermMonths: 12,
+    billingNote: 'monatliche Abbuchung · 12 Monate Mindestlaufzeit',
     leadsPerMonth: 999,
     features: ['Unbegrenzte Aufträge sehen & kontaktieren', 'Direkter Kontakt zu Auftraggebern', 'Angebote abgeben', 'Günstigster Monatspreis'],
     priceEnv: 'STRIPE_PRICE_YEARLY',

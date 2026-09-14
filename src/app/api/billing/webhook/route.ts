@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { getStripe } from '@/lib/stripe'
+import { TIERS, type TierId } from '@/lib/tiers'
 import type Stripe from 'stripe'
 
 export async function POST(req: NextRequest) {
@@ -28,12 +29,15 @@ export async function POST(req: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.userId
-      const tier = session.metadata?.tier
-      if (userId && tier) {
+      const tier = session.metadata?.tier as TierId | undefined
+      if (userId && tier && tier in TIERS) {
+        const minimumTermMonths = TIERS[tier].minimumTermMonths
         await db.query(
           `UPDATE users SET subscription_tier = $1, subscription_status = 'active',
-           stripe_subscription_id = $2, stripe_customer_id = $3 WHERE id = $4`,
-          [tier, session.subscription, session.customer, userId]
+           stripe_subscription_id = $2, stripe_customer_id = $3,
+           subscription_committed_until = CASE WHEN $4::int > 0 THEN now() + make_interval(months => $4::int) ELSE NULL END
+           WHERE id = $5`,
+          [tier, session.subscription, session.customer, minimumTermMonths, userId]
         )
       }
       break

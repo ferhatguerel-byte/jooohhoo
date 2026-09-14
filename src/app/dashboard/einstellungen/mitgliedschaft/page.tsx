@@ -33,6 +33,12 @@ export default async function MitgliedschaftPage() {
             €{TIERS[user.subscriptionTier!].priceEuroPerMonth} / Monat · {TIERS[user.subscriptionTier!].billingNote}
           </p>
         )}
+        {user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date() && (
+          <p className="text-sm text-orange-600 mt-2">
+            Mindestlaufzeit bis {new Date(user.subscriptionCommittedUntil).toLocaleDateString('de-DE')} – eine Kündigung
+            ist erst danach möglich.
+          </p>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl p-6">

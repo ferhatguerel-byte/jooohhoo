@@ -12,9 +12,13 @@ export async function POST(req: NextRequest) {
   const appUrl = getAppUrl(req)
   const stripe = getStripe()
 
+  const isInCommitment = !!user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date()
+  const restrictedConfig = process.env.STRIPE_PORTAL_CONFIGURATION_ID_LOCKED
+
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
     return_url: `${appUrl}/dashboard/abo`,
+    ...(isInCommitment && restrictedConfig ? { configuration: restrictedConfig } : {}),
   })
 
   return NextResponse.json({ url: session.url })

@@ -18,6 +18,7 @@ export interface CurrentUser {
   qualificationFiles: { url: string; name: string; label: string }[]
   emailNotifications: boolean
   newsletterOptIn: boolean
+  subscriptionCommittedUntil: string | null
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -28,7 +29,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const result = await db.query(
     `SELECT id, email, role, company_name, phone, plz, ort, gewerke,
             subscription_tier, subscription_status, stripe_customer_id,
-            verification_status, qualification_files, email_notifications, newsletter_opt_in
+            verification_status, qualification_files, email_notifications, newsletter_opt_in,
+            subscription_committed_until
      FROM users WHERE id = $1`,
     [session.userId]
   )
@@ -51,5 +53,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     qualificationFiles: row.qualification_files || [],
     emailNotifications: row.email_notifications,
     newsletterOptIn: row.newsletter_opt_in,
+    subscriptionCommittedUntil: row.subscription_committed_until,
   }
 }

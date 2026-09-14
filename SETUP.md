@@ -47,12 +47,20 @@ KI-Funktion zeigt einen Fehler an.
 ## 4. Stripe einrichten (Zahlungen der Unternehmer)
 
 1. Account auf https://stripe.com erstellen
-2. Zwei Preise anlegen:
+2. Zwei Preise anlegen, **beide mit monatlicher Abrechnung** (das Jahrespaket
+   wird nicht als Jahresbetrag im Voraus abgebucht, sondern monatlich – die
+   Mindestlaufzeit von 12 Monaten wird von der App selbst verwaltet, nicht
+   von Stripe):
    - Monatspaket: wiederkehrend monatlich, 119 €
-   - Jahrespaket: wiederkehrend jährlich, 1.068 € (= 89 €/Monat)
+   - Jahrespaket: wiederkehrend monatlich, 89 €
 3. Price-IDs als `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` eintragen
-4. API-Key als `STRIPE_SECRET_KEY` eintragen
-5. Webhook: `https://deine-domain.de/api/billing/webhook`,
+4. Optional, aber empfohlen: unter Einstellungen → Kundenportal eine zweite
+   Portal-Konfiguration ohne „Abo kündigen"-Option anlegen und deren ID als
+   `STRIPE_PORTAL_CONFIGURATION_ID_LOCKED` eintragen. Nutzer im Jahrespaket
+   sehen diese eingeschränkte Ansicht, solange ihre Mindestlaufzeit läuft
+   (die App erkennt automatisch, ob die Mindestlaufzeit abgelaufen ist).
+5. API-Key als `STRIPE_SECRET_KEY` eintragen
+6. Webhook: `https://deine-domain.de/api/billing/webhook`,
    Events: `checkout.session.completed`, `customer.subscription.updated`,
    `customer.subscription.deleted` → Signing Secret als
    `STRIPE_WEBHOOK_SECRET`

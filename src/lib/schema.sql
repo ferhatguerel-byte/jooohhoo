@@ -153,6 +153,9 @@ CREATE TABLE IF NOT EXISTS offer_line_items (
   UNIQUE(offer_id, job_line_item_id)
 );
 
+-- Mindestlaufzeit beim Jahrespaket (monatliche Abbuchung, aber 12 Monate gebunden)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_committed_until TIMESTAMPTZ;
+
 -- Benachrichtigungs-Einstellungen des Nutzers
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS newsletter_opt_in BOOLEAN NOT NULL DEFAULT false;
