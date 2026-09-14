@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/current-user'
 import { TIERS } from '@/lib/tiers'
 import PortalButton from '../../abo/PortalButton'
+import CancelYearlyButton from './CancelYearlyButton'
 
 export default async function MitgliedschaftPage() {
   const user = await getCurrentUser()
@@ -33,10 +34,9 @@ export default async function MitgliedschaftPage() {
             €{tierDef.priceEuroPerMonth} / Monat · {tierDef.billingNote}
           </p>
         )}
-        {user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date() && (
+        {user.subscriptionCommittedUntil && !user.subscriptionCancelAt && (
           <p className="text-sm text-orange-600 mt-2">
-            Mindestlaufzeit bis {new Date(user.subscriptionCommittedUntil).toLocaleDateString('de-DE')} – eine Kündigung
-            ist erst danach möglich.
+            Laufende Vertragsperiode bis {new Date(user.subscriptionCommittedUntil).toLocaleDateString('de-DE')}
           </p>
         )}
       </div>
@@ -44,8 +44,8 @@ export default async function MitgliedschaftPage() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6">
         <h2 className="font-bold text-slate-900 mb-1">Zahlungsart</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Zahlungsmethode ändern, Rechnungsadresse anpassen oder das Abo kündigen — verwaltet über unseren
-          sicheren Zahlungsanbieter Stripe.
+          Zahlungsmethode ändern oder Rechnungsadresse anpassen — verwaltet über unseren sicheren
+          Zahlungsanbieter Stripe.
         </p>
         {user.stripeCustomerId ? (
           <PortalButton />
@@ -53,6 +53,18 @@ export default async function MitgliedschaftPage() {
           <p className="text-sm text-slate-400">Noch keine Zahlungsmethode hinterlegt.</p>
         )}
       </div>
+
+      {tierDef?.id === 'yearly' && user.subscriptionStatus === 'active' && user.subscriptionCommittedUntil && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6">
+          <h2 className="font-bold text-slate-900 mb-1">Vertrag kündigen</h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Sie können jederzeit kündigen. Die Kündigung wird zum Ende der laufenden 12-Monats-Laufzeit wirksam,
+            sofern sie spätestens 3 Monate vor Ablauf eingeht — andernfalls verlängert sich der Vertrag automatisch
+            um weitere 12 Monate.
+          </p>
+          <CancelYearlyButton cancelAt={user.subscriptionCancelAt} />
+        </div>
+      )}
     </div>
   )
 }

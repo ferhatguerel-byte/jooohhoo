@@ -47,11 +47,11 @@ export default function AgbPage() {
             laufenden Abrechnungsperiode kündbar.
           </li>
           <li>
-            <strong>Jahrespaket:</strong> ebenfalls monatliche Abbuchung, jedoch mit einer Mindestvertragslaufzeit
-            von 12 Monaten ab Vertragsschluss. Eine ordentliche Kündigung ist erstmals zum Ablauf dieser
-            Mindestlaufzeit möglich. Erfolgt innerhalb von einem Monat vor Ablauf der Mindestlaufzeit keine
-            Kündigung, verlängert sich das Jahrespaket automatisch um jeweils weitere 12 Monate, sofern es
-            nicht mit einer Frist von einem Monat zum Ende der jeweiligen Laufzeit gekündigt wird.
+            <strong>Jahrespaket:</strong> ebenfalls monatliche Abbuchung, jedoch mit einer Vertragslaufzeit von
+            12 Monaten ab Vertragsschluss. Die ordentliche Kündigung ist jederzeit möglich, wird jedoch erst zum
+            Ende der jeweils laufenden 12-Monats-Vertragsperiode wirksam. Die Kündigung muss dem Unternehmer
+            mit einer Frist von 3 Monaten vor Ablauf der jeweiligen Vertragsperiode zugehen; andernfalls
+            verlängert sich das Jahrespaket automatisch um weitere 12 Monate.
           </li>
         </ul>
         <p>

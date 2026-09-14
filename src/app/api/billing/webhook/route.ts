@@ -49,10 +49,11 @@ export async function POST(req: NextRequest) {
       const status = subscription.status === 'active' ? 'active'
         : subscription.status === 'past_due' ? 'past_due'
         : 'inactive'
+      const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null
       if (userId) {
         await db.query(
-          'UPDATE users SET subscription_status = $1, subscription_tier = COALESCE($2, subscription_tier) WHERE id = $3',
-          [status, tier || null, userId]
+          'UPDATE users SET subscription_status = $1, subscription_tier = COALESCE($2, subscription_tier), subscription_cancel_at = $3 WHERE id = $4',
+          [status, tier || null, cancelAt, userId]
         )
       }
       break
@@ -61,7 +62,10 @@ export async function POST(req: NextRequest) {
       const subscription = event.data.object as Stripe.Subscription
       const userId = subscription.metadata?.userId
       if (userId) {
-        await db.query("UPDATE users SET subscription_status = 'canceled' WHERE id = $1", [userId])
+        await db.query(
+          "UPDATE users SET subscription_status = 'canceled', subscription_cancel_at = NULL WHERE id = $1",
+          [userId]
+        )
       }
       break
     }

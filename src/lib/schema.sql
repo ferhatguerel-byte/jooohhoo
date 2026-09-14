@@ -156,6 +156,9 @@ CREATE TABLE IF NOT EXISTS offer_line_items (
 -- Mindestlaufzeit beim Jahrespaket (monatliche Abbuchung, aber 12 Monate gebunden)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_committed_until TIMESTAMPTZ;
 
+-- Vom Kunden erklärte, zum Laufzeitende wirksame Kündigung (Stripe cancel_at)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at TIMESTAMPTZ;
+
 -- Benachrichtigungs-Einstellungen des Nutzers
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS newsletter_opt_in BOOLEAN NOT NULL DEFAULT false;
