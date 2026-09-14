@@ -17,6 +17,7 @@ interface Props {
   plz: string
   ort: string
   gewerke: string[]
+  blockedGewerke?: string[]
   verificationStatus?: 'unverified' | 'pending' | 'verified' | 'rejected'
   qualificationFiles?: QualificationFile[]
 }
@@ -35,6 +36,7 @@ export default function ProfileForm({
   plz,
   ort,
   gewerke: initialGewerke,
+  blockedGewerke = [],
   verificationStatus = 'unverified',
   qualificationFiles: initialQualificationFiles = [],
 }: Props) {
@@ -117,14 +119,21 @@ export default function ProfileForm({
           <label className="block text-sm font-semibold text-slate-700 mb-2">Gewerke</label>
           <div className="flex flex-wrap gap-2">
             {GEWERKE.map((g) => {
-              const locked = isMeisterpflichtig(g) && verificationStatus !== 'verified'
+              const blockedByAdmin = blockedGewerke.includes(g)
+              const locked = blockedByAdmin || (isMeisterpflichtig(g) && verificationStatus !== 'verified')
               return (
                 <button
                   type="button"
                   key={g}
                   disabled={locked}
                   onClick={() => toggleGewerk(g)}
-                  title={locked ? 'Erst wählbar, sobald Ihr Meisterbrief/Qualifikationsnachweis verifiziert wurde.' : undefined}
+                  title={
+                    blockedByAdmin
+                      ? 'Dieses Gewerk wurde von BAUVERSUS für Ihr Konto gesperrt. Bitte kontaktieren Sie den Support.'
+                      : locked
+                      ? 'Erst wählbar, sobald Ihr Meisterbrief/Qualifikationsnachweis verifiziert wurde.'
+                      : undefined
+                  }
                   className={`px-3 py-1.5 rounded-full text-sm border transition flex items-center gap-1.5 ${
                     locked
                       ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'

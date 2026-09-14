@@ -43,6 +43,7 @@ export default async function ProfilPage() {
           plz={user.plz}
           ort={user.ort}
           gewerke={user.gewerke}
+          blockedGewerke={user.blockedGewerke}
           verificationStatus={user.verificationStatus}
           qualificationFiles={user.qualificationFiles as { url: string; name: string; label: string }[]}
         />

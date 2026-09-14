@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
     if (user.role === 'subunternehmer' && user.verificationStatus !== 'verified') {
       gewerke = gewerke.filter((g) => !isMeisterpflichtig(g))
     }
+    if (user.role === 'subunternehmer') {
+      gewerke = gewerke.filter((g) => !user.blockedGewerke.includes(g))
+    }
     const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
 
     const filesChanged =

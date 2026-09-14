@@ -159,6 +159,22 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_committed_until TIMESTAM
 -- Vom Kunden erklärte, zum Laufzeitende wirksame Kündigung (Stripe cancel_at)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at TIMESTAMPTZ;
 
+-- Admin-Nutzerverwaltung: Kontostatus, gesperrte Gewerke, interne Notizen
+DO $$ BEGIN
+  CREATE TYPE account_status AS ENUM ('active', 'suspended');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status account_status NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_gewerke TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+
+CREATE TABLE IF NOT EXISTS admin_warnings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_admin_warnings_user ON admin_warnings(user_id, created_at);
+
 -- Benachrichtigungs-Einstellungen des Nutzers
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS newsletter_opt_in BOOLEAN NOT NULL DEFAULT false;

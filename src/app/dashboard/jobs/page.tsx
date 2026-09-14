@@ -209,7 +209,15 @@ export default async function JobsPage({
                 </div>
               )}
 
-              {isMeisterpflichtig(job.gewerk) && user.verificationStatus !== 'verified' && !job.my_offer_id ? (
+              {user.blockedGewerke.includes(job.gewerk) && !job.my_offer_id ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-2 text-sm text-red-700">
+                  <Lock size={16} className="shrink-0 mt-0.5" />
+                  <span>
+                    Das Gewerk {job.gewerk} wurde für Ihr Konto gesperrt. Bitte kontaktieren Sie den{' '}
+                    <Link href="/dashboard/support" className="font-semibold underline">Support</Link>.
+                  </span>
+                </div>
+              ) : isMeisterpflichtig(job.gewerk) && user.verificationStatus !== 'verified' && !job.my_offer_id ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 flex items-start gap-2 text-sm text-slate-600">
                   <Lock size={16} className="shrink-0 mt-0.5 text-slate-400" />
                   <span>

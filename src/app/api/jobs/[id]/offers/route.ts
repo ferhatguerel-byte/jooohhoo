@@ -46,6 +46,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         { status: 403 }
       )
     }
+    if (user.blockedGewerke.includes(job.rows[0].gewerk)) {
+      return NextResponse.json(
+        { error: 'Dieses Gewerk wurde für Ihr Konto von BAUVERSUS gesperrt. Bitte kontaktieren Sie den Support.' },
+        { status: 403 }
+      )
+    }
 
     const alreadyContacted = await pool.query(
       'SELECT id, viewed_at FROM offers WHERE job_id = $1 AND subunternehmer_id = $2',

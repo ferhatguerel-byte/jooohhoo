@@ -96,6 +96,21 @@ export async function sendTicketReplyEmail(to: string, subject: string, isFromSu
   )
 }
 
+export async function sendAdminWarningEmail(to: string, companyName: string, message: string) {
+  await send(
+    to,
+    `⚠️ Wichtiger Hinweis zu Ihrem BAUVERSUS-Konto`,
+    `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #b45309;">Hinweis von BAUVERSUS</h1>
+      <p>Sehr geehrte(r) ${companyName},</p>
+      <p style="background: #fff7ed; border: 1px solid #fed7aa; padding: 16px; border-radius: 8px;">${message}</p>
+      <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+        Bei Fragen wenden Sie sich bitte über das Support Center an uns.
+      </p>
+    </div>`
+  )
+}
+
 export async function sendOfferAwardedEmail(to: string, companyName: string) {
   await send(
     to,

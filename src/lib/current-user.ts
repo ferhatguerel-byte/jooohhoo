@@ -21,6 +21,8 @@ export interface CurrentUser {
   newsletterOptIn: boolean
   subscriptionCommittedUntil: string | null
   subscriptionCancelAt: string | null
+  accountStatus: 'active' | 'suspended'
+  blockedGewerke: string[]
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -32,7 +34,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     `SELECT id, email, role, company_name, phone, plz, ort, gewerke,
             subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id,
             verification_status, qualification_files, email_notifications, newsletter_opt_in,
-            subscription_committed_until, subscription_cancel_at
+            subscription_committed_until, subscription_cancel_at, account_status, blocked_gewerke
      FROM users WHERE id = $1`,
     [session.userId]
   )
@@ -58,5 +60,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     newsletterOptIn: row.newsletter_opt_in,
     subscriptionCommittedUntil: row.subscription_committed_until,
     subscriptionCancelAt: row.subscription_cancel_at,
+    accountStatus: row.account_status,
+    blockedGewerke: row.blocked_gewerke || [],
   }
 }

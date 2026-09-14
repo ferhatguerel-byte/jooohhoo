@@ -22,7 +22,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL
   if (isAdmin) {
-    links.push({ href: '/dashboard/admin/verifizierungen', label: 'Verifizierungen' })
+    links.push({ href: '/dashboard/admin', label: 'Admin-Dashboard' })
+  }
+
+  if (user.accountStatus === 'suspended' && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+        <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-md text-center">
+          <h1 className="text-xl font-black text-slate-900 mb-2">Konto gesperrt</h1>
+          <p className="text-slate-500 mb-6">
+            Ihr Konto wurde vorübergehend gesperrt. Bitte kontaktieren Sie unseren Support, um mehr zu erfahren.
+          </p>
+          <a href={`mailto:${process.env.ADMIN_EMAIL || ''}`} className="text-brand font-semibold hover:underline">
+            Support kontaktieren
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (

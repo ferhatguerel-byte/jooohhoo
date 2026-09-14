@@ -34,7 +34,7 @@ export default function AccountMenu({
     { href: '/dashboard/profil', label: 'Profil', icon: User },
     { href: '/dashboard/einstellungen', label: 'Einstellungen', icon: Settings },
     { href: '/dashboard/support', label: 'Support Center', icon: LifeBuoy },
-    ...(isAdmin ? [{ href: '/dashboard/admin/support', label: 'Support-Verwaltung', icon: ShieldCheck }] : []),
+    ...(isAdmin ? [{ href: '/dashboard/admin', label: 'Admin-Dashboard', icon: ShieldCheck }] : []),
   ]
 
   return (
