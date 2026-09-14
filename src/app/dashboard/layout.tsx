@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { HardHat } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
-import LogoutButton from './LogoutButton'
+import AccountMenu from './AccountMenu'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -13,16 +13,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const links = user.role === 'auftraggeber'
     ? [
         { href: '/dashboard/auftraege', label: 'Meine Aufträge' },
-        { href: '/dashboard/profil', label: 'Profil' },
       ]
     : [
         { href: '/dashboard/jobs', label: 'Aufträge durchsuchen' },
         { href: '/dashboard/angebote', label: 'Meine Angebote' },
         { href: '/dashboard/abo', label: 'Abo' },
-        { href: '/dashboard/profil', label: 'Profil' },
       ]
 
-  if (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL) {
+  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL
+  if (isAdmin) {
     links.push({ href: '/dashboard/admin/verifizierungen', label: 'Verifizierungen' })
   }
 
@@ -42,8 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             ))}
           </nav>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500 hidden sm:inline">{user.companyName}</span>
-            <LogoutButton />
+            <AccountMenu companyName={user.companyName} isAdmin={isAdmin} />
           </div>
         </div>
         <nav className="sm:hidden flex items-center gap-4 px-6 pb-3 text-sm font-medium text-slate-600 overflow-x-auto">

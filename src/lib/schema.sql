@@ -151,6 +151,37 @@ CREATE TABLE IF NOT EXISTS offer_line_items (
   UNIQUE(offer_id, job_line_item_id)
 );
 
+-- Benachrichtigungs-Einstellungen des Nutzers
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS newsletter_opt_in BOOLEAN NOT NULL DEFAULT false;
+
+-- Support Center
+DO $$ BEGIN
+  CREATE TYPE support_ticket_status AS ENUM ('open', 'closed');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  status support_ticket_status NOT NULL DEFAULT 'open',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS support_ticket_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id UUID NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_support_ticket_messages_ticket ON support_ticket_messages(ticket_id, created_at);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_gewerk ON jobs(gewerk);
 CREATE INDEX IF NOT EXISTS idx_offers_job ON offers(job_id);

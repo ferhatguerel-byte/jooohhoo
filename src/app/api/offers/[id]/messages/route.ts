@@ -19,8 +19,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const offer = await db.query(
       `SELECT o.id, o.subunternehmer_id, j.auftraggeber_id,
-              su.email AS subunternehmer_email, su.company_name AS subunternehmer_name,
-              ag.email AS auftraggeber_email, ag.company_name AS auftraggeber_name
+              su.email AS subunternehmer_email, su.company_name AS subunternehmer_name, su.email_notifications AS subunternehmer_notify,
+              ag.email AS auftraggeber_email, ag.company_name AS auftraggeber_name, ag.email_notifications AS auftraggeber_notify
        FROM offers o
        JOIN jobs j ON j.id = o.job_id
        JOIN users su ON su.id = o.subunternehmer_id
@@ -43,11 +43,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     ])
 
     const recipientEmail = user.id === row.subunternehmer_id ? row.auftraggeber_email : row.subunternehmer_email
+    const recipientNotify = user.id === row.subunternehmer_id ? row.auftraggeber_notify : row.subunternehmer_notify
     const senderName = user.id === row.subunternehmer_id ? row.subunternehmer_name : row.auftraggeber_name
-    try {
-      await sendNewMessageEmail(recipientEmail, senderName, message)
-    } catch (emailErr) {
-      console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+    if (recipientNotify) {
+      try {
+        await sendNewMessageEmail(recipientEmail, senderName, message)
+      } catch (emailErr) {
+        console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+      }
     }
 
     return NextResponse.json({ ok: true })

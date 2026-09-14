@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const offer = await db.query(
-      `SELECT o.subunternehmer_id, u.email, u.company_name
+      `SELECT o.subunternehmer_id, u.email, u.company_name, u.email_notifications
        FROM offers o JOIN users u ON u.id = o.subunternehmer_id
        WHERE o.id = $1 AND o.job_id = $2`,
       [offerId, jobId]
@@ -42,10 +42,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       [jobId, offerId]
     )
 
-    try {
-      await sendOfferAwardedEmail(offer.rows[0].email, offer.rows[0].company_name)
-    } catch (emailErr) {
-      console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+    if (offer.rows[0].email_notifications) {
+      try {
+        await sendOfferAwardedEmail(offer.rows[0].email, offer.rows[0].company_name)
+      } catch (emailErr) {
+        console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+      }
     }
 
     return NextResponse.json({ ok: true })

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const pool = getDb()
 
     const job = await pool.query(
-      `SELECT j.id, j.title, u.email
+      `SELECT j.id, j.title, u.email, u.email_notifications
        FROM jobs j JOIN users u ON u.id = j.auftraggeber_id
        WHERE j.id = $1 AND j.status = 'open'`,
       [jobId]
@@ -104,10 +104,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       client.release()
     }
 
-    try {
-      await sendNewOfferEmail(job.rows[0].email, job.rows[0].title, totalPrice, user.companyName)
-    } catch (emailErr) {
-      console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+    if (job.rows[0].email_notifications) {
+      try {
+        await sendNewOfferEmail(job.rows[0].email, job.rows[0].title, totalPrice, user.companyName)
+      } catch (emailErr) {
+        console.error('Benachrichtigung fehlgeschlagen:', emailErr)
+      }
     }
 
     return NextResponse.json({ ok: true })
