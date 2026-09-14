@@ -18,7 +18,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user || user.role !== 'subunternehmer') {
     return NextResponse.json({ error: 'Nur Unternehmer können Angebote abgeben.' }, { status: 403 })
   }
-  if (user.subscriptionStatus !== 'active' || !user.subscriptionTier) {
+  const tierDef = user.subscriptionTier ? TIERS[user.subscriptionTier] : undefined
+  if (user.subscriptionStatus !== 'active' || !tierDef) {
     return NextResponse.json(
       { error: 'Bitte wählen Sie zuerst ein Abo, um Aufträge zu kontaktieren.' },
       { status: 402 }
@@ -55,10 +56,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
          WHERE subunternehmer_id = $1 AND created_at >= date_trunc('month', now())`,
         [user.id]
       )
-      const limit = TIERS[user.subscriptionTier].leadsPerMonth
+      const limit = tierDef.leadsPerMonth
       if (contactedThisMonth.rows[0].count >= limit) {
         return NextResponse.json(
-          { error: `Sie haben Ihr monatliches Kontingent von ${limit} Aufträgen für Ihr ${TIERS[user.subscriptionTier].name}-Abo erreicht.` },
+          { error: `Sie haben Ihr monatliches Kontingent von ${limit} Aufträgen für Ihr ${tierDef.name}-Abo erreicht.` },
           { status: 402 }
         )
       }

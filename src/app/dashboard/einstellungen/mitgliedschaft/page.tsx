@@ -8,7 +8,7 @@ export default async function MitgliedschaftPage() {
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
 
-  const hasActiveSub = user.subscriptionStatus === 'active' && user.subscriptionTier
+  const tierDef = user.subscriptionTier ? TIERS[user.subscriptionTier] : undefined
 
   const statusLabels: Record<string, { text: string; className: string }> = {
     active: { text: 'Aktiv', className: 'bg-green-100 text-green-700' },
@@ -24,13 +24,13 @@ export default async function MitgliedschaftPage() {
         <p className="text-sm text-slate-500 mb-1">Aktuelle Mitgliedschaft</p>
         <div className="flex items-center gap-2 mb-1">
           <p className="text-xl font-black text-slate-900">
-            {hasActiveSub ? TIERS[user.subscriptionTier!].name : 'Kein aktives Abo'}
+            {tierDef ? tierDef.name : 'Kein aktives Abo'}
           </p>
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status.className}`}>{status.text}</span>
         </div>
-        {hasActiveSub && (
+        {tierDef && (
           <p className="text-sm text-slate-500">
-            €{TIERS[user.subscriptionTier!].priceEuroPerMonth} / Monat · {TIERS[user.subscriptionTier!].billingNote}
+            €{tierDef.priceEuroPerMonth} / Monat · {tierDef.billingNote}
           </p>
         )}
         {user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date() && (

@@ -10,7 +10,8 @@ export default async function AboPage() {
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
 
-  const hasActiveSub = user.subscriptionStatus === 'active' && user.subscriptionTier
+  const currentTierDef = user.subscriptionTier ? TIERS[user.subscriptionTier] : undefined
+  const hasActiveSub = user.subscriptionStatus === 'active' && !!currentTierDef
 
   const leadsUsedResult = await getDb().query(
     `SELECT COUNT(*)::int AS count FROM offers
@@ -27,7 +28,7 @@ export default async function AboPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-sm text-slate-500">Aktuelles Abo</p>
-            <p className="text-xl font-black text-brand">{TIERS[user.subscriptionTier!].name}</p>
+            <p className="text-xl font-black text-brand">{currentTierDef!.name}</p>
             <p className="text-sm text-slate-500 mt-1">
               {leadsUsed} Aufträge diesen Monat kontaktiert · unbegrenzter Zugriff
             </p>
