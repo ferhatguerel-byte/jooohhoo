@@ -1,12 +1,13 @@
 import type Stripe from 'stripe'
 import { getDb } from '@/lib/db'
+import { getAppUrl } from '@/lib/url'
 
 const SETTING_KEY = 'stripe_portal_config_locked'
 
 /**
  * Liefert die ID einer Stripe-Kundenportal-Konfiguration, in der "Abo kündigen" deaktiviert ist.
- * Wird einmalig automatisch angelegt (auf Basis der Standard-Konfiguration) und danach in der
- * Datenbank zwischengespeichert, damit nicht bei jedem Aufruf eine neue Konfiguration entsteht.
+ * Wird einmalig automatisch angelegt (unabhängig von einer eventuell fehlenden Standard-
+ * Konfiguration im Stripe-Account) und danach in der Datenbank zwischengespeichert.
  * Ein manuell gesetztes STRIPE_PORTAL_CONFIGURATION_ID_LOCKED hat weiterhin Vorrang.
  */
 export async function getLockedPortalConfigurationId(stripe: Stripe): Promise<string | undefined> {
@@ -21,28 +22,18 @@ export async function getLockedPortalConfigurationId(stripe: Stripe): Promise<st
   }
 
   try {
-    const defaults = await stripe.billingPortal.configurations.list({ is_default: true, limit: 1 })
-    const base = defaults.data[0]
-    if (!base) return undefined
-
+    const appUrl = getAppUrl()
     const created = await stripe.billingPortal.configurations.create({
       business_profile: {
-        headline: base.business_profile.headline ?? undefined,
-        privacy_policy_url: base.business_profile.privacy_policy_url ?? undefined,
-        terms_of_service_url: base.business_profile.terms_of_service_url ?? undefined,
+        headline: 'BAUVERSUS',
+        privacy_policy_url: `${appUrl}/datenschutz`,
+        terms_of_service_url: `${appUrl}/agb`,
       },
       features: {
-        customer_update: {
-          enabled: base.features.customer_update.enabled,
-          allowed_updates: base.features.customer_update.allowed_updates,
-        },
-        invoice_history: { enabled: base.features.invoice_history.enabled },
-        payment_method_update: { enabled: base.features.payment_method_update.enabled },
-        subscription_update: {
-          enabled: false,
-          default_allowed_updates: [],
-          products: [],
-        },
+        customer_update: { enabled: true, allowed_updates: ['email', 'address', 'phone', 'tax_id'] },
+        invoice_history: { enabled: true },
+        payment_method_update: { enabled: true },
+        subscription_update: { enabled: false, default_allowed_updates: [], products: [] },
         subscription_cancel: { enabled: false },
       },
     })
