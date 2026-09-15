@@ -4,12 +4,20 @@ import { getDb } from '@/lib/db'
 import { generateResetToken } from '@/lib/auth'
 import { sendPasswordResetEmail } from '@/lib/email'
 import { getAppUrl } from '@/lib/url'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: NextRequest) {
   try {
     const { email } = schema.parse(await req.json())
+
+    const allowed = await checkRateLimit('forgot-password', `${getClientIp(req)}:${email}`, 5, 60)
+    if (!allowed) {
+      // Dieselbe Antwort wie im Erfolgsfall, um nichts über Rate-Limiting oder Kontoexistenz preiszugeben.
+      return NextResponse.json({ ok: true })
+    }
+
     const db = getDb()
 
     const user = await db.query('SELECT id FROM users WHERE email = $1', [email])

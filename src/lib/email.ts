@@ -1,6 +1,16 @@
 import { Resend } from 'resend'
 import { getAppUrl } from '@/lib/url'
 
+/** Verhindert HTML-Injection in E-Mails über nutzergesteuerte Texte (Nachrichten, Firmennamen, Betreffs). */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 let resendClient: Resend | undefined
 
 function getResend(): Resend {
@@ -19,13 +29,15 @@ async function send(to: string, subject: string, html: string) {
 }
 
 export async function sendNewOfferEmail(to: string, jobTitle: string, price: number, companyName: string) {
+  const safeTitle = escapeHtml(jobTitle)
+  const safeCompany = escapeHtml(companyName)
   await send(
     to,
     `📋 Neues Angebot für „${jobTitle}“`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #1e3a8a;">Neues Angebot erhalten</h1>
-      <p><strong>${companyName}</strong> hat ein Angebot über <strong>€${price}</strong> für Ihren Auftrag
-      „${jobTitle}“ abgegeben.</p>
+      <p><strong>${safeCompany}</strong> hat ein Angebot über <strong>€${price}</strong> für Ihren Auftrag
+      „${safeTitle}“ abgegeben.</p>
       <a href="${getAppUrl()}/dashboard/auftraege"
          style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
         Angebot ansehen →
@@ -35,13 +47,14 @@ export async function sendNewOfferEmail(to: string, jobTitle: string, price: num
 }
 
 export async function sendNewMessageEmail(to: string, senderName: string, message: string) {
+  const safeSender = escapeHtml(senderName)
   await send(
     to,
     `💬 Neue Nachricht von ${senderName}`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #1e3a8a;">Neue Nachricht</h1>
-      <p><strong>${senderName}</strong> hat Ihnen geschrieben:</p>
-      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
+      <p><strong>${safeSender}</strong> hat Ihnen geschrieben:</p>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</p>
     </div>`
   )
 }
@@ -71,8 +84,8 @@ export async function sendNewTicketEmail(to: string, companyName: string, catego
     `🆘 Neue Support-Anfrage: „${subject}“`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #1e3a8a;">Neue Support-Anfrage</h1>
-      <p><strong>${companyName}</strong> hat eine neue Anfrage in der Kategorie <strong>${category}</strong> gestellt:</p>
-      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
+      <p><strong>${escapeHtml(companyName)}</strong> hat eine neue Anfrage in der Kategorie <strong>${escapeHtml(category)}</strong> gestellt:</p>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</p>
       <a href="${getAppUrl()}/dashboard/admin/support"
          style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
         Ticket ansehen →
@@ -87,7 +100,7 @@ export async function sendTicketReplyEmail(to: string, subject: string, isFromSu
     isFromSupport ? `💬 Antwort zu deiner Anfrage: „${subject}“` : `💬 Neue Antwort im Support-Ticket: „${subject}“`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #1e3a8a;">${isFromSupport ? 'Antwort vom Support' : 'Neue Nachricht im Support-Ticket'}</h1>
-      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px;">${message}</p>
+      <p style="background: #f1f5f9; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</p>
       <a href="${getAppUrl()}/dashboard/support"
          style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">
         Zum Ticket →
@@ -102,8 +115,8 @@ export async function sendAdminWarningEmail(to: string, companyName: string, mes
     `⚠️ Wichtiger Hinweis zu Ihrem BAUVERSUS-Konto`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #b45309;">Hinweis von BAUVERSUS</h1>
-      <p>Sehr geehrte(r) ${companyName},</p>
-      <p style="background: #fff7ed; border: 1px solid #fed7aa; padding: 16px; border-radius: 8px;">${message}</p>
+      <p>Sehr geehrte(r) ${escapeHtml(companyName)},</p>
+      <p style="background: #fff7ed; border: 1px solid #fed7aa; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</p>
       <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
         Bei Fragen wenden Sie sich bitte über das Support Center an uns.
       </p>
@@ -116,7 +129,7 @@ export async function sendOfferAwardedEmail(to: string, companyName: string) {
     to,
     `🎉 Ihr Angebot wurde angenommen!`,
     `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #059669;">Herzlichen Glückwunsch, ${companyName}!</h1>
+      <h1 style="color: #059669;">Herzlichen Glückwunsch, ${escapeHtml(companyName)}!</h1>
       <p>Ihr Angebot wurde vom Auftraggeber angenommen. Der Auftrag wurde Ihnen zugeteilt.</p>
       <a href="${getAppUrl()}/dashboard/jobs"
          style="display: inline-block; background: #059669; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 16px;">

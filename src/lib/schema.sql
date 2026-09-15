@@ -159,6 +159,15 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_committed_until TIMESTAM
 -- Vom Kunden erklärte, zum Laufzeitende wirksame Kündigung (Stripe cancel_at)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at TIMESTAMPTZ;
 
+-- Rate-Limiting für Login/Registrierung/Passwort-Reset gegen Brute-Force und Spam
+CREATE TABLE IF NOT EXISTS rate_limit_hits (
+  id BIGSERIAL PRIMARY KEY,
+  bucket TEXT NOT NULL,
+  identifier TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup ON rate_limit_hits(bucket, identifier, created_at);
+
 -- Generischer Key-Value-Speicher für App-weite Einstellungen (z.B. Stripe-Portal-Konfiguration)
 CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,

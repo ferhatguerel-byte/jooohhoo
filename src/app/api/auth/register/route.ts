@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { hashPassword, createSessionCookie } from '@/lib/auth'
 import { GEWERKE } from '@/lib/gewerke'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -18,6 +19,15 @@ const registerSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = registerSchema.parse(await req.json())
+
+    const allowed = await checkRateLimit('register', getClientIp(req), 8, 60)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Zu viele Registrierungen von dieser Verbindung. Bitte versuchen Sie es später erneut.' },
+        { status: 429 }
+      )
+    }
+
     const db = getDb()
 
     const existing = await db.query('SELECT id FROM users WHERE email = $1', [body.email])

@@ -3,6 +3,7 @@ import { put } from '@vercel/blob'
 import { getCurrentUser } from '@/lib/current-user'
 
 const MAX_SIZE = 10 * 1024 * 1024
+const ALLOWED_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic'])
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -22,9 +23,13 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: 'Datei ist zu groß (max. 10 MB).' }, { status: 400 })
   }
+  if (!ALLOWED_TYPES.has(file.type)) {
+    return NextResponse.json({ error: 'Nur PDF- oder Bilddateien (JPG, PNG, WEBP, HEIC) sind erlaubt.' }, { status: 400 })
+  }
 
   try {
-    const blob = await put(`${user.id}/${Date.now()}-${file.name}`, file, {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100)
+    const blob = await put(`${user.id}/${Date.now()}-${safeName}`, file, {
       access: 'public',
       addRandomSuffix: true,
     })

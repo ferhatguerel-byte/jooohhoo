@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { verifyPassword, createSessionCookie } from '@/lib/auth'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -11,6 +12,15 @@ const loginSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = loginSchema.parse(await req.json())
+
+    const allowed = await checkRateLimit('login', `${getClientIp(req)}:${body.email}`, 10, 15)
+    if (!allowed) {
+      return NextResponse.json(
+        { error: 'Zu viele Anmeldeversuche. Bitte warten Sie einige Minuten und versuchen Sie es erneut.' },
+        { status: 429 }
+      )
+    }
+
     const db = getDb()
 
     const result = await db.query(

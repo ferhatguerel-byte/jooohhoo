@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
     }
     const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error('Leistungsverzeichnis Fehler:', message)
+    return NextResponse.json({ error: 'Leistungsverzeichnis konnte nicht erstellt werden.' }, { status: 500 })
   }
 }
