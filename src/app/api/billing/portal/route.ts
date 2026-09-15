@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
 import { getAppUrl } from '@/lib/url'
+import { getLockedPortalConfigurationId } from '@/lib/stripe-portal'
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -12,13 +13,14 @@ export async function POST(req: NextRequest) {
   const appUrl = getAppUrl(req)
   const stripe = getStripe()
 
-  const isInCommitment = !!user.subscriptionCommittedUntil && new Date(user.subscriptionCommittedUntil) > new Date()
-  const restrictedConfig = process.env.STRIPE_PORTAL_CONFIGURATION_ID_LOCKED
+  // Beim Jahrespaket läuft die Kündigung immer über unseren eigenen "Vertrag kündigen"-Flow
+  // (Mindestlaufzeit + 3 Monate Kündigungsfrist) statt über Stripes generischen Kündigen-Button.
+  const restrictedConfig = user.subscriptionTier === 'yearly' ? await getLockedPortalConfigurationId(stripe) : undefined
 
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
-    return_url: `${appUrl}/dashboard/abo`,
-    ...(isInCommitment && restrictedConfig ? { configuration: restrictedConfig } : {}),
+    return_url: `${appUrl}/dashboard/einstellungen/mitgliedschaft`,
+    ...(restrictedConfig ? { configuration: restrictedConfig } : {}),
   })
 
   return NextResponse.json({ url: session.url })

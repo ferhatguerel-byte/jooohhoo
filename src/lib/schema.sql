@@ -159,6 +159,13 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_committed_until TIMESTAM
 -- Vom Kunden erklärte, zum Laufzeitende wirksame Kündigung (Stripe cancel_at)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_cancel_at TIMESTAMPTZ;
 
+-- Generischer Key-Value-Speicher für App-weite Einstellungen (z.B. Stripe-Portal-Konfiguration)
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Admin-Nutzerverwaltung: Kontostatus, gesperrte Gewerke, interne Notizen
 DO $$ BEGIN
   CREATE TYPE account_status AS ENUM ('active', 'suspended');
