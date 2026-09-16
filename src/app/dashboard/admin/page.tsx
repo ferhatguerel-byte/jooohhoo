@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, ShieldCheck, LifeBuoy, Newspaper } from 'lucide-react'
+import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 
@@ -49,6 +49,13 @@ export default async function AdminDashboardPage() {
       title: 'Ratgeber-Artikel',
       desc: 'SEO-Inhalte für die öffentliche Ratgeber-Sektion verwalten.',
       stat: `${articleCount.rows[0].count} Artikel`,
+    },
+    {
+      href: '/dashboard/admin/tracking',
+      icon: LineChart,
+      title: 'Tracking-Dashboard',
+      desc: 'Onboarding- und Aktivierungs-Funnel: Registrierungen, Verifizierungen, Abos, Aufträge und Vergaben.',
+      stat: 'Übersicht',
     },
   ]
 
