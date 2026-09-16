@@ -52,6 +52,7 @@ export default async function AboPage() {
         {TIER_ORDER.map((tierId) => {
           const tier = TIERS[tierId]
           const isCurrent = user.subscriptionTier === tierId && hasActiveSub
+          const blockedDowngrade = hasActiveSub && user.subscriptionTier === 'yearly' && tierId === 'monthly' && !user.subscriptionCancelAt
           return (
             <div key={tier.id} className={`rounded-2xl p-6 border-2 ${isCurrent ? 'border-brand' : 'border-slate-200'} bg-white`}>
               <div className="text-lg font-bold text-slate-900 mb-1">{tier.name}</div>
@@ -62,6 +63,12 @@ export default async function AboPage() {
               </ul>
               {isCurrent ? (
                 <div className="text-center text-sm font-bold text-brand py-3">Aktueller Plan</div>
+              ) : blockedDowngrade ? (
+                <div className="text-center">
+                  <div className="text-xs text-slate-400 bg-slate-50 border border-slate-200 rounded-lg py-3 px-2">
+                    Erst nach Ablauf der Jahrespaket-Laufzeit verfügbar. Bitte zuerst über „Vertrag kündigen&rdquo; kündigen.
+                  </div>
+                </div>
               ) : (
                 <CheckoutButton tier={tier.id} label={hasActiveSub ? 'Wechseln' : 'Abo abschließen'} />
               )}

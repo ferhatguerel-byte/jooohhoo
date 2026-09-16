@@ -24,15 +24,65 @@ export async function POST(req: NextRequest) {
     }
 
     const stripe = getStripe()
+    const hasActiveSub = user.subscriptionStatus === 'active' && !!user.subscriptionTier && !!user.stripeSubscriptionId
+
+    if (hasActiveSub) {
+      if (user.subscriptionTier === tier) {
+        return NextResponse.json({ error: 'Sie haben dieses Abo bereits aktiv.' }, { status: 409 })
+      }
+      if (user.subscriptionTier === 'yearly' && tier === 'monthly') {
+        return NextResponse.json(
+          {
+            error:
+              'Ein Wechsel vom Jahrespaket zum Monatspaket ist während der laufenden 12-Monats-Laufzeit nicht möglich. Bitte kündigen Sie zunächst über "Vertrag kündigen" – nach Ablauf der Laufzeit können Sie dann frei wählen.',
+          },
+          { status: 409 }
+        )
+      }
+
+      // Bestehendes Abo (Monatspaket -> Jahrespaket) direkt umstellen, statt ein zweites
+      // Stripe-Abo für dieselbe E-Mail-Adresse anzulegen und doppelt abzurechnen.
+      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!)
+      const currentItemId = subscription.items.data[0]?.id
+      if (!currentItemId) {
+        return NextResponse.json({ error: 'Abo konnte nicht gefunden werden.' }, { status: 404 })
+      }
+
+      await stripe.subscriptions.update(user.stripeSubscriptionId!, {
+        items: [{ id: currentItemId, price: priceId }],
+        metadata: { userId: user.id, tier },
+        proration_behavior: 'create_prorations',
+      })
+
+      const minimumTermMonths = tierDef.minimumTermMonths
+      await getDb().query(
+        `UPDATE users SET subscription_tier = $1,
+         subscription_committed_until = CASE WHEN $2::int > 0 THEN now() + make_interval(months => $2::int) ELSE NULL END,
+         subscription_cancel_at = NULL
+         WHERE id = $3`,
+        [tier, minimumTermMonths, user.id]
+      )
+
+      const appUrl = getAppUrl(req)
+      return NextResponse.json({ url: `${appUrl}/dashboard/abo?success=1` })
+    }
+
     let customerId = user.stripeCustomerId
 
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.companyName,
-        metadata: { userId: user.id },
-      })
-      customerId = customer.id
+      // Sicherstellen, dass pro E-Mail-Adresse nur ein Stripe-Kunde/Abo existiert, auch wenn
+      // stripe_customer_id lokal aus irgendeinem Grund fehlt.
+      const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 })
+      if (existingCustomers.data.length > 0) {
+        customerId = existingCustomers.data[0].id
+      } else {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.companyName,
+          metadata: { userId: user.id },
+        })
+        customerId = customer.id
+      }
       await getDb().query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, user.id])
     }
 
