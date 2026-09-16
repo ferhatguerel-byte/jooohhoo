@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# deployment zip built for manual Vercel upload
+*.zip
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
