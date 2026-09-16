@@ -214,3 +214,40 @@ export function NotificationsForm({
     </div>
   )
 }
+
+export function DirectoryListingForm({ initialListed }: { initialListed: boolean }) {
+  const [listed, setListed] = useState(initialListed)
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function toggle() {
+    const value = !listed
+    setListed(value)
+    setLoading(true)
+    setSaved(false)
+    try {
+      await fetch('/api/account/directory-listing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listed: value }),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <ToggleRow
+        checked={listed}
+        disabled={loading}
+        onToggle={toggle}
+        label="Im Branchenbuch anzeigen"
+        description="Ihr Firmenprofil ist öffentlich über Google auffindbar – gut für Ihre eigene Sichtbarkeit."
+      />
+      {saved && <p className="text-xs text-green-700 mt-2">Gespeichert.</p>}
+    </div>
+  )
+}

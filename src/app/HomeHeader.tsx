@@ -17,6 +17,8 @@ export default function HomeHeader({ loggedIn }: { loggedIn: boolean }) {
           <a href="#so-funktionierts" className="hover:text-[#17202a] transition">So funktioniert&apos;s</a>
           <a href="#vorteile" className="hover:text-[#17202a] transition">Vorteile</a>
           <a href="#unternehmen" className="hover:text-[#17202a] transition">Für Unternehmen</a>
+          <Link href="/branchenbuch" className="hover:text-[#17202a] transition">Branchenbuch</Link>
+          <Link href="/ratgeber" className="hover:text-[#17202a] transition">Ratgeber</Link>
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
@@ -52,6 +54,8 @@ export default function HomeHeader({ loggedIn }: { loggedIn: boolean }) {
           <a href="#so-funktionierts" onClick={() => setOpen(false)} className="text-slate-700 font-medium">So funktioniert&apos;s</a>
           <a href="#vorteile" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Vorteile</a>
           <a href="#unternehmen" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Für Unternehmen</a>
+          <Link href="/branchenbuch" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Branchenbuch</Link>
+          <Link href="/ratgeber" onClick={() => setOpen(false)} className="text-slate-700 font-medium">Ratgeber</Link>
           {loggedIn ? (
             <Link href="/dashboard" onClick={() => setOpen(false)} className="bg-accent text-white font-bold py-3 rounded-lg text-sm text-center">
               Zum Dashboard →

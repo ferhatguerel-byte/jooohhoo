@@ -244,7 +244,9 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-slate-500 max-w-6xl mx-auto">
         <div>© {new Date().getFullYear()} BAUVERSUS – eine Marke der GGV BAU GmbH.</div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 flex-wrap justify-center">
+          <Link href="/branchenbuch" className="hover:text-[#17202a]">Branchenbuch</Link>
+          <Link href="/ratgeber" className="hover:text-[#17202a]">Ratgeber</Link>
           <Link href="/impressum" className="hover:text-[#17202a]">Impressum</Link>
           <Link href="/datenschutz" className="hover:text-[#17202a]">Datenschutz</Link>
           <Link href="/agb" className="hover:text-[#17202a]">AGB</Link>

@@ -1,8 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Star, ShieldCheck, Ruler, BadgeCheck, Paperclip } from 'lucide-react'
+import { Star, ShieldCheck, Ruler, BadgeCheck, Paperclip, TrendingUp, Zap } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
+import { getRegionalPriceStats } from '@/lib/regional-price'
+import { getResponseTimeStats } from '@/lib/response-time'
 import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
@@ -78,6 +80,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     })
   }
 
+  const regionalPrice = await getRegionalPriceStats(job.gewerk, job.plz)
+
+  const responseTimeByOffer = new Map<string, string>()
+  await Promise.all(
+    offers.map(async (offer) => {
+      const stats = await getResponseTimeStats(offer.subunternehmer_id)
+      if (stats) responseTimeByOffer.set(offer.id, stats.label)
+    })
+  )
+
   let existingReview = null
   if (job.awarded_subunternehmer_id) {
     const reviewResult = await db.query(
@@ -126,6 +138,18 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </div>
         )}
       </div>
+
+      {regionalPrice && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex items-start gap-3">
+          <TrendingUp size={18} className="text-blue-700 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-900">
+            <strong>Regionaler Preisvergleich:</strong> Ähnliche {job.gewerk}-Aufträge im {regionalPrice.regionLabel} wurden
+            zuletzt für durchschnittlich <strong>€{regionalPrice.avgPrice.toLocaleString('de-DE')}</strong> vergeben
+            (Spanne €{regionalPrice.minPrice.toLocaleString('de-DE')} – €{regionalPrice.maxPrice.toLocaleString('de-DE')},
+            basierend auf {regionalPrice.sampleSize} vergangenen Aufträgen).
+          </p>
+        </div>
+      )}
 
       {job.awarded_subunternehmer_id && (
         <div className="mb-8">
@@ -213,6 +237,11 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                     )}
                   </div>
                   <div className="text-sm text-slate-500">{offer.plz} {offer.ort}</div>
+                  {responseTimeByOffer.has(offer.id) && (
+                    <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-green-700">
+                      <Zap size={12} /> Antwortet meist {responseTimeByOffer.get(offer.id)}
+                    </div>
+                  )}
                   {offer.review_count > 0 && (
                     <div className="flex items-center gap-1 mt-1 text-sm text-slate-600">
                       <Star size={14} className="fill-[#f47b20] text-[#f47b20]" />

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/current-user'
-import { EmailForm, PasswordForm, NotificationsForm } from './AccountForms'
+import { EmailForm, PasswordForm, NotificationsForm, DirectoryListingForm } from './AccountForms'
 
 export default async function KontoEinstellungenPage() {
   const user = await getCurrentUser()
@@ -26,6 +26,16 @@ export default async function KontoEinstellungenPage() {
           initialNewsletterOptIn={user.newsletterOptIn}
         />
       </section>
+
+      {user.role === 'subunternehmer' && (
+        <section className="bg-white border border-slate-200 rounded-2xl p-6">
+          <h2 className="font-bold text-slate-900 mb-2">Branchenbuch</h2>
+          <p className="text-sm text-slate-500 mb-2">
+            Kostenlos für Ihr Abo enthalten: ein öffentliches, bei Google auffindbares Firmenprofil.
+          </p>
+          <DirectoryListingForm initialListed={user.directoryListed} />
+        </section>
+      )}
     </div>
   )
 }

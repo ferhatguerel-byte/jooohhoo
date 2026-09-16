@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, ShieldCheck, LifeBuoy } from 'lucide-react'
+import { Users, ShieldCheck, LifeBuoy, Newspaper } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 
@@ -11,11 +11,12 @@ export default async function AdminDashboardPage() {
   if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
 
   const db = getDb()
-  const [pendingVerifications, openTickets, suspendedUsers, totalUnternehmer] = await Promise.all([
+  const [pendingVerifications, openTickets, suspendedUsers, totalUnternehmer, articleCount] = await Promise.all([
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer' AND verification_status = 'pending'`),
     db.query(`SELECT COUNT(*)::int AS count FROM support_tickets WHERE status = 'open'`),
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer' AND account_status = 'suspended'`),
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer'`),
+    db.query(`SELECT COUNT(*)::int AS count FROM guide_articles`),
   ])
 
   const tiles = [
@@ -41,6 +42,13 @@ export default async function AdminDashboardPage() {
       desc: 'Support-Tickets von Nutzern einsehen und beantworten.',
       stat: `${openTickets.rows[0].count} offen`,
       urgent: openTickets.rows[0].count > 0,
+    },
+    {
+      href: '/dashboard/admin/ratgeber',
+      icon: Newspaper,
+      title: 'Ratgeber-Artikel',
+      desc: 'SEO-Inhalte für die öffentliche Ratgeber-Sektion verwalten.',
+      stat: `${articleCount.rows[0].count} Artikel`,
     },
   ]
 

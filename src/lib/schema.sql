@@ -168,6 +168,23 @@ CREATE TABLE IF NOT EXISTS rate_limit_hits (
 );
 CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup ON rate_limit_hits(bucket, identifier, created_at);
 
+-- Branchenbuch: Unternehmer können ihren öffentlichen Eintrag abschalten
+ALTER TABLE users ADD COLUMN IF NOT EXISTS directory_listed BOOLEAN NOT NULL DEFAULT true;
+
+-- Ratgeber-Artikel (SEO-Content), vom Admin verwaltet
+CREATE TABLE IF NOT EXISTS guide_articles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  content TEXT NOT NULL,
+  meta_description TEXT,
+  published BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_guide_articles_published ON guide_articles(published, created_at);
+
 -- Generischer Key-Value-Speicher für App-weite Einstellungen (z.B. Stripe-Portal-Konfiguration)
 CREATE TABLE IF NOT EXISTS app_settings (
   key TEXT PRIMARY KEY,
