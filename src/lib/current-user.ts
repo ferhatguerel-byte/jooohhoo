@@ -24,6 +24,7 @@ export interface CurrentUser {
   accountStatus: 'active' | 'suspended'
   blockedGewerke: string[]
   directoryListed: boolean
+  verifiedGewerke: string[]
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -36,7 +37,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
             subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id,
             verification_status, qualification_files, email_notifications, newsletter_opt_in,
             subscription_committed_until, subscription_cancel_at, account_status, blocked_gewerke,
-            directory_listed
+            directory_listed, verified_gewerke
      FROM users WHERE id = $1`,
     [session.userId]
   )
@@ -65,5 +66,6 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     accountStatus: row.account_status,
     blockedGewerke: row.blocked_gewerke || [],
     directoryListed: row.directory_listed,
+    verifiedGewerke: row.verified_gewerke || [],
   }
 }

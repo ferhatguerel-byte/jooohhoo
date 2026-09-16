@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (job.rows.length === 0) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden oder nicht mehr offen.' }, { status: 404 })
     }
-    if (isMeisterpflichtig(job.rows[0].gewerk) && user.verificationStatus !== 'verified') {
+    if (isMeisterpflichtig(job.rows[0].gewerk) && !user.verifiedGewerke.includes(job.rows[0].gewerk)) {
       return NextResponse.json(
         { error: 'Für dieses meisterpflichtige Gewerk müssen Sie zuerst Ihren Meisterbrief/Qualifikationsnachweis im Profil hochladen und verifizieren lassen.' },
         { status: 403 }

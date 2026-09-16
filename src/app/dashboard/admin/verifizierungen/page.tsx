@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { Paperclip } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
+import { MEISTERPFLICHTIGE_GEWERKE } from '@/lib/gewerke'
 import VerifyActions from './VerifyActions'
 
 export default async function AdminVerifizierungenPage() {
@@ -11,7 +12,7 @@ export default async function AdminVerifizierungenPage() {
   if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
 
   const result = await getDb().query(
-    `SELECT id, company_name, email, plz, ort, gewerke, verification_status, qualification_files
+    `SELECT id, company_name, email, plz, ort, gewerke, verification_status, qualification_files, verified_gewerke
      FROM users WHERE role = 'subunternehmer' AND verification_status != 'unverified'
      ORDER BY (verification_status = 'pending') DESC, created_at DESC`
   )
@@ -36,8 +37,20 @@ export default async function AdminVerifizierungenPage() {
                 }`}>
                   {u.verification_status === 'pending' ? 'Prüfung läuft' : u.verification_status === 'verified' ? 'Verifiziert' : 'Abgelehnt'}
                 </span>
+                {u.verified_gewerke && u.verified_gewerke.length > 0 && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    Freigegebene meisterpflichtige Gewerke: {u.verified_gewerke.join(', ')}
+                  </div>
+                )}
               </div>
-              {u.verification_status === 'pending' && <VerifyActions userId={u.id} />}
+              {u.verification_status === 'pending' && (
+                <VerifyActions
+                  userId={u.id}
+                  meisterpflichtigeGewerke={(u.gewerke || []).filter((g: string) =>
+                    (MEISTERPFLICHTIGE_GEWERKE as string[]).includes(g)
+                  )}
+                />
+              )}
             </div>
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
               {(u.qualification_files || []).map((f: { url: string; name: string; label: string }) => (

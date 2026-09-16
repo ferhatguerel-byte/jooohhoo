@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/current-user'
 const schema = z.object({
   userId: z.string().uuid(),
   status: z.enum(['verified', 'rejected', 'unverified']),
+  verifiedGewerke: z.array(z.string()).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -16,8 +17,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { userId, status } = schema.parse(await req.json())
-    await getDb().query('UPDATE users SET verification_status = $1 WHERE id = $2', [status, userId])
+    const { userId, status, verifiedGewerke } = schema.parse(await req.json())
+    await getDb().query(
+      'UPDATE users SET verification_status = $1, verified_gewerke = $2 WHERE id = $3',
+      [status, status === 'verified' ? verifiedGewerke || [] : [], userId]
+    )
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {

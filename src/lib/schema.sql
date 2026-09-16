@@ -171,6 +171,10 @@ CREATE INDEX IF NOT EXISTS idx_rate_limit_hits_lookup ON rate_limit_hits(bucket,
 -- Branchenbuch: Unternehmer können ihren öffentlichen Eintrag abschalten
 ALTER TABLE users ADD COLUMN IF NOT EXISTS directory_listed BOOLEAN NOT NULL DEFAULT true;
 
+-- Meisterpflichtige Gewerke werden einzeln freigeschaltet, nicht pauschal über
+-- verification_status: ein Meisterbrief für Elektro qualifiziert nicht automatisch für Sanitär/Gerüstbau.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_gewerke TEXT[] NOT NULL DEFAULT '{}';
+
 -- Ratgeber-Artikel (SEO-Content), vom Admin verwaltet
 CREATE TABLE IF NOT EXISTS guide_articles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
