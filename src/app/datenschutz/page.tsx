@@ -99,12 +99,6 @@ export default function DatenschutzPage() {
           Es werden keine Tracking- oder Marketing-Cookies eingesetzt.
         </p>
       </section>
-
-      <p className="text-sm text-slate-400">
-        [Platzhalter-Text – vor Livegang durch eine rechtssichere, individuell geprüfte Datenschutzerklärung
-        ersetzen, insbesondere im Hinblick auf die Auftragsverarbeitungsverträge mit Hosting- und
-        Zahlungsdienstleistern.]
-      </p>
     </div>
   )
 }

@@ -152,12 +152,6 @@ export default function AgbPage() {
           unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.
         </p>
       </section>
-
-      <p className="text-sm text-slate-400">
-        [Platzhalter-Text – vor Livegang durch rechtlich geprüfte, individuelle AGB für eine
-        Vermittlungsplattform ersetzen, insbesondere hinsichtlich Haftungsausschluss, Widerrufsrecht bei
-        Abo-Abschluss und Kündigungsmodalitäten.]
-      </p>
     </div>
   )
 }
