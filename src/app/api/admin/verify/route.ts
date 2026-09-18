@@ -18,9 +18,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const { userId, status, verifiedGewerke } = schema.parse(await req.json())
+    const newlyVerified = status === 'verified' ? verifiedGewerke || [] : []
     await getDb().query(
-      'UPDATE users SET verification_status = $1, verified_gewerke = $2 WHERE id = $3',
-      [status, status === 'verified' ? verifiedGewerke || [] : [], userId]
+      `UPDATE users SET verification_status = $1, verified_gewerke = $2,
+       gewerke = ARRAY(SELECT DISTINCT unnest(gewerke || $2::text[]))
+       WHERE id = $3`,
+      [status, newlyVerified, userId]
     )
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

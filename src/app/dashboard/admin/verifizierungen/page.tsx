@@ -44,12 +44,7 @@ export default async function AdminVerifizierungenPage() {
                 )}
               </div>
               {u.verification_status === 'pending' && (
-                <VerifyActions
-                  userId={u.id}
-                  meisterpflichtigeGewerke={(u.gewerke || []).filter((g: string) =>
-                    (MEISTERPFLICHTIGE_GEWERKE as string[]).includes(g)
-                  )}
-                />
+                <VerifyActions userId={u.id} meisterpflichtigeGewerke={MEISTERPFLICHTIGE_GEWERKE as string[]} />
               )}
             </div>
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
