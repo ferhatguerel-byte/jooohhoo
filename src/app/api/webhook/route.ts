@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import { sendWelcomeEmail, sendPaymentConfirmation, sendAffiliateCommissionEmail } from '@/lib/email'
 import Stripe from 'stripe'
@@ -10,17 +10,17 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
+    event = getStripe().webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch {
     return NextResponse.json({ error: 'Ungültige Signatur' }, { status: 400 })
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-    const { name, planId, ref } = session.metadata || {}
+    const { name, planId, ref, affiliateCode: existingCode } = session.metadata || {}
     const email = session.customer_email || ''
     const amount = (session.amount_total || 0) / 100
-    const affiliateCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const affiliateCode = existingCode || Math.random().toString(36).substring(2, 8).toUpperCase()
 
     const customer = db.createCustomer({
       email,

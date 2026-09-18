@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 
 const PLAN_PRICES: Record<string, number> = {
   starter: 2900,
@@ -49,13 +49,15 @@ export async function POST(req: NextRequest) {
       }]
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const affiliateCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+    const session = await getStripe().checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: lineItems,
       customer_email: email,
-      metadata: { name, planId, ref: ref || '' },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      metadata: { name, planId, ref: ref || '', affiliateCode },
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&code=${affiliateCode}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/#pricing`,
       locale: 'de',
       allow_promotion_codes: true,
