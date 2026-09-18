@@ -54,10 +54,16 @@ export default function AgbPage() {
             verlängert sich das Jahrespaket automatisch um weitere 12 Monate.
           </li>
         </ul>
-        <p>
+        <p className="mb-3">
           Die jeweils aktuellen Preise sind auf der Website unter „Preise&rdquo; einsehbar. Das gesetzliche
-          Recht zur außerordentlichen Kündigung aus wichtigem Grund sowie ein gegebenenfalls bestehendes
-          gesetzliches Widerrufsrecht bleiben von einer vereinbarten Mindestlaufzeit unberührt.
+          Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt von einer vereinbarten
+          Mindestlaufzeit unberührt.
+        </p>
+        <p>
+          Die Registrierung als Unternehmer und der Abschluss eines Abo-Modells setzen voraus, dass der
+          Nutzer in Ausübung seiner gewerblichen oder selbständigen beruflichen Tätigkeit handelt (§ 14
+          BGB). Ein gesetzliches Verbraucherwiderrufsrecht nach §§ 312g, 355 BGB besteht für diese
+          Verträge daher grundsätzlich nicht.
         </p>
       </section>
 
@@ -82,7 +88,17 @@ export default function AgbPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 6 Haftungsausschluss</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 6 Bewertungen</h2>
+        <p>
+          Eine Bewertung kann ausschließlich von dem Auftraggeber abgegeben werden, der dem bewerteten
+          Unternehmer einen Auftrag über die Plattform tatsächlich vergeben hat; das System erlaubt keine
+          Bewertung ohne einen zugrundeliegenden, auf der Plattform vergebenen Auftrag. Eine inhaltliche
+          Prüfung der Bewertungstexte auf Richtigkeit findet darüber hinaus nicht statt.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">§ 7 Haftungsausschluss</h2>
         <p className="mb-3">
           Der Betreiber ist reiner Vermittler und stellt lediglich die technische Plattform zur Verfügung.
           Er wird nicht Vertragspartei der zwischen Auftraggeber und Unternehmer zustande kommenden
@@ -130,7 +146,7 @@ export default function AgbPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">§ 7 Schlussbestimmungen</h2>
+        <h2 className="font-bold text-slate-900 mb-2">§ 8 Schlussbestimmungen</h2>
         <p>
           Es gilt das Recht der Bundesrepublik Deutschland. Sollten einzelne Bestimmungen dieser AGB
           unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.
