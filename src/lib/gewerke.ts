@@ -10,12 +10,19 @@ export const GEWERKE = [
   'Bodenleger',
   'Tischler & Schreiner',
   'Photovoltaik',
-  'Gerüstbau',
   'Metallbau',
   'Abbruch & Entkernung',
   'Gebäudereinigung',
   'Baureinigung',
   'Fensterreinigung',
+  'Gärtner/Landschaftsbauer',
+  'Umzugsunternehmer',
+  'Hausmeisterservice',
+  'Entrümpelungsservice',
+  'Transport',
+  'Winterdienst',
+  'Schädlingsbekämpfer',
+  'Schlüsseldienst',
 ] as const
 
 export type Gewerk = (typeof GEWERKE)[number]
@@ -28,7 +35,6 @@ export type Gewerk = (typeof GEWERKE)[number]
 export const MEISTERPFLICHTIGE_GEWERKE: Gewerk[] = [
   'Elektro',
   'Sanitär & Heizung',
-  'Gerüstbau',
 ]
 
 export function isMeisterpflichtig(gewerk: string): boolean {

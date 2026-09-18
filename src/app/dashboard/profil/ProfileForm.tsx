@@ -150,7 +150,7 @@ export default function ProfileForm({
           </div>
           {GEWERKE.some((g) => isMeisterpflichtig(g)) && verificationStatus !== 'verified' && (
             <p className="text-xs text-slate-400 mt-2">
-              🔒 Meisterpflichtige Gewerke (Elektro, Sanitär & Heizung, Gerüstbau) werden erst freigeschaltet, sobald Ihr
+              🔒 Meisterpflichtige Gewerke (Elektro, Sanitär & Heizung) werden erst freigeschaltet, sobald Ihr
               Meisterbrief/Qualifikationsnachweis unten hochgeladen und verifiziert wurde.
             </p>
           )}
