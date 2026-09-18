@@ -179,18 +179,19 @@ export default function NewJobForm() {
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleGenerateLV}
             disabled={loading}
             className="bg-[#f47b20] hover:bg-[#e06c14] disabled:opacity-50 text-white font-bold py-2.5 px-6 rounded-lg flex items-center gap-2"
           >
             <Sparkles size={18} /> {loading ? 'Wird erstellt…' : 'Leistungsverzeichnis mit KI erstellen'}
+            <span className="bg-white/20 text-[10px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded">Beta</span>
           </button>
           <button
             onClick={() => handlePublish(false)}
             disabled={loading}
-            className="text-slate-500 font-semibold text-sm px-2"
+            className="bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-[#17202a] font-bold py-2.5 px-6 rounded-lg"
           >
             Ohne Leistungsverzeichnis veröffentlichen
           </button>
