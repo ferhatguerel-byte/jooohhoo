@@ -8,7 +8,7 @@ import OfferForm from './OfferForm'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
 import HideJobButton from './HideJobButton'
 import { isMeisterpflichtig } from '@/lib/gewerke'
-import { Lock } from 'lucide-react'
+import { Lock, CheckCircle2, Circle } from 'lucide-react'
 
 export default async function JobsPage({
   searchParams,
@@ -142,6 +142,23 @@ export default async function JobsPage({
           </Link>
         )}
       </div>
+
+      {user.verificationStatus === 'unverified' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <p className="text-sm font-bold text-blue-900 mb-2">Noch 2 Schritte bis zum vollen Zugriff</p>
+          <div className="space-y-1.5 text-sm text-blue-900">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-green-600 shrink-0" /> Abo aktiv
+            </div>
+            <div className="flex items-center gap-2">
+              <Circle size={16} className="text-blue-400 shrink-0" />
+              Nachweise in{' '}
+              <Link href="/dashboard/profil" className="font-semibold underline">Ihrem Profil</Link>{' '}
+              hochladen, um das Verifiziert-Abzeichen zu erhalten und meisterpflichtige Gewerke freizuschalten
+            </div>
+          </div>
+        </div>
+      )}
 
       {!showHidden && <JobFilters initialGewerke={selectedGewerke} initialPlz={plz || user.plz || ''} initialRadius={radius || ''} />}
 

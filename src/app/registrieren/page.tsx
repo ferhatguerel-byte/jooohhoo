@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { HardHat, ArrowRight } from 'lucide-react'
-import { GEWERKE } from '@/lib/gewerke'
+import { GEWERK_GROUPS } from '@/lib/gewerke'
 
 type Role = 'auftraggeber' | 'subunternehmer'
 
@@ -112,6 +112,7 @@ function RegisterForm() {
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1">Passwort *</label>
                 <input id="password" name="password" type="password" required minLength={8} className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand" />
+                <p className="text-xs text-slate-400 mt-1">Mindestens 8 Zeichen</p>
               </div>
             </div>
 
@@ -133,20 +134,27 @@ function RegisterForm() {
             {role === 'subunternehmer' && (
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Ihre Gewerke *</label>
-                <div className="flex flex-wrap gap-2">
-                  {GEWERKE.map((g) => (
-                    <button
-                      type="button"
-                      key={g}
-                      onClick={() => toggleGewerk(g)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                        gewerke.includes(g)
-                          ? 'bg-accent border-accent text-white'
-                          : 'border-slate-300 text-slate-600 hover:border-slate-400'
-                      }`}
-                    >
-                      {g}
-                    </button>
+                <div className="space-y-3">
+                  {GEWERK_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{group.label}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {group.items.map((g) => (
+                          <button
+                            type="button"
+                            key={g}
+                            onClick={() => toggleGewerk(g)}
+                            className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                              gewerke.includes(g)
+                                ? 'bg-accent border-accent text-white'
+                                : 'border-slate-300 text-slate-600 hover:border-slate-400'
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

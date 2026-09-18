@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { GEWERKE } from '@/lib/gewerke'
+import { GEWERK_GROUPS } from '@/lib/gewerke'
 import { RADIUS_OPTIONS } from '@/lib/plz-geo'
 
 export default function JobFilters({
@@ -42,17 +42,24 @@ export default function JobFilters({
     <div className="bg-white border border-slate-200 rounded-xl p-5 mb-8">
       <div className="mb-4">
         <p className="text-sm font-semibold text-slate-700 mb-2">Gewerke (Mehrfachauswahl)</p>
-        <div className="flex flex-wrap gap-2">
-          {GEWERKE.map((g) => (
-            <button
-              key={g}
-              onClick={() => toggleGewerk(g)}
-              className={`px-3 py-1.5 rounded-full text-sm border transition ${
-                gewerke.includes(g) ? 'bg-[#17202a] border-[#17202a] text-white' : 'border-slate-300 text-slate-600'
-              }`}
-            >
-              {g}
-            </button>
+        <div className="space-y-3">
+          {GEWERK_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{group.label}</p>
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => toggleGewerk(g)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                      gewerke.includes(g) ? 'bg-[#17202a] border-[#17202a] text-white' : 'border-slate-300 text-slate-600'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

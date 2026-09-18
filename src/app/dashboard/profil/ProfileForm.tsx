@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Lock } from 'lucide-react'
-import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
+import { GEWERK_GROUPS, isMeisterpflichtig } from '@/lib/gewerke'
 import FileUploader, { UploadedFile } from '@/components/FileUploader'
 
 interface QualificationFile extends UploadedFile {
@@ -117,38 +117,45 @@ export default function ProfileForm({
       {role === 'subunternehmer' && (
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Gewerke</label>
-          <div className="flex flex-wrap gap-2">
-            {GEWERKE.map((g) => {
-              const blockedByAdmin = blockedGewerke.includes(g)
-              const locked = blockedByAdmin || (isMeisterpflichtig(g) && verificationStatus !== 'verified')
-              return (
-                <button
-                  type="button"
-                  key={g}
-                  disabled={locked}
-                  onClick={() => toggleGewerk(g)}
-                  title={
-                    blockedByAdmin
-                      ? 'Dieses Gewerk wurde von BAUVERSUS für Ihr Konto gesperrt. Bitte kontaktieren Sie den Support.'
-                      : locked
-                      ? 'Erst wählbar, sobald Ihr Meisterbrief/Qualifikationsnachweis verifiziert wurde.'
-                      : undefined
-                  }
-                  className={`px-3 py-1.5 rounded-full text-sm border transition flex items-center gap-1.5 ${
-                    locked
-                      ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
-                      : gewerke.includes(g)
-                      ? 'bg-accent border-accent text-white'
-                      : 'border-slate-300 text-slate-600'
-                  }`}
-                >
-                  {locked && <Lock size={12} />}
-                  {g}
-                </button>
-              )
-            })}
+          <div className="space-y-3">
+            {GEWERK_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">{group.label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {group.items.map((g) => {
+                    const blockedByAdmin = blockedGewerke.includes(g)
+                    const locked = blockedByAdmin || (isMeisterpflichtig(g) && verificationStatus !== 'verified')
+                    return (
+                      <button
+                        type="button"
+                        key={g}
+                        disabled={locked}
+                        onClick={() => toggleGewerk(g)}
+                        title={
+                          blockedByAdmin
+                            ? 'Dieses Gewerk wurde von BAUVERSUS für Ihr Konto gesperrt. Bitte kontaktieren Sie den Support.'
+                            : locked
+                            ? 'Erst wählbar, sobald Ihr Meisterbrief/Qualifikationsnachweis verifiziert wurde.'
+                            : undefined
+                        }
+                        className={`px-3 py-1.5 rounded-full text-sm border transition flex items-center gap-1.5 ${
+                          locked
+                            ? 'border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50'
+                            : gewerke.includes(g)
+                            ? 'bg-accent border-accent text-white'
+                            : 'border-slate-300 text-slate-600'
+                        }`}
+                      >
+                        {locked && <Lock size={12} />}
+                        {g}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-          {GEWERKE.some((g) => isMeisterpflichtig(g)) && verificationStatus !== 'verified' && (
+          {GEWERK_GROUPS.some((group) => group.items.some((g) => isMeisterpflichtig(g))) && verificationStatus !== 'verified' && (
             <p className="text-xs text-slate-400 mt-2">
               🔒 Meisterpflichtige Gewerke (Elektro, Sanitär & Heizung) werden erst freigeschaltet, sobald Ihr
               Meisterbrief/Qualifikationsnachweis unten hochgeladen und verifiziert wurde.

@@ -7,6 +7,7 @@ import { getRegionalPriceStats } from '@/lib/regional-price'
 import { getResponseTimeStats } from '@/lib/response-time'
 import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
+import EditJobButton from './EditJobButton'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -123,7 +124,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           )}
         </div>
         {job.attachments && job.attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-4">
             {job.attachments.map((f: { url: string; name: string }) => (
               <a
                 key={f.url}
@@ -136,6 +137,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               </a>
             ))}
           </div>
+        )}
+        {!job.awarded_subunternehmer_id && (
+          <EditJobButton
+            jobId={id}
+            initialTitle={job.title}
+            initialDescription={job.description}
+            initialDeadline={job.deadline ? new Date(job.deadline).toISOString() : null}
+          />
         )}
       </div>
 

@@ -7,7 +7,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
-import { GEWERKE } from '@/lib/gewerke'
+import { GEWERK_GROUPS } from '@/lib/gewerke'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from './HomeHeader'
 
@@ -181,9 +181,17 @@ export default async function HomePage() {
               <Wrench size={20} className="text-accent" />
               <h3 className="font-bold text-lg">Alle Gewerke</h3>
             </div>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              {GEWERKE.join(' · ')}
-            </p>
+            <div className="space-y-3">
+              {GEWERK_GROUPS.map((group) => (
+                <div key={group.label} className="flex flex-wrap gap-1.5">
+                  {group.items.map((g) => (
+                    <span key={g} className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
+                      {g}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
