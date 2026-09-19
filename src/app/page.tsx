@@ -30,12 +30,12 @@ const STEPS = [
 ]
 
 const COMPARE_ROWS = [
-  { label: 'Geprüfte Anbieter', bc: true, leads: 'teilweise' },
-  { label: 'Angebote vergleichbar', bc: true, leads: '–' },
-  { label: 'KI-Leistungsverzeichnis', bc: true, leads: '–' },
-  { label: 'Festpreis-Kennzeichnung', bc: true, leads: '–' },
-  { label: 'Bewertungssystem', bc: true, leads: 'teilweise' },
-  { label: 'Kein Bezahlen pro Kontakt', bc: true, leads: '–' },
+  { label: 'Abrechnung', bc: 'Festes Abo, unbegrenzt Aufträge', leads: 'Bezahlung pro einzelnem Kontakt' },
+  { label: 'Kontakt exklusiv?', bc: 'Ja, kein Weiterverkauf', leads: 'Oft an mehrere Betriebe gleichzeitig verkauft' },
+  { label: 'Angebote direkt vergleichbar', bc: 'Ja', leads: 'Nein' },
+  { label: 'KI-Leistungsverzeichnis', bc: 'Ja', leads: 'Nein' },
+  { label: 'Festpreis-Kennzeichnung', bc: 'Ja', leads: 'Nein' },
+  { label: 'Geprüfte Betriebe', bc: 'Ja', leads: 'Teilweise' },
 ]
 
 const VORTEILE = [
@@ -134,14 +134,14 @@ export default async function HomePage() {
               {COMPARE_ROWS.map((row) => (
                 <div key={row.label} className="px-4 py-3.5">
                   <div className="font-bold text-sm mb-2">{row.label}</div>
-                  <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-green-700">✓</span>
-                      <span className="text-slate-500">BAUVERSUS</span>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-start gap-1.5">
+                      <span className="font-bold text-green-700 shrink-0">BAUVERSUS:</span>
+                      <span className="text-slate-700">{row.bc}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-400 font-semibold">{row.leads}</span>
-                      <span className="text-slate-400">Lead-Kauf-Portale</span>
+                    <div className="flex items-start gap-1.5">
+                      <span className="font-bold text-slate-400 shrink-0">Lead-Portale:</span>
+                      <span className="text-slate-400">{row.leads}</span>
                     </div>
                   </div>
                 </div>
@@ -149,15 +149,15 @@ export default async function HomePage() {
             </div>
             {/* Ab Tablet: klassische Tabelle */}
             <div className="hidden sm:block">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr] px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
+              <div className="grid grid-cols-[1.1fr_1.2fr_1.2fr] px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
                 <div>Kriterium</div>
                 <div>BAUVERSUS</div>
                 <div>Lead-Kauf-Portale</div>
               </div>
               {COMPARE_ROWS.map((row) => (
-                <div key={row.label} className="grid grid-cols-[1.4fr_1fr_1fr] px-5 py-4 text-sm border-b border-slate-100 last:border-0 items-center">
-                  <div>{row.label}</div>
-                  <div className="font-extrabold text-green-700">✓</div>
+                <div key={row.label} className="grid grid-cols-[1.1fr_1.2fr_1.2fr] px-5 py-4 text-sm border-b border-slate-100 last:border-0 items-center">
+                  <div className="font-semibold">{row.label}</div>
+                  <div className="font-bold text-green-700">{row.bc}</div>
                   <div className="text-slate-500">{row.leads}</div>
                 </div>
               ))}
