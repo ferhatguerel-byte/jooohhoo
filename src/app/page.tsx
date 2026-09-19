@@ -30,12 +30,12 @@ const STEPS = [
 ]
 
 const COMPARE_ROWS = [
-  { label: 'Geprüfte Anbieter', bc: true, boerse: 'teilweise', phone: '–' },
-  { label: 'Angebote vergleichbar', bc: true, boerse: '–', phone: '–' },
-  { label: 'KI-Leistungsverzeichnis', bc: true, boerse: '–', phone: '–' },
-  { label: 'Festpreis-Kennzeichnung', bc: true, boerse: 'teilweise', phone: '–' },
-  { label: 'Bewertungssystem', bc: true, boerse: 'teilweise', phone: '–' },
-  { label: 'Nachunternehmer-Börse', bc: true, boerse: 'selten', phone: '–' },
+  { label: 'Geprüfte Anbieter', bc: true, leads: 'teilweise' },
+  { label: 'Angebote vergleichbar', bc: true, leads: '–' },
+  { label: 'KI-Leistungsverzeichnis', bc: true, leads: '–' },
+  { label: 'Festpreis-Kennzeichnung', bc: true, leads: '–' },
+  { label: 'Bewertungssystem', bc: true, leads: 'teilweise' },
+  { label: 'Kein Bezahlen pro Kontakt', bc: true, leads: '–' },
 ]
 
 const VORTEILE = [
@@ -128,21 +128,21 @@ export default async function HomePage() {
               von Handwerkern.
             </p>
           </div>
-          <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden">
-            <div className="grid grid-cols-4 px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
-              <div>Kriterium</div>
-              <div>BAUVERSUS</div>
-              <div>Klassische Börse</div>
-              <div>Telefon/Google</div>
-            </div>
-            {COMPARE_ROWS.map((row) => (
-              <div key={row.label} className="grid grid-cols-4 px-5 py-4 text-sm border-b border-slate-100 last:border-0">
-                <div>{row.label}</div>
-                <div className="font-extrabold text-green-700">✓</div>
-                <div className="text-slate-500">{row.boerse}</div>
-                <div className="text-slate-400">{row.phone}</div>
+          <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden overflow-x-auto">
+            <div className="min-w-[420px]">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr] px-4 sm:px-5 py-4 font-extrabold bg-slate-50 text-xs sm:text-sm border-b border-slate-200">
+                <div>Kriterium</div>
+                <div>BAUVERSUS</div>
+                <div>Lead-Kauf-Portale</div>
               </div>
-            ))}
+              {COMPARE_ROWS.map((row) => (
+                <div key={row.label} className="grid grid-cols-[1.4fr_1fr_1fr] px-4 sm:px-5 py-4 text-xs sm:text-sm border-b border-slate-100 last:border-0 items-center">
+                  <div>{row.label}</div>
+                  <div className="font-extrabold text-green-700">✓</div>
+                  <div className="text-slate-500">{row.leads}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

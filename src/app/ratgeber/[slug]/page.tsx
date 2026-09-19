@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { ArrowLeft } from 'lucide-react'
 import { getArticleBySlug } from '@/lib/guide'
 import ArticleContent from '@/components/ArticleContent'
+import { getCurrentUser } from '@/lib/current-user'
+import HomeHeader from '../../HomeHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +25,7 @@ export default async function RatgeberArtikelPage({ params }: { params: Promise<
   const { slug } = await params
   const article = await getArticleBySlug(slug)
   if (!article) notFound()
+  const user = await getCurrentUser()
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -37,6 +40,7 @@ export default async function RatgeberArtikelPage({ params }: { params: Promise<
   return (
     <div className="min-h-screen bg-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <HomeHeader loggedIn={!!user} />
       <div className="max-w-2xl mx-auto px-6 py-16">
         <Link href="/ratgeber" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-brand mb-6">
           <ArrowLeft size={14} /> Zurück zum Ratgeber

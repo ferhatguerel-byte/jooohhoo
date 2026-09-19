@@ -5,6 +5,8 @@ import { MapPin, Star, BadgeCheck, Zap, ArrowLeft } from 'lucide-react'
 import { getDb } from '@/lib/db'
 import { extractIdPrefixFromSlug, buildCompanySlug } from '@/lib/slugify'
 import { getResponseTimeStats } from '@/lib/response-time'
+import { getCurrentUser } from '@/lib/current-user'
+import HomeHeader from '../../HomeHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +46,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
   const { slug } = await params
   const company = await getCompany(slug)
   if (!company) notFound()
+  const user = await getCurrentUser()
 
   const db = getDb()
   const reviewsResult = await db.query(
@@ -85,6 +88,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
   return (
     <div className="min-h-screen bg-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <HomeHeader loggedIn={!!user} />
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link href="/branchenbuch" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-brand mb-6">
           <ArrowLeft size={14} /> Zurück zum Branchenbuch

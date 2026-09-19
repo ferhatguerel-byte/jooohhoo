@@ -4,6 +4,8 @@ import { MapPin, Star, BadgeCheck } from 'lucide-react'
 import { getDb } from '@/lib/db'
 import { GEWERKE } from '@/lib/gewerke'
 import { buildCompanySlug } from '@/lib/slugify'
+import { getCurrentUser } from '@/lib/current-user'
+import HomeHeader from '../HomeHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +22,7 @@ export default async function BranchenbuchPage({
   searchParams: Promise<{ gewerk?: string }>
 }) {
   const { gewerk } = await searchParams
+  const user = await getCurrentUser()
   const db = getDb()
 
   const params: unknown[] = []
@@ -43,6 +46,7 @@ export default async function BranchenbuchPage({
 
   return (
     <div className="min-h-screen bg-white">
+      <HomeHeader loggedIn={!!user} />
       <div className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Branchenbuch</div>
         <h1 className="text-3xl md:text-4xl font-black tracking-tight text-[#17202a] mb-3">
