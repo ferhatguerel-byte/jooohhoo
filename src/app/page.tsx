@@ -128,15 +128,34 @@ export default async function HomePage() {
               von Handwerkern.
             </p>
           </div>
-          <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden overflow-x-auto">
-            <div className="min-w-[420px]">
-              <div className="grid grid-cols-[1.4fr_1fr_1fr] px-4 sm:px-5 py-4 font-extrabold bg-slate-50 text-xs sm:text-sm border-b border-slate-200">
+          <div className="bg-white text-[#17202a] rounded-2xl overflow-hidden">
+            {/* Mobile: gestapelte Karten, kein Scrollen nötig */}
+            <div className="sm:hidden divide-y divide-slate-100">
+              {COMPARE_ROWS.map((row) => (
+                <div key={row.label} className="px-4 py-3.5">
+                  <div className="font-bold text-sm mb-2">{row.label}</div>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-green-700">✓</span>
+                      <span className="text-slate-500">BAUVERSUS</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-400 font-semibold">{row.leads}</span>
+                      <span className="text-slate-400">Lead-Kauf-Portale</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Ab Tablet: klassische Tabelle */}
+            <div className="hidden sm:block">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr] px-5 py-4 font-extrabold bg-slate-50 text-sm border-b border-slate-200">
                 <div>Kriterium</div>
                 <div>BAUVERSUS</div>
                 <div>Lead-Kauf-Portale</div>
               </div>
               {COMPARE_ROWS.map((row) => (
-                <div key={row.label} className="grid grid-cols-[1.4fr_1fr_1fr] px-4 sm:px-5 py-4 text-xs sm:text-sm border-b border-slate-100 last:border-0 items-center">
+                <div key={row.label} className="grid grid-cols-[1.4fr_1fr_1fr] px-5 py-4 text-sm border-b border-slate-100 last:border-0 items-center">
                   <div>{row.label}</div>
                   <div className="font-extrabold text-green-700">✓</div>
                   <div className="text-slate-500">{row.leads}</div>
