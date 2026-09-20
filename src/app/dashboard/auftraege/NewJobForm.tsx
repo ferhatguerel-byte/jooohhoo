@@ -174,7 +174,8 @@ export default function NewJobForm() {
           files={attachments}
           onChange={setAttachments}
           label="Bilder & Dateien (optional) – hilft Fachbetrieben, den Umfang besser einzuschätzen"
-          accept="image/*,.pdf,.doc,.docx"
+          accept="image/*,.pdf"
+          purpose="job_attachment"
         />
 
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

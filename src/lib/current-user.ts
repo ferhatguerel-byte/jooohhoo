@@ -17,7 +17,7 @@ export interface CurrentUser {
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
   verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected'
-  qualificationFiles: { url: string; name: string; label: string }[]
+  qualificationFiles: { fileId: string; name: string; label: string }[]
   emailNotifications: boolean
   newsletterOptIn: boolean
   subscriptionCommittedUntil: string | null

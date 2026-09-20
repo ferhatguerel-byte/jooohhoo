@@ -44,10 +44,10 @@ export default async function AdminVerifizierungenPage() {
               )}
             </div>
             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-              {(u.qualification_files || []).map((f: { url: string; name: string; label: string }) => (
+              {(u.qualification_files || []).map((f: { fileId: string; name: string; label: string }) => (
                 <a
-                  key={f.url}
-                  href={f.url}
+                  key={f.fileId}
+                  href={`/api/files/${f.fileId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-semibold text-brand border border-slate-200 rounded-lg px-3 py-1.5 hover:border-brand/40 flex items-center gap-1"

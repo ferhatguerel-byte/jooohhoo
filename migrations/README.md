@@ -35,3 +35,5 @@ angewendete automatisch.
   (jobs.auftraggeber_id, users(role, subscription_status), users.plz, offers.subunternehmer_id,
   hidden_jobs.job_id).
 - `0002_admin_audit_log.sql` – Admin-Audit-Log-Tabelle für sicherheitsrelevante Admin-Aktionen.
+- `0003_private_files.sql` – Zuordnungstabelle für private Datei-Uploads (Qualifikationsnachweise,
+  Auftrags-Anhänge); Zugriff nur über die serverseitig autorisierte Route `/api/files/[id]`.

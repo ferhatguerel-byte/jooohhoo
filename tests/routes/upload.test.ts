@@ -1,20 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { getCurrentUserMock, queryMock, putMock } = vi.hoisted(() => ({
+const { getCurrentUserMock, queryMock, putMock, optimizeMock } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
   putMock: vi.fn(),
+  optimizeMock: vi.fn(),
 }))
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 vi.mock('@vercel/blob', () => ({ put: putMock }))
+vi.mock('@/lib/image-optimize', () => ({ optimizeImageIfNeeded: optimizeMock }))
 
 import { POST } from '@/app/api/upload/route'
 
-function reqWithFile(file: File) {
+function reqWithFile(file: File, purpose = 'job_attachment') {
   const formData = new FormData()
   formData.set('file', file)
+  formData.set('purpose', purpose)
   return new NextRequest('http://localhost/api/upload', { method: 'POST', body: formData })
 }
 
@@ -23,10 +26,19 @@ describe('POST /api/upload', () => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     putMock.mockReset()
+    optimizeMock.mockReset()
     vi.stubEnv('BLOB_READ_WRITE_TOKEN', 'test-token')
     getCurrentUserMock.mockResolvedValue({ id: 'user-1' })
-    queryMock.mockResolvedValue({ rows: [{ count: 0 }] }) // Rate-Limit: immer "erlaubt"
-    putMock.mockResolvedValue({ url: 'https://blob.example.com/user-1/file.pdf' })
+    queryMock.mockImplementation(async (sql: string) => {
+      if (sql.includes('rate_limit_hits')) return { rows: [{ count: 0 }] }
+      if (sql.includes('INSERT INTO private_files')) return { rows: [{ id: 'new-file-id' }] }
+      return { rows: [] }
+    })
+    putMock.mockResolvedValue({ pathname: 'private/job_attachment/user-1/file.pdf' })
+    optimizeMock.mockImplementation(async (file: File) => ({
+      buffer: Buffer.from(await file.arrayBuffer()),
+      contentType: file.type,
+    }))
   })
 
   it('rejects unauthenticated uploads', async () => {
@@ -36,11 +48,22 @@ describe('POST /api/upload', () => {
     expect(res.status).toBe(401)
   })
 
-  it('accepts a valid PDF', async () => {
+  it('rejects an invalid/missing purpose', async () => {
     const file = new File(['%PDF-1.4 ...'], 'nachweis.pdf', { type: 'application/pdf' })
-    const res = await POST(reqWithFile(file))
+    const res = await POST(reqWithFile(file, 'anything-else'))
+    expect(res.status).toBe(400)
+    expect(putMock).not.toHaveBeenCalled()
+  })
+
+  it('accepts a valid PDF and stores it privately, returning a fileId (never a direct URL)', async () => {
+    const file = new File(['%PDF-1.4 ...'], 'nachweis.pdf', { type: 'application/pdf' })
+    const res = await POST(reqWithFile(file, 'qualification_file'))
     expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.fileId).toBe('new-file-id')
+    expect(body.url).toBeUndefined()
     expect(putMock).toHaveBeenCalledOnce()
+    expect(putMock.mock.calls[0][2]).toMatchObject({ access: 'private' })
   })
 
   it('rejects a disallowed MIME type (e.g. an executable)', async () => {

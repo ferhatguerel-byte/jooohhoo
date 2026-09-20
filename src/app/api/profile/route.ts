@@ -6,7 +6,7 @@ import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 
 const qualificationFileSchema = z.object({
-  url: z.string().url(),
+  fileId: z.string().uuid(),
   name: z.string().max(255),
   label: z.string().max(100),
 })
@@ -39,11 +39,23 @@ export async function POST(req: NextRequest) {
     const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
 
     const filesChanged =
-      JSON.stringify([...qualificationFiles].sort((a, b) => a.url.localeCompare(b.url))) !==
-      JSON.stringify([...user.qualificationFiles].sort((a, b) => a.url.localeCompare(b.url)))
+      JSON.stringify([...qualificationFiles].sort((a, b) => a.fileId.localeCompare(b.fileId))) !==
+      JSON.stringify([...user.qualificationFiles].sort((a, b) => a.fileId.localeCompare(b.fileId)))
 
     if (user.role === 'subunternehmer' && qualificationFiles.length > 0 && filesChanged) {
-      await getDb().query(
+      const db = getDb()
+      // Nur eigene, tatsächlich als Qualifikationsnachweis hochgeladene Dateien akzeptieren –
+      // verhindert, dass ein Nutzer die fileId einer fremden Datei oder eines Auftrags-Anhangs
+      // in sein eigenes Profil einträgt.
+      const ownedFiles = await db.query(
+        `SELECT id FROM private_files WHERE id = ANY($1::uuid[]) AND uploaded_by = $2 AND purpose = 'qualification_file'`,
+        [qualificationFiles.map((f) => f.fileId), user.id]
+      )
+      if (ownedFiles.rows.length !== qualificationFiles.length) {
+        return NextResponse.json({ error: 'Eine der Dateien konnte Ihrem Konto nicht zugeordnet werden.' }, { status: 400 })
+      }
+
+      await db.query(
         `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5,
          qualification_files = $6, verification_status = 'pending' WHERE id = $7`,
         [body.companyName, body.phone || null, body.plz, body.ort, gewerke, JSON.stringify(qualificationFiles), user.id]

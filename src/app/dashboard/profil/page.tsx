@@ -45,7 +45,7 @@ export default async function ProfilPage() {
           gewerke={user.gewerke}
           blockedGewerke={user.blockedGewerke}
           verificationStatus={user.verificationStatus}
-          qualificationFiles={user.qualificationFiles as { url: string; name: string; label: string }[]}
+          qualificationFiles={user.qualificationFiles as { fileId: string; name: string; label: string }[]}
         />
       </div>
     </div>

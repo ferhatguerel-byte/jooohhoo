@@ -198,10 +198,10 @@ export default async function JobsPage({
 
               {job.attachments && job.attachments.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {job.attachments.map((f: { url: string; name: string }) => (
+                  {job.attachments.map((f: { fileId: string; name: string }) => (
                     <a
-                      key={f.url}
-                      href={f.url}
+                      key={f.fileId}
+                      href={`/api/files/${f.fileId}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-semibold text-brand border border-slate-200 rounded-lg px-3 py-1.5 hover:border-brand/40"

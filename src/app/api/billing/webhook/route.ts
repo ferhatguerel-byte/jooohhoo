@@ -25,52 +25,61 @@ export async function POST(req: NextRequest) {
 
   const db = getDb()
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session
-      const userId = session.metadata?.userId
-      const tier = session.metadata?.tier as TierId | undefined
-      if (userId && tier && tier in TIERS) {
-        const minimumTermMonths = TIERS[tier].minimumTermMonths
-        await db.query(
-          `UPDATE users SET subscription_tier = $1, subscription_status = 'active',
-           stripe_subscription_id = $2, stripe_customer_id = $3,
-           subscription_committed_until = CASE WHEN $4::int > 0 THEN now() + make_interval(months => $4::int) ELSE NULL END
-           WHERE id = $5`,
-          [tier, session.subscription, session.customer, minimumTermMonths, userId]
-        )
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        const userId = session.metadata?.userId
+        const tier = session.metadata?.tier as TierId | undefined
+        if (userId && tier && tier in TIERS) {
+          const minimumTermMonths = TIERS[tier].minimumTermMonths
+          await db.query(
+            `UPDATE users SET subscription_tier = $1, subscription_status = 'active',
+             stripe_subscription_id = $2, stripe_customer_id = $3,
+             subscription_committed_until = CASE WHEN $4::int > 0 THEN now() + make_interval(months => $4::int) ELSE NULL END
+             WHERE id = $5`,
+            [tier, session.subscription, session.customer, minimumTermMonths, userId]
+          )
+        }
+        break
       }
-      break
-    }
-    case 'customer.subscription.updated': {
-      const subscription = event.data.object as Stripe.Subscription
-      const userId = subscription.metadata?.userId
-      const tier = subscription.metadata?.tier
-      const status = subscription.status === 'active' ? 'active'
-        : subscription.status === 'past_due' ? 'past_due'
-        : 'inactive'
-      const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null
-      if (userId) {
-        await db.query(
-          'UPDATE users SET subscription_status = $1, subscription_tier = COALESCE($2, subscription_tier), subscription_cancel_at = $3 WHERE id = $4',
-          [status, tier || null, cancelAt, userId]
-        )
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        const userId = subscription.metadata?.userId
+        const tier = subscription.metadata?.tier
+        const status = subscription.status === 'active' ? 'active'
+          : subscription.status === 'past_due' ? 'past_due'
+          : 'inactive'
+        const cancelAt = subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null
+        if (userId) {
+          await db.query(
+            'UPDATE users SET subscription_status = $1, subscription_tier = COALESCE($2, subscription_tier), subscription_cancel_at = $3 WHERE id = $4',
+            [status, tier || null, cancelAt, userId]
+          )
+        }
+        break
       }
-      break
-    }
-    case 'customer.subscription.deleted': {
-      const subscription = event.data.object as Stripe.Subscription
-      const userId = subscription.metadata?.userId
-      if (userId) {
-        await db.query(
-          "UPDATE users SET subscription_status = 'canceled', subscription_cancel_at = NULL WHERE id = $1",
-          [userId]
-        )
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        const userId = subscription.metadata?.userId
+        if (userId) {
+          await db.query(
+            "UPDATE users SET subscription_status = 'canceled', subscription_cancel_at = NULL WHERE id = $1",
+            [userId]
+          )
+        }
+        break
       }
-      break
+      default:
+        break
     }
-    default:
-      break
+  } catch (err: unknown) {
+    // Bewusst ein Nicht-2xx-Ergebnis zurückgeben (siehe unten): Stripe wiederholt den Webhook
+    // dann automatisch. Ein stilles Verschlucken hier würde den Abo-Status dauerhaft
+    // inkonsistent lassen, ohne dass irgendjemand es bemerkt.
+    const message = err instanceof Error ? err.message : String(err)
+    console.error(`Stripe-Webhook Fehler (event ${event.id}, type ${event.type}):`, message)
+    return NextResponse.json({ error: 'Webhook-Verarbeitung fehlgeschlagen.' }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })

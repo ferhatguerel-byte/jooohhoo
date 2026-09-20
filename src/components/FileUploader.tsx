@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { Paperclip, X, Loader2 } from 'lucide-react'
 
 export interface UploadedFile {
-  url: string
+  fileId: string
   name: string
 }
 
@@ -14,12 +14,15 @@ export default function FileUploader({
   label,
   accept,
   multiple = true,
+  purpose,
 }: {
   files: UploadedFile[]
   onChange: (files: UploadedFile[]) => void
   label: string
   accept?: string
   multiple?: boolean
+  /** Bestimmt die serverseitige Autorisierungsregel für den späteren Datei-Zugriff. */
+  purpose: 'qualification_file' | 'job_attachment'
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -34,10 +37,11 @@ export default function FileUploader({
       for (const file of Array.from(fileList)) {
         const formData = new FormData()
         formData.append('file', file)
+        formData.append('purpose', purpose)
         const res = await fetch('/api/upload', { method: 'POST', body: formData })
         const json = await res.json()
         if (!res.ok) throw new Error(json.error || 'Upload fehlgeschlagen.')
-        uploaded.push({ url: json.url, name: json.name })
+        uploaded.push({ fileId: json.fileId, name: json.name })
       }
       onChange(multiple ? [...files, ...uploaded] : uploaded)
     } catch (err) {
@@ -48,8 +52,8 @@ export default function FileUploader({
     }
   }
 
-  function removeFile(url: string) {
-    onChange(files.filter((f) => f.url !== url))
+  function removeFile(fileId: string) {
+    onChange(files.filter((f) => f.fileId !== fileId))
   }
 
   return (
@@ -57,11 +61,11 @@ export default function FileUploader({
       <p className="block text-sm font-semibold text-slate-700 mb-1">{label}</p>
       <div className="space-y-2 mb-2">
         {files.map((f) => (
-          <div key={f.url} className="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            <a href={f.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-700 hover:underline truncate">
+          <div key={f.fileId} className="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <a href={`/api/files/${f.fileId}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-slate-700 hover:underline truncate">
               <Paperclip size={14} className="shrink-0" /> <span className="truncate">{f.name}</span>
             </a>
-            <button type="button" onClick={() => removeFile(f.url)} aria-label="Entfernen" className="text-slate-400 hover:text-red-600 shrink-0">
+            <button type="button" onClick={() => removeFile(f.fileId)} aria-label="Entfernen" className="text-slate-400 hover:text-red-600 shrink-0">
               <X size={16} />
             </button>
           </div>

@@ -11,7 +11,7 @@ const lineItemSchema = z.object({
   description: z.string().max(1000).optional(),
 })
 
-const attachmentSchema = z.object({ url: z.string().url(), name: z.string().max(255) })
+const attachmentSchema = z.object({ fileId: z.string().uuid(), name: z.string().max(255) })
 
 const jobSchema = z.object({
   title: z.string().min(5),
@@ -37,6 +37,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = jobSchema.parse(await req.json())
     const pool = getDb()
+
+    if (body.attachments && body.attachments.length > 0) {
+      // Nur eigene, tatsächlich als Auftrags-Anhang hochgeladene Dateien akzeptieren.
+      const ownedFiles = await pool.query(
+        `SELECT id FROM private_files WHERE id = ANY($1::uuid[]) AND uploaded_by = $2 AND purpose = 'job_attachment'`,
+        [body.attachments.map((a) => a.fileId), user.id]
+      )
+      if (ownedFiles.rows.length !== body.attachments.length) {
+        return NextResponse.json({ error: 'Eine der Dateien konnte Ihrem Konto nicht zugeordnet werden.' }, { status: 400 })
+      }
+    }
 
     const client = await pool.connect()
     let jobId: string

@@ -54,4 +54,27 @@ describe('POST /api/billing/webhook', () => {
     expect(res.status).toBe(200)
     expect(queryMock).toHaveBeenCalledOnce()
   })
+
+  it('returns a non-2xx status on a DB failure so Stripe retries the event (no silent data loss)', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_1',
+      type: 'checkout.session.completed',
+      data: { object: { metadata: { userId: 'u1', tier: 'monthly' }, subscription: 'sub_123', customer: 'cus_123' } },
+    })
+    queryMock.mockRejectedValue(new Error('connection terminated'))
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+
+    expect(res.status).toBe(500)
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('ignores unhandled event types without error (e.g. unrelated Stripe events)', async () => {
+    constructEventMock.mockReturnValue({ id: 'evt_2', type: 'invoice.created', data: { object: {} } })
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(queryMock).not.toHaveBeenCalled()
+  })
 })

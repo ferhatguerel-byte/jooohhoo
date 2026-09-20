@@ -77,10 +77,10 @@ export default async function AdminNutzerDetailPage({ params }: { params: Promis
       <div className="bg-white border border-slate-200 rounded-2xl p-6">
         <h2 className="font-bold text-slate-900 mb-3">Nachweise</h2>
         <div className="flex flex-wrap gap-2">
-          {(u.qualification_files || []).map((f: { url: string; name: string; label: string }) => (
+          {(u.qualification_files || []).map((f: { fileId: string; name: string; label: string }) => (
             <a
-              key={f.url}
-              href={f.url}
+              key={f.fileId}
+              href={`/api/files/${f.fileId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-semibold text-brand border border-slate-200 rounded-lg px-3 py-1.5 hover:border-brand/40 flex items-center gap-1"

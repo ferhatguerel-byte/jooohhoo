@@ -180,6 +180,7 @@ export default function ProfileForm({
             label="Gewerbeanmeldung"
             accept=".pdf,image/*"
             multiple={false}
+            purpose="qualification_file"
             files={qualificationFiles.filter((f) => f.label === 'Gewerbeanmeldung')}
             onChange={(files) => setFilesForLabel('Gewerbeanmeldung', files)}
           />
@@ -187,6 +188,7 @@ export default function ProfileForm({
             label="Meisterbrief / Qualifikationsnachweis"
             accept=".pdf,image/*"
             multiple={false}
+            purpose="qualification_file"
             files={qualificationFiles.filter((f) => f.label === 'Meisterbrief / Qualifikationsnachweis')}
             onChange={(files) => setFilesForLabel('Meisterbrief / Qualifikationsnachweis', files)}
           />
@@ -194,6 +196,7 @@ export default function ProfileForm({
             label="Haftpflichtversicherung"
             accept=".pdf,image/*"
             multiple={false}
+            purpose="qualification_file"
             files={qualificationFiles.filter((f) => f.label === 'Haftpflichtversicherung')}
             onChange={(files) => setFilesForLabel('Haftpflichtversicherung', files)}
           />

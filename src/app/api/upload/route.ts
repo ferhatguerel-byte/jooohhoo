@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
+import { randomUUID } from 'crypto'
+import { z } from 'zod'
 import { getCurrentUser } from '@/lib/current-user'
+import { getDb } from '@/lib/db'
 import { enforceRateLimit, getClientIp } from '@/lib/rate-limit'
 import { handleApiError } from '@/lib/api-error'
+import { optimizeImageIfNeeded } from '@/lib/image-optimize'
 
 const MAX_SIZE = 10 * 1024 * 1024
 
@@ -16,6 +20,11 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   'image/webp': ['webp'],
   'image/heic': ['heic'],
 }
+
+// Alle aktuell unterstützten Upload-Arten sind sensibel/nicht-öffentlich (Qualifikationsnachweise,
+// Auftrags-Anhänge) – es gibt derzeit keinen echten öffentlichen Upload-Typ (Firmenlogo o.ä.)
+// in der Anwendung. Deshalb werden ausnahmslos alle Dateien privat gespeichert.
+const purposeSchema = z.enum(['qualification_file', 'job_attachment'])
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -42,6 +51,12 @@ export async function POST(req: NextRequest) {
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Keine Datei übermittelt.' }, { status: 400 })
     }
+    const purposeResult = purposeSchema.safeParse(formData.get('purpose'))
+    if (!purposeResult.success) {
+      return NextResponse.json({ error: 'Ungültiger Upload-Typ.' }, { status: 400 })
+    }
+    const purpose = purposeResult.data
+
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: 'Datei ist zu groß (max. 10 MB).' }, { status: 400 })
     }
@@ -60,13 +75,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dateiendung passt nicht zum Dateityp.' }, { status: 400 })
     }
 
+    const { buffer, contentType } = await optimizeImageIfNeeded(file)
+
     const safeName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100)
-    const blob = await put(`${user.id}/${Date.now()}-${safeName}`, file, {
-      access: 'public',
-      addRandomSuffix: true,
-      contentType: file.type,
+    const pathname = `private/${purpose}/${user.id}/${randomUUID()}-${safeName}`
+    const blob = await put(pathname, buffer, {
+      access: 'private',
+      addRandomSuffix: false,
+      contentType,
     })
-    return NextResponse.json({ url: blob.url, name: baseName })
+
+    const db = getDb()
+    const inserted = await db.query(
+      `INSERT INTO private_files (pathname, original_name, content_type, size_bytes, uploaded_by, purpose)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [blob.pathname, baseName, contentType, buffer.byteLength, user.id, purpose]
+    )
+
+    return NextResponse.json({ fileId: inserted.rows[0].id, name: baseName })
   } catch (err: unknown) {
     return handleApiError(err, 'Datei konnte nicht hochgeladen werden.')
   }
