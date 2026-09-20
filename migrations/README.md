@@ -37,3 +37,6 @@ angewendete automatisch.
 - `0002_admin_audit_log.sql` – Admin-Audit-Log-Tabelle für sicherheitsrelevante Admin-Aktionen.
 - `0003_private_files.sql` – Zuordnungstabelle für private Datei-Uploads (Qualifikationsnachweise,
   Auftrags-Anhänge); Zugriff nur über die serverseitig autorisierte Route `/api/files/[id]`.
+- `0004_seo_architecture.sql` – `users.company_slug` (stabiler kanonischer Firmen-Slug für
+  `/firma/[slug]`) sowie `seo_landing_pages` (Status/Quality-Score-Tracking für programmatische
+  SEO-Landingpages, siehe `src/lib/seo/`).

@@ -2,8 +2,9 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { MapPin, Star, BadgeCheck } from 'lucide-react'
 import { getDb } from '@/lib/db'
-import { GEWERKE } from '@/lib/gewerke'
-import { buildCompanySlug } from '@/lib/slugify'
+import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
+import { getActiveCities } from '@/lib/seo/cities'
+import { ensureCompanySlugs } from '@/lib/company-slug'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '../HomeHeader'
 
@@ -16,33 +17,22 @@ export const metadata: Metadata = {
   alternates: { canonical: '/branchenbuch' },
 }
 
-export default async function BranchenbuchPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ gewerk?: string }>
-}) {
-  const { gewerk } = await searchParams
+export default async function BranchenbuchPage() {
   const user = await getCurrentUser()
   const db = getDb()
-
-  const params: unknown[] = []
-  let filterClause = ''
-  if (gewerk) {
-    params.push(gewerk)
-    filterClause = 'AND $1 = ANY(gewerke)'
-  }
+  const gewerkeList = getActiveGewerkeSeo()
+  const cities = getActiveCities()
 
   const result = await db.query(
-    `SELECT id, company_name, gewerke, plz, ort, verification_status,
+    `SELECT id, company_name, company_slug, gewerke, plz, ort, verification_status,
             (SELECT AVG(rating)::numeric(2,1) FROM reviews WHERE reviewee_id = users.id) AS avg_rating,
             (SELECT COUNT(*)::int FROM reviews WHERE reviewee_id = users.id) AS review_count
      FROM users
      WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
-       AND company_name IS NOT NULL ${filterClause}
-     ORDER BY company_name ASC`,
-    params
+       AND company_name IS NOT NULL
+     ORDER BY company_name ASC`
   )
-  const companies = result.rows
+  const companies = await ensureCompanySlugs(result.rows)
 
   return (
     <div className="min-h-screen bg-white">
@@ -57,32 +47,43 @@ export default async function BranchenbuchPage({
           Handwerksbetriebe in Ihrer Region zu finden, und kontaktieren Sie sie direkt über die Plattform.
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-10">
-          <Link
-            href="/branchenbuch"
-            className={`px-3 py-1.5 rounded-full text-sm border transition ${!gewerk ? 'bg-accent border-accent text-white' : 'border-slate-300 text-slate-600'}`}
-          >
-            Alle Gewerke
-          </Link>
-          {GEWERKE.map((g) => (
-            <Link
-              key={g}
-              href={`/branchenbuch?gewerk=${encodeURIComponent(g)}`}
-              className={`px-3 py-1.5 rounded-full text-sm border transition ${gewerk === g ? 'bg-accent border-accent text-white' : 'border-slate-300 text-slate-600'}`}
-            >
-              {g}
-            </Link>
-          ))}
+        <div className="mb-2">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Nach Gewerk</p>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {gewerkeList.map((g) => (
+              <Link
+                key={g.slug}
+                href={`/branchenbuch/${g.slug}`}
+                className="px-3 py-1.5 rounded-full text-sm border border-slate-300 text-slate-600 hover:border-brand/40 transition"
+              >
+                {g.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="mb-10">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Nach Stadt</p>
+          <div className="flex flex-wrap gap-2">
+            {cities.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/branchenbuch/${c.slug}`}
+                className="px-3 py-1.5 rounded-full text-sm border border-slate-300 text-slate-600 hover:border-brand/40 transition"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {companies.length === 0 && (
-            <p className="text-slate-500 col-span-full">Aktuell sind keine Betriebe für dieses Gewerk gelistet.</p>
+            <p className="text-slate-500 col-span-full">Aktuell sind keine Betriebe gelistet.</p>
           )}
           {companies.map((c) => (
             <Link
               key={c.id}
-              href={`/branchenbuch/${buildCompanySlug(c.company_name, c.id)}`}
+              href={`/firma/${c.company_slug}`}
               className="border border-slate-200 rounded-2xl p-5 hover:border-brand/40 hover:shadow-md transition"
             >
               <div className="flex items-start justify-between gap-2 mb-2">

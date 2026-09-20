@@ -7,7 +7,8 @@ import {
   Wrench,
 } from 'lucide-react'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
-import { GEWERK_GROUPS } from '@/lib/gewerke'
+import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
+import { getActiveCities } from '@/lib/seo/cities'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from './HomeHeader'
 
@@ -46,6 +47,8 @@ const VORTEILE = [
 
 export default async function HomePage() {
   const user = await getCurrentUser()
+  const gewerke = getActiveGewerkeSeo()
+  const cities = getActiveCities()
 
   return (
     <div className="min-h-screen bg-white text-[#17202a]">
@@ -59,20 +62,20 @@ export default async function HomePage() {
               Die neue Plattform für Bau &amp; Handwerk
             </div>
             <h1 className="text-4xl md:text-6xl font-black leading-[1.03] tracking-tight mb-6 max-w-xl">
-              Gute Handwerker finden.{' '}
-              <span className="text-accent">Faire Angebote vergleichen.</span>
+              Bauprojekte einfach vergeben.{' '}
+              <span className="text-accent">Angebote wirklich vergleichen.</span>
             </h1>
             <p className="text-lg text-slate-500 leading-relaxed max-w-xl mb-8">
-              BAUVERSUS bringt Auftraggeber und geprüfte Fachbetriebe zusammen – mit einem KI-Leistungsverzeichnis,
-              transparenten Angeboten und einem Matching, das wirklich zu deinem Projekt passt.
+              BAUVERSUS bringt Auftraggeber und passende Fachbetriebe zusammen – mit strukturierten Projekten,
+              intelligentem Matching und vergleichbaren Angeboten.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/registrieren?rolle=auftraggeber" className="bg-accent hover:bg-accent-hover text-white font-bold py-3.5 px-7 rounded-lg text-center transition">
-                Kostenlos Auftrag erstellen →
+              <Link href="/handwerker" className="bg-accent hover:bg-accent-hover text-white font-bold py-3.5 px-7 rounded-lg text-center transition">
+                Handwerker finden →
               </Link>
-              <a href="#so-funktionierts" className="border border-slate-300 hover:border-slate-400 text-[#17202a] font-bold py-3.5 px-7 rounded-lg text-center transition">
-                Mehr erfahren
-              </a>
+              <Link href="/nachunternehmer" className="border border-slate-300 hover:border-slate-400 text-[#17202a] font-bold py-3.5 px-7 rounded-lg text-center transition">
+                Nachunternehmer finden →
+              </Link>
             </div>
           </div>
 
@@ -87,10 +90,10 @@ export default async function HomePage() {
               <span className="text-sm text-slate-500">Berlin · 120 m² · Start flexibel</span>
             </div>
             <div className="bg-[#f6faf7] rounded-lg p-4 mt-4">
-              <div className="text-3xl font-black text-[#17202a] mb-1">96 % Match</div>
+              <div className="font-black text-lg text-[#17202a] mb-1">Intelligentes Matching</div>
               <div className="text-sm text-slate-500">
                 Passende geprüfte Fachbetriebe werden anhand von Qualifikation, Erfahrung, Entfernung, Kapazität und
-                Preisniveau bewertet.
+                Preisniveau ermittelt.
               </div>
             </div>
           </div>
@@ -198,19 +201,58 @@ export default async function HomePage() {
           <div className="border border-slate-200 rounded-2xl p-8 flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-3">
               <Wrench size={20} className="text-accent" />
-              <h3 className="font-bold text-lg">Alle Gewerke</h3>
+              <h3 className="font-bold text-lg">Gewerke</h3>
             </div>
-            <div className="space-y-3">
-              {GEWERK_GROUPS.map((group) => (
-                <div key={group.label} className="flex flex-wrap gap-1.5">
-                  {group.items.map((g) => (
-                    <span key={g} className="text-xs font-medium text-slate-600 bg-slate-100 rounded-full px-2.5 py-1">
-                      {g}
-                    </span>
-                  ))}
-                </div>
+            <div className="flex flex-wrap gap-1.5">
+              {gewerke.map((g) => (
+                <Link
+                  key={g.slug}
+                  href={`/handwerker/${g.slug}`}
+                  className="text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full px-2.5 py-1 transition"
+                >
+                  {g.name}
+                </Link>
               ))}
             </div>
+            <Link href="/handwerker" className="text-sm font-semibold text-brand hover:underline mt-4 inline-block">
+              Alle Gewerke ansehen →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Städte / Baukosten / Branchenbuch / Ratgeber */}
+      <section className="max-w-6xl mx-auto px-6 pb-20 grid md:grid-cols-2 gap-6">
+        <div className="border border-slate-200 rounded-2xl p-8">
+          <h3 className="font-bold text-lg mb-3">Handwerker in Ihrer Stadt</h3>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {cities.map((c) => (
+              <Link
+                key={c.slug}
+                href={`/branchenbuch/${c.slug}`}
+                className="text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full px-2.5 py-1 transition"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+          <Link href="/branchenbuch" className="text-sm font-semibold text-brand hover:underline">
+            Zum Branchenbuch →
+          </Link>
+        </div>
+        <div className="border border-slate-200 rounded-2xl p-8">
+          <h3 className="font-bold text-lg mb-3">Baukosten &amp; Ratgeber</h3>
+          <p className="text-slate-500 text-sm mb-4">
+            Orientierung zu typischen Bauleistungen und Sanierungsprojekten sowie Fachwissen rund um Bau und
+            Handwerk.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link href="/baukosten" className="text-sm font-semibold text-brand hover:underline">
+              Baukosten →
+            </Link>
+            <Link href="/ratgeber" className="text-sm font-semibold text-brand hover:underline">
+              Ratgeber →
+            </Link>
           </div>
         </div>
       </section>
@@ -272,6 +314,9 @@ export default async function HomePage() {
       <footer className="px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-slate-500 max-w-6xl mx-auto">
         <div>© {new Date().getFullYear()} BAUVERSUS – eine Marke der GGV BAU GmbH.</div>
         <div className="flex gap-4 flex-wrap justify-center">
+          <Link href="/handwerker" className="hover:text-[#17202a]">Handwerker</Link>
+          <Link href="/nachunternehmer" className="hover:text-[#17202a]">Nachunternehmer</Link>
+          <Link href="/baukosten" className="hover:text-[#17202a]">Baukosten</Link>
           <Link href="/branchenbuch" className="hover:text-[#17202a]">Branchenbuch</Link>
           <Link href="/ratgeber" className="hover:text-[#17202a]">Ratgeber</Link>
           <Link href="/impressum" className="hover:text-[#17202a]">Impressum</Link>
