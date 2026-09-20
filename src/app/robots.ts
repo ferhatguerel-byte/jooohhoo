@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { getAppUrl } from '@/lib/url'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard', '/api'],
     },
-    sitemap: 'https://www.bauversus.de/sitemap.xml',
+    sitemap: `${getAppUrl()}/sitemap.xml`,
   }
 }

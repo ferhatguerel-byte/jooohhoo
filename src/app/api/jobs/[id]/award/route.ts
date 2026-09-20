@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendOfferAwardedEmail } from '@/lib/email'
+import { handleApiError } from '@/lib/api-error'
 
 const awardSchema = z.object({ offerId: z.string().uuid() })
 
@@ -52,11 +53,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Auftrag vergeben Fehler:', message)
-    return NextResponse.json({ error: 'Auftrag konnte nicht vergeben werden.' }, { status: 500 })
+    return handleApiError(err, 'Auftrag konnte nicht vergeben werden.')
   }
 }

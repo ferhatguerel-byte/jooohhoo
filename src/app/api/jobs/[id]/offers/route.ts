@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { sendNewOfferEmail } from '@/lib/email'
 import { TIERS } from '@/lib/tiers'
 import { isMeisterpflichtig } from '@/lib/gewerke'
+import { handleApiError } from '@/lib/api-error'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -128,11 +129,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Angebot abgeben Fehler:', message)
-    return NextResponse.json({ error: 'Angebot konnte nicht übermittelt werden.' }, { status: 500 })
+    return handleApiError(err, 'Angebot konnte nicht übermittelt werden.')
   }
 }

@@ -1,14 +1,11 @@
-import { redirect, notFound } from 'next/navigation'
-import { getCurrentUser } from '@/lib/current-user'
+import { notFound } from 'next/navigation'
+import { requireAdmin } from '@/lib/authorization'
 import { getArticleByIdForAdmin } from '@/lib/guide'
 import ArticleForm from '../ArticleForm'
 
 export default async function EditArtikelPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const article = await getArticleByIdForAdmin(id)
   if (!article) notFound()

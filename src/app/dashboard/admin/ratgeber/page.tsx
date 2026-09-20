@@ -1,14 +1,10 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getAllArticlesForAdmin } from '@/lib/guide'
 import DeleteArticleButton from './DeleteArticleButton'
 
 export default async function AdminRatgeberPage() {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const articles = await getAllArticlesForAdmin()
 

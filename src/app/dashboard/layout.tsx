@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { HardHat } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
+import { isAdmin as checkIsAdmin } from '@/lib/authorization'
 import AccountMenu from './AccountMenu'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         { href: '/dashboard/abo', label: 'Abo' },
       ]
 
-  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL
+  const isAdmin = checkIsAdmin(user)
   if (isAdmin) {
     links.push({ href: '/dashboard/admin', label: 'Admin-Dashboard' })
   }

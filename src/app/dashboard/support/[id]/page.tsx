@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
+import { isAdmin as checkIsAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 import TicketThread, { TicketMessage } from '@/components/TicketThread'
 
@@ -9,7 +10,7 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL
+  const isAdmin = checkIsAdmin(user)
 
   const db = getDb()
   const ticketResult = await db.query(

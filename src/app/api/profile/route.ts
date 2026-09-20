@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
+import { handleApiError } from '@/lib/api-error'
 
 const qualificationFileSchema = z.object({
   url: z.string().url(),
@@ -56,11 +57,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Profil aktualisieren Fehler:', message)
-    return NextResponse.json({ error: 'Profil konnte nicht gespeichert werden.' }, { status: 500 })
+    return handleApiError(err, 'Profil konnte nicht gespeichert werden.')
   }
 }

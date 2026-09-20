@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewTicketEmail } from '@/lib/email'
+import { handleApiError } from '@/lib/api-error'
 
 const schema = z.object({
   category: z.string().min(1).max(60),
@@ -61,11 +62,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, ticketId })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Ticket erstellen Fehler:', message)
-    return NextResponse.json({ error: 'Anfrage konnte nicht gesendet werden.' }, { status: 500 })
+    return handleApiError(err, 'Anfrage konnte nicht gesendet werden.')
   }
 }

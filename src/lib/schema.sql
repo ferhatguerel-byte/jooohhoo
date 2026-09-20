@@ -1,5 +1,11 @@
--- BAUVERSUS – Datenbankschema
+-- BAUVERSUS – Datenbankschema (historischer Stand, eingefroren)
 -- Ausführen mit: psql "$DATABASE_URL" -f src/lib/schema.sql
+--
+-- WICHTIG: Diese Datei wird ab sofort NICHT mehr erweitert. Sie dokumentiert nur noch den
+-- Stand bis einschließlich der letzten hier enthaltenen ALTER-Anweisung. Alle künftigen
+-- Datenbankänderungen kommen als nummerierte Migrationen in /migrations (siehe
+-- /migrations/README.md) – jede Migration ist idempotent und trägt sich selbst in die
+-- Tabelle schema_migrations ein.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 

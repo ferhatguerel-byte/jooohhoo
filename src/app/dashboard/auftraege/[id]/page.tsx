@@ -4,7 +4,7 @@ import { Star, ShieldCheck, Ruler, BadgeCheck, Paperclip, TrendingUp, Zap } from
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 import { getRegionalPriceStats } from '@/lib/regional-price'
-import { getResponseTimeStats } from '@/lib/response-time'
+import { getResponseTimeStatsBatch } from '@/lib/response-time'
 import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
 import EditJobButton from './EditJobButton'
@@ -83,13 +83,12 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   const regionalPrice = await getRegionalPriceStats(job.gewerk, job.plz)
 
+  const responseTimeStatsByUser = await getResponseTimeStatsBatch(offers.map((o) => o.subunternehmer_id))
   const responseTimeByOffer = new Map<string, string>()
-  await Promise.all(
-    offers.map(async (offer) => {
-      const stats = await getResponseTimeStats(offer.subunternehmer_id)
-      if (stats) responseTimeByOffer.set(offer.id, stats.label)
-    })
-  )
+  for (const offer of offers) {
+    const stats = responseTimeStatsByUser.get(offer.subunternehmer_id)
+    if (stats) responseTimeByOffer.set(offer.id, stats.label)
+  }
 
   let existingReview = null
   if (job.awarded_subunternehmer_id) {

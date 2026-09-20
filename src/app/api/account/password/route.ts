@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { hashPassword, verifyPassword } from '@/lib/auth'
+import { handleApiError } from '@/lib/api-error'
 
 const schema = z.object({
   currentPassword: z.string().min(1, 'Bitte aktuelles Passwort eingeben.'),
@@ -28,11 +29,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Passwort ändern Fehler:', message)
-    return NextResponse.json({ error: 'Passwort konnte nicht geändert werden.' }, { status: 500 })
+    return handleApiError(err, 'Passwort konnte nicht geändert werden.')
   }
 }

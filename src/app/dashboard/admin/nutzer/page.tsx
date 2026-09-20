@@ -1,7 +1,6 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 import { TIERS, type TierId } from '@/lib/tiers'
 import NutzerSearch from './NutzerSearch'
@@ -12,10 +11,7 @@ export default async function AdminNutzerPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const { q } = await searchParams
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const db = getDb()
   const search = (q || '').trim()

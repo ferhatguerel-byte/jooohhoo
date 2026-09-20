@@ -1,16 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdminApi } from '@/lib/authorization'
+import { handleApiError } from '@/lib/api-error'
+import { logAdminAction } from '@/lib/admin-audit'
 import { getStripe } from '@/lib/stripe'
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: userId } = await params
-  const admin = await getCurrentUser()
-  if (!admin || !process.env.ADMIN_EMAIL || admin.email !== process.env.ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Kein Zugriff.' }, { status: 403 })
-  }
-
   try {
+    const admin = await requireAdminApi()
     const db = getDb()
     const target = await db.query('SELECT stripe_subscription_id FROM users WHERE id = $1', [userId])
     if (target.rows.length === 0) {
@@ -28,10 +26,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       [userId]
     )
 
+    await logAdminAction(admin.id, 'SUBSCRIPTION_CHANGED', 'user', userId, { action: 'admin_canceled' }, req)
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Admin-Kündigung Fehler:', message)
-    return NextResponse.json({ error: 'Kündigung konnte nicht durchgeführt werden.' }, { status: 500 })
+    return handleApiError(err, 'Kündigung konnte nicht durchgeführt werden.')
   }
 }

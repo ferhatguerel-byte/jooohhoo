@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
 import { computeCancellationEffectiveDate } from '@/lib/subscription-term'
+import { handleApiError } from '@/lib/api-error'
 
 export async function POST() {
   const user = await getCurrentUser()
@@ -24,9 +25,7 @@ export async function POST() {
 
     return NextResponse.json({ ok: true, cancelAt: effectiveDate.toISOString() })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Kündigung Fehler:', message)
-    return NextResponse.json({ error: 'Kündigung konnte nicht eingereicht werden.' }, { status: 500 })
+    return handleApiError(err, 'Kündigung konnte nicht eingereicht werden.')
   }
 }
 
@@ -45,8 +44,6 @@ export async function DELETE() {
     await getDb().query('UPDATE users SET subscription_cancel_at = NULL WHERE id = $1', [user.id])
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Kündigung zurückziehen Fehler:', message)
-    return NextResponse.json({ error: 'Kündigung konnte nicht zurückgezogen werden.' }, { status: 500 })
+    return handleApiError(err, 'Kündigung konnte nicht zurückgezogen werden.')
   }
 }

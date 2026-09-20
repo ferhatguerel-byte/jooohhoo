@@ -1,13 +1,9 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 
 export default async function AdminSupportPage() {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const result = await getDb().query(
     `SELECT t.id, t.category, t.subject, t.status, t.updated_at, u.company_name, u.email

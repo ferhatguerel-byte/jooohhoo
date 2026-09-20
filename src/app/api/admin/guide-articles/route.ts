@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdminApi } from '@/lib/authorization'
+import { handleApiError } from '@/lib/api-error'
+import { logAdminAction } from '@/lib/admin-audit'
 import { slugify } from '@/lib/slugify'
 
 const schema = z.object({
@@ -12,17 +14,9 @@ const schema = z.object({
   published: z.boolean().default(true),
 })
 
-function isAdmin(email: string) {
-  return !!process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL
-}
-
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user || !isAdmin(user.email)) {
-    return NextResponse.json({ error: 'Kein Zugriff.' }, { status: 403 })
-  }
-
   try {
+    const admin = await requireAdminApi()
     const body = schema.parse(await req.json())
     const db = getDb()
 
@@ -40,13 +34,9 @@ export async function POST(req: NextRequest) {
       [slug, body.title, body.excerpt, body.content, body.metaDescription || null, body.published]
     )
 
+    await logAdminAction(admin.id, 'GUIDE_ARTICLE_CREATED', 'guide_article', result.rows[0].id, { title: body.title, slug }, req)
     return NextResponse.json({ ok: true, id: result.rows[0].id, slug })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Ratgeber-Artikel erstellen Fehler:', message)
-    return NextResponse.json({ error: 'Artikel konnte nicht erstellt werden.' }, { status: 500 })
+    return handleApiError(err, 'Artikel konnte nicht erstellt werden.')
   }
 }

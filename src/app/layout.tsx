@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getAppUrl } from "@/lib/url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,7 +13,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://www.bauversus.de";
+const SITE_URL = getAppUrl();
 const SITE_NAME = "BAUVERSUS";
 const TITLE = "BAUVERSUS – Geprüfte Handwerker. Vergleichbare Angebote.";
 const DESCRIPTION =

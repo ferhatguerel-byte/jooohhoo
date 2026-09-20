@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
+import { handleApiError } from '@/lib/api-error'
 
 const updateSchema = z.object({
   title: z.string().min(5),
@@ -37,11 +38,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     )
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Auftrag bearbeiten Fehler:', message)
-    return NextResponse.json({ error: 'Auftrag konnte nicht aktualisiert werden.' }, { status: 500 })
+    return handleApiError(err, 'Auftrag konnte nicht aktualisiert werden.')
   }
 }

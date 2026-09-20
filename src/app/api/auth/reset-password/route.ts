@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { hashPassword, hashResetToken } from '@/lib/auth'
+import { handleApiError } from '@/lib/api-error'
 
 const schema = z.object({
   token: z.string().min(1),
@@ -30,11 +31,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Passwort zurücksetzen Fehler:', message)
-    return NextResponse.json({ error: 'Passwort konnte nicht zurückgesetzt werden.' }, { status: 500 })
+    return handleApiError(err, 'Passwort konnte nicht zurückgesetzt werden.')
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
+import { handleApiError } from '@/lib/api-error'
 
 const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
@@ -37,11 +38,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Bewertung Fehler:', message)
-    return NextResponse.json({ error: 'Bewertung konnte nicht gespeichert werden.' }, { status: 500 })
+    return handleApiError(err, 'Bewertung konnte nicht gespeichert werden.')
   }
 }

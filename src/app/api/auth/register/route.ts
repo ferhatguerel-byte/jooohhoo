@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { hashPassword, createSessionCookie } from '@/lib/auth'
 import { GEWERKE } from '@/lib/gewerke'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { handleApiError } from '@/lib/api-error'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -50,11 +51,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, role: user.role })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Registrierung Fehler:', message)
-    return NextResponse.json({ error: 'Registrierung fehlgeschlagen.' }, { status: 500 })
+    return handleApiError(err, 'Registrierung fehlgeschlagen.')
   }
 }

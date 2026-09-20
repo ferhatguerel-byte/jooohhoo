@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { verifyPassword, createSessionCookie } from '@/lib/auth'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { handleApiError } from '@/lib/api-error'
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -42,11 +43,6 @@ export async function POST(req: NextRequest) {
     await createSessionCookie({ userId: user.id, role: user.role })
     return NextResponse.json({ ok: true, role: user.role })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Login Fehler:', message)
-    return NextResponse.json({ error: 'Login fehlgeschlagen.' }, { status: 500 })
+    return handleApiError(err, 'Login fehlgeschlagen.')
   }
 }

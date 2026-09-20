@@ -1,15 +1,11 @@
-import { redirect } from 'next/navigation'
 import { Paperclip } from 'lucide-react'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 import { MEISTERPFLICHTIGE_GEWERKE } from '@/lib/gewerke'
 import VerifyActions from './VerifyActions'
 
 export default async function AdminVerifizierungenPage() {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const result = await getDb().query(
     `SELECT id, company_name, email, plz, ort, gewerke, verification_status, qualification_files, verified_gewerke

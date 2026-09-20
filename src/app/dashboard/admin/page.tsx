@@ -1,14 +1,10 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart } from 'lucide-react'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 
 export default async function AdminDashboardPage() {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const db = getDb()
   const [pendingVerifications, openTickets, suspendedUsers, totalUnternehmer, articleCount] = await Promise.all([

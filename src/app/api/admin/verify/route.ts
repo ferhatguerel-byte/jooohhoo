@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdminApi } from '@/lib/authorization'
+import { handleApiError } from '@/lib/api-error'
+import { logAdminAction } from '@/lib/admin-audit'
 
 const schema = z.object({
   userId: z.string().uuid(),
@@ -10,13 +12,8 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!adminEmail || !user || user.email !== adminEmail) {
-    return NextResponse.json({ error: 'Kein Zugriff.' }, { status: 403 })
-  }
-
   try {
+    const admin = await requireAdminApi()
     const { userId, status, verifiedGewerke } = schema.parse(await req.json())
     const newlyVerified = status === 'verified' ? verifiedGewerke || [] : []
     await getDb().query(
@@ -25,13 +22,9 @@ export async function POST(req: NextRequest) {
        WHERE id = $3`,
       [status, newlyVerified, userId]
     )
+    await logAdminAction(admin.id, status === 'verified' ? 'DOCUMENT_APPROVED' : status === 'rejected' ? 'DOCUMENT_REJECTED' : 'USER_UNVERIFIED', 'user', userId, { status, verifiedGewerke: newlyVerified }, req)
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Verifizierung Fehler:', message)
-    return NextResponse.json({ error: 'Aktion fehlgeschlagen.' }, { status: 500 })
+    return handleApiError(err, 'Aktion fehlgeschlagen.')
   }
 }

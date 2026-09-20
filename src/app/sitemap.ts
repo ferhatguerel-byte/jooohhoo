@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next'
 import { getDb } from '@/lib/db'
 import { buildCompanySlug } from '@/lib/slugify'
+import { getAppUrl } from '@/lib/url'
 
-const BASE_URL = 'https://www.bauversus.de'
+const BASE_URL = getAppUrl()
 
 export const dynamic = 'force-dynamic'
 

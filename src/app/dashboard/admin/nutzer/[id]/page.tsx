@@ -1,7 +1,7 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Paperclip } from 'lucide-react'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 import { TIERS, type TierId } from '@/lib/tiers'
 import {
@@ -14,10 +14,7 @@ import {
 
 export default async function AdminNutzerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const admin = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!admin) redirect('/login')
-  if (!adminEmail || admin.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const db = getDb()
   const result = await db.query(

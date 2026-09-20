@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getSession } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 import type { TierId } from '@/lib/tiers'
@@ -27,7 +28,13 @@ export interface CurrentUser {
   verifiedGewerke: string[]
 }
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+/**
+ * Über React.cache() pro Request memoisiert: mehrere Aufrufe innerhalb desselben
+ * Server-Component-Rendertrees (z. B. im Layout und in der Page) lösen nur eine
+ * DB-Abfrage aus statt einer pro Aufruf. Der Cache wird von Next.js für jeden neuen
+ * Request zurückgesetzt, es werden also nie Daten zwischen Nutzern/Requests geteilt.
+ */
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await getSession()
   if (!session) return null
 
@@ -68,4 +75,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     directoryListed: row.directory_listed,
     verifiedGewerke: row.verified_gewerke || [],
   }
-}
+})

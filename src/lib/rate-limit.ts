@@ -1,6 +1,14 @@
 import type { NextRequest } from 'next/server'
 import { getDb } from '@/lib/db'
 
+/** Wird von handleApiError (src/lib/api-error.ts) in eine 429-Antwort übersetzt. */
+export class RateLimitError extends Error {
+  constructor(message = 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.') {
+    super(message)
+    this.name = 'RateLimitError'
+  }
+}
+
 export function getClientIp(req: NextRequest): string {
   const forwarded = req.headers.get('x-forwarded-for')
   if (forwarded) return forwarded.split(',')[0]!.trim()
@@ -37,4 +45,16 @@ export async function checkRateLimit(
   }
 
   return true
+}
+
+/** Wie checkRateLimit, wirft aber RateLimitError statt false zurückzugeben. */
+export async function enforceRateLimit(
+  bucket: string,
+  identifier: string,
+  maxHits: number,
+  windowMinutes: number,
+  message?: string
+): Promise<void> {
+  const allowed = await checkRateLimit(bucket, identifier, maxHits, windowMinutes)
+  if (!allowed) throw new RateLimitError(message)
 }

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewMessageEmail } from '@/lib/email'
+import { handleApiError } from '@/lib/api-error'
 
 const schema = z.object({ message: z.string().min(1).max(2000) })
 
@@ -55,11 +56,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Nachricht senden Fehler:', message)
-    return NextResponse.json({ error: 'Nachricht konnte nicht gesendet werden.' }, { status: 500 })
+    return handleApiError(err, 'Nachricht konnte nicht gesendet werden.')
   }
 }

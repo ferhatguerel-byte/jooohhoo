@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getAppUrl } from '@/lib/url'
+import { handleApiError } from '@/lib/api-error'
 
 const checkoutSchema = z.object({ tier: z.enum(TIER_ORDER as [string, ...string[]]) })
 
@@ -100,11 +101,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })
-    }
-    const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-    console.error('Checkout Fehler:', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return handleApiError(err, 'Checkout konnte nicht gestartet werden.')
   }
 }

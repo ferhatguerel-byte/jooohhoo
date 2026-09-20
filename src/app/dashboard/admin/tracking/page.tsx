@@ -1,7 +1,6 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireAdmin } from '@/lib/authorization'
 import { getFunnelStats } from '@/lib/funnel-stats'
 
 export const dynamic = 'force-dynamic'
@@ -34,10 +33,7 @@ function FunnelBar({
 }
 
 export default async function TrackingDashboardPage() {
-  const user = await getCurrentUser()
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user) redirect('/login')
-  if (!adminEmail || user.email !== adminEmail) redirect('/dashboard')
+  await requireAdmin()
 
   const stats = await getFunnelStats()
 
