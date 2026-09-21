@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart, Search } from 'lucide-react'
+import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart, Search, TrendingUp } from 'lucide-react'
 import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 
@@ -61,6 +61,13 @@ export default async function AdminDashboardPage() {
       desc: 'Quality-Score, Status und Freigabe der programmatischen SEO-Seiten (Handwerker, Nachunternehmer, Branchenbuch).',
       stat: `${seoReviewCount.rows[0].count} zur Prüfung`,
       urgent: seoReviewCount.rows[0].count > 0,
+    },
+    {
+      href: '/dashboard/admin/analytics',
+      icon: TrendingUp,
+      title: 'Matching Analytics',
+      desc: 'Wie sich Aufträge durch den Matching-Funnel bewegen: Matches, Notifications, E-Mails, Angebote, Vergaben.',
+      stat: 'Übersicht',
     },
   ]
 
