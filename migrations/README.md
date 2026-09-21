@@ -52,3 +52,7 @@ angewendete automatisch.
   künftige Match-Benachrichtigungen, UNIQUE(job_id, provider_id), `job_match_id` verweist auf
   `job_matches(id)` mit `ON DELETE SET NULL`; noch keine automatische Befüllung, kein E-Mail-
   Versand).
+- `0009_match_notification_retry.sql` – Phase 3.6F: neuer Enum-Wert `'sending'` für
+  `match_notification_status` sowie `match_notifications.processing_started_at` (Lease-Timeout
+  für hängende Zustellungen + Backoff-Basis für Retries; siehe
+  `src/lib/matching/send-match-notification-emails.ts`).

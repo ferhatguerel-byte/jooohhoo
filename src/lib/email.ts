@@ -1,5 +1,25 @@
 import { Resend } from 'resend'
+import type { ErrorResponse } from 'resend'
 import { getAppUrl } from '@/lib/url'
+
+/**
+ * Phase 3.6F – Resend meldet API-Fehler (ungültige Adresse, Rate-Limit, ...) NICHT über eine
+ * geworfene Exception, sondern über `{ data: null, error: {...} }` im Rückgabewert. Bis zu dieser
+ * Härtung wurde dieser Rückgabewert nie geprüft – ein von Resend abgelehnter Versand sah für den
+ * Aufrufer wie ein erfolgreicher `await send(...)` aus. `code` entspricht exakt
+ * `ErrorResponse['name']` aus der tatsächlich installierten Resend-SDK-Typdefinition (keine
+ * erfundenen Fehlercodes), ermöglicht der Retry-Logik in
+ * src/lib/matching/send-match-notification-emails.ts eine echte Fehlerklassifizierung
+ * (transient vs. permanent) statt jeden Fehler gleich zu behandeln.
+ */
+export class ResendSendError extends Error {
+  code: ErrorResponse['name']
+  constructor(message: string, code: ErrorResponse['name']) {
+    super(message)
+    this.name = 'ResendSendError'
+    this.code = code
+  }
+}
 
 /** Verhindert HTML-Injection in E-Mails über nutzergesteuerte Texte (Nachrichten, Firmennamen, Betreffs). */
 function escapeHtml(value: string): string {
@@ -25,7 +45,10 @@ async function send(to: string, subject: string, html: string, text?: string) {
     console.log(`[E-Mail nicht versendet – kein RESEND_API_KEY] An: ${to} | Betreff: ${subject}`)
     return
   }
-  await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html, ...(text ? { text } : {}) })
+  const result = await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html, ...(text ? { text } : {}) })
+  if (result.error) {
+    throw new ResendSendError(result.error.message, result.error.name)
+  }
 }
 
 /** Kürzt einen Text auf eine sinnvolle Länge für E-Mails, ohne HTML mitten in einer Entität abzuschneiden. */

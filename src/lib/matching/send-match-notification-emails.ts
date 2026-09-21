@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { sendMatchNotificationEmail } from '@/lib/email'
+import { sendMatchNotificationEmail, ResendSendError } from '@/lib/email'
+import { MAX_MATCH_EMAIL_ATTEMPTS, MATCH_EMAIL_BACKOFF_SECONDS, MATCH_EMAIL_LEASE_SECONDS } from '@/lib/matching/email-retry-config'
 
 const emailSchema = z.string().email()
 
@@ -32,66 +33,94 @@ interface CandidateRow {
 }
 
 /**
- * Phase 3.6D – versendet E-Mails für konkret übergebene, NEU erzeugte match_notifications
- * (die IDs kommen aus createMatchNotifications().createdIds – niemals ein "SELECT alle
- * pending", das würde bei jedem Re-Matching alte, bereits bekannte Notifications erneut anfassen).
+ * Phase 3.6F – Resend-Fehlercodes, bei denen ein erneuter Versand mit identischen Parametern
+ * garantiert wieder fehlschlagen würde (Konfigurations-/Validierungsfehler unserer eigenen
+ * Anfrage, nicht ein vorübergehendes Problem des Versands). Ausschließlich Werte aus der
+ * tatsächlich installierten Resend-SDK-Typdefinition (RESEND_ERROR_CODE_KEY in
+ * node_modules/resend/dist/index.d.mts) – keine erfundenen Codes. Alles, was hier NICHT
+ * aufgeführt ist (insb. rate_limit_exceeded, application_error, internal_server_error,
+ * concurrent_idempotent_requests, monthly_quota_exceeded, daily_quota_exceeded, sowie jeder
+ * unbekannte künftige Code), gilt als transient und bleibt bis MAX_MATCH_EMAIL_ATTEMPTS
+ * retryfähig – ein sicherer Default, da das Attempt-Limit jede Wiederholung ohnehin begrenzt.
+ */
+const NON_RETRYABLE_RESEND_ERROR_CODES = new Set<string>([
+  'validation_error',
+  'invalid_from_address',
+  'invalid_parameter',
+  'missing_required_field',
+  'invalid_attachment',
+  'invalid_region',
+  'missing_api_key',
+  'invalid_api_key',
+  'restricted_api_key',
+  'invalid_access',
+  'security_error',
+  'not_found',
+  'method_not_allowed',
+  'invalid_idempotency_key',
+  'invalid_idempotent_request',
+])
+
+function isPermanentError(err: unknown): boolean {
+  return err instanceof ResendSendError && NON_RETRYABLE_RESEND_ERROR_CODES.has(err.code)
+}
+
+/**
+ * Phase 3.6D/3.6F – versendet E-Mails für konkret übergebene match_notification-IDs. Zwei
+ * Aufrufer mit unterschiedlicher ID-Herkunft, dieselbe Logik (keine zweite Implementierung):
+ * 1. run-matching.ts (Phase 3.6A/D, unverändert): NEU erzeugte IDs aus
+ *    createMatchNotifications().createdIds direkt nach dem Matching.
+ * 2. retry-match-notification-emails.ts (Phase 3.6F): IDs aus getEmailRetryCandidateIds(), von
+ *    einem periodischen Retry-Batch ermittelt.
+ * In beiden Fällen entscheidet ausschließlich der atomare Claim (claimNotification), ob eine
+ * Zeile tatsächlich verarbeitet wird – die Lese-Query hier filtert bewusst NICHT zusätzlich nach
+ * Status, um die Eligibility-Logik nicht doppelt zu pflegen (einzige Quelle der Wahrheit: die
+ * Claim-Query unten).
  *
- * KLAIM-STRATEGIE (Phase 3.6D §11-§13, bewusste Entscheidung, dokumentiert):
- * Das bestehende Status-ENUM kennt nur pending/sent/failed, kein "sending". Eine neue
- * Statuskategorie/Migration wird für diese Phase bewusst NICHT eingeführt (§5/§12: "bevorzugt
- * keine unnötige Schemaerweiterung"). Stattdessen wird der Claim als atomarer Übergang
- * pending -> failed (inkl. attempts+1 und einem Platzhalter-last_error) implementiert:
+ * KLAIM-/ZUSTANDSMASCHINE (Phase 3.6F, ersetzt die Phase-3.6D-Übergangslösung):
  *
- *   UPDATE match_notifications SET status='failed', attempts=attempts+1, last_error=<Platzhalter>
- *   WHERE id=$1 AND status='pending'
- *   RETURNING ...
+ *   pending ──claim──► sending ──Erfolg──► sent
+ *                          │
+ *                          └──Fehler──► failed ──Backoff abgelaufen──► (erneuter claim) sending
  *
- * Das ist ein einzelnes atomares UPDATE mit WHERE-Bedingung auf den aktuellen Status – Postgres
- * serialisiert konkurrierende UPDATEs auf dieselbe Zeile über den Row-Lock; sobald die erste
- * Transaktion committet (Autocommit bei Einzelstatements), sieht die zweite, ursprünglich
- * blockierte UPDATE-Anweisung den bereits geänderten Status und matcht die WHERE-Bedingung nicht
- * mehr -> 0 Zeilen betroffen -> der zweite Claim-Versuch schlägt sauber fehl (kein Double-Claim).
- * Es wird KEINE PostgreSQL-Transaktion offen über den externen Resend-HTTP-Request gehalten
- * (Claim ist ein abgeschlossenes Einzelstatement, danach folgt der Versand, danach ein zweites,
- * unabhängiges Einzelstatement für das Ergebnis) – erfüllt die Vorgabe "kein Lock während
- * externem Request".
+ * Zusätzlich: eine seit MATCH_EMAIL_LEASE_SECONDS hängende 'sending'-Zeile (Prozessabsturz
+ * zwischen Claim und Versand-Bestätigung) gilt als abgebrochen und ist über denselben Claim
+ * wieder erreichbar ("Lease-Recovery") – ohne diesen Mechanismus wäre eine per Crash unterbrochene
+ * Zustellung für immer unsichtbar hängen geblieben (das in Phase 3.6D dokumentierte Risiko).
  *
- * Bewusste Konsequenz (dokumentiert, kein verstecktes Risiko): geht der Prozess exakt zwischen
- * Claim und dem abschließenden Status-Update verloren (Crash), bleibt die Zeile als 'failed' mit
- * dem Platzhaltertext stehen – niemals fälschlich als 'sent', niemals unsichtbar als ewig
- * 'pending'. Das ist der sicherste Fehlermodus ohne Schemaänderung: ein späteres, in dieser Phase
- * NICHT gebautes Retry-System würde genau solche 'failed'-Zeilen ohnehin erneut aufgreifen. Ein
- * theoretisches Risiko bleibt: ein künftiger Retry-Worker könnte eine solche Zeile parallel zu
- * einem noch laufenden Erstversand erneut aufgreifen (da beide Zustände wie 'failed' aussehen) –
- * das ist erst relevant, sobald ein Retry-Worker existiert (nicht Teil dieser Phase), und muss
- * dann mit adressiert werden (z. B. durch einen echten 'sending'-Status/Lease).
+ * EXACTLY-ONCE IST NICHT GARANTIERBAR (Phase 3.6F §4, bewusst explizit dokumentiert): Resend
+ * (externes HTTP-System) und PostgreSQL sind zwei getrennte Systeme ohne gemeinsame Transaktion.
+ * Stirbt der Prozess exakt zwischen "Resend hat die E-Mail akzeptiert" und dem anschließenden
+ * `UPDATE ... SET status='sent'`, bleibt die Zeile als 'sending' liegen; nach Ablauf der Lease
+ * wird sie erneut versucht – die E-Mail könnte dadurch ein zweites Mal ankommen. Es gibt keine
+ * verteilte Transaktion, die das ausschließen könnte. Ziel ist deshalb ausdrücklich NUR:
+ * at-most-once CLAIM (mehrere Worker versuchen nie gleichzeitig erfolgreich dieselbe Zeile zu
+ * beanspruchen, real gegen PostgreSQL verifiziert) plus eine bewusst konservative Lease-Dauer
+ * (5 Minuten – ein normaler Resend-Request dauert Sekunden), die die Wahrscheinlichkeit eines
+ * Doppelversands stark reduziert, ohne ihn auf Null zu garantieren.
  *
- * attempts wird NUR beim tatsächlichen Claim erhöht (§14) – für email_notifications=false,
- * fehlende/unplausible E-Mail oder Rolle != subunternehmer wird gar nicht erst geclaimt, die
- * Notification bleibt exakt im Zustand 'pending' stehen (bewusst KEIN separater "skipped"-Status,
- * §5: 'pending' bedeutet ehrlich "noch nicht zugestellt", das bleibt technisch wahr).
+ * attempts wird ausschließlich beim tatsächlichen Claim erhöht (§22) – für
+ * email_notifications=false, unplausible E-Mail oder Rolle != subunternehmer wird gar nicht erst
+ * geclaimt, die Notification bleibt exakt in ihrem aktuellen Status stehen.
  */
 export async function sendMatchNotificationEmails(notificationIds: string[]): Promise<SendMatchNotificationOutcome[]> {
   if (notificationIds.length === 0) return []
 
   const db = getDb()
-  // Eine einzige gebatchte Lese-Query für alle Kandidaten (Notification + Provider + Job) –
-  // kein N+1 über die Providerzahl (Phase 3.6D §18).
   const candidates = await db.query<CandidateRow>(
     `SELECT n.id AS notification_id, u.email AS provider_email, u.email_notifications, u.role AS provider_role,
             j.title, j.gewerk, j.plz, j.ort, j.description, j.budget_min, j.budget_max, j.deadline
      FROM match_notifications n
      JOIN users u ON u.id = n.provider_id
      JOIN jobs j ON j.id = n.job_id
-     WHERE n.id = ANY($1::uuid[]) AND n.status = 'pending'`,
+     WHERE n.id = ANY($1::uuid[])`,
     [notificationIds]
   )
 
   const outcomes: SendMatchNotificationOutcome[] = []
 
-  // Bewusst sequenziell: die aktuelle Plattformgröße (siehe Phase-3.6-Audit) macht das
-  // unproblematisch, und ein Bulk-/Batch-E-Mail-Versand würde die Fehlerzuordnung pro Notification
-  // (welcher Claim gehört zu welchem tatsächlichen Sende-Ergebnis) unnötig verschlechtern (§18).
+  // Bewusst sequenziell: siehe Phase-3.6D-Begründung (Fehlerzuordnung 1:1 pro Notification),
+  // weiterhin gültig – Bulk-Versand würde das verschlechtern (Phase 3.6F §19).
   for (const row of candidates.rows) {
     if (row.provider_role !== 'subunternehmer') {
       outcomes.push({ notificationId: row.notification_id, sent: false, skipReason: 'not_a_provider' })
@@ -126,7 +155,7 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
       await markSent(row.notification_id)
       outcomes.push({ notificationId: row.notification_id, sent: true })
     } catch (err) {
-      await markFailed(row.notification_id, errorToSafeMessage(err))
+      await markFailed(row.notification_id, errorToSafeMessage(err), isPermanentError(err))
       outcomes.push({ notificationId: row.notification_id, sent: false })
     }
   }
@@ -134,16 +163,39 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
   return outcomes
 }
 
-const CLAIM_PLACEHOLDER_ERROR = 'Versand wird verarbeitet.'
-
+/**
+ * Atomarer Claim: eine Zeile wird NUR beansprucht, wenn genau EINE der drei Bedingungen zutrifft
+ * (real gegen PostgreSQL verifiziert, siehe Abschlussbericht):
+ * - status='pending' (noch nie versucht)
+ * - status='failed' UND attempts < MAX UND der nach `attempts` gestufte Backoff seit dem letzten
+ *   Versuch (processing_started_at) ist abgelaufen
+ * - status='sending' UND attempts < MAX UND die Lease ist abgelaufen (Crash-Recovery)
+ * Ein einzelnes UPDATE-Statement mit dieser WHERE-Bedingung – Postgres serialisiert konkurrierende
+ * UPDATEs auf dieselbe Zeile über den Row-Lock; nach dem Commit der ersten Transaktion matcht die
+ * WHERE-Bedingung einer zweiten, zuvor blockierten UPDATE-Anweisung nicht mehr -> 0 Zeilen -> kein
+ * Double-Claim möglich. Kein DB-Lock bleibt während des externen Resend-Requests offen (Claim ist
+ * ein abgeschlossenes Einzelstatement, Versand und Ergebnis-Update folgen unabhängig danach).
+ */
 async function claimNotification(id: string): Promise<boolean> {
   const db = getDb()
+  const [backoffAfterAttempt1, backoffAfterAttempt2] = MATCH_EMAIL_BACKOFF_SECONDS
   const result = await db.query(
     `UPDATE match_notifications
-     SET status = 'failed', attempts = attempts + 1, last_error = $2
-     WHERE id = $1 AND status = 'pending'
+     SET status = 'sending', attempts = attempts + 1, processing_started_at = now(), last_error = NULL
+     WHERE id = $1
+       AND (
+         status = 'pending'
+         OR (
+           status = 'failed' AND attempts < $2
+           AND processing_started_at <= now() - (CASE attempts WHEN 1 THEN $3 WHEN 2 THEN $4 ELSE $4 END * interval '1 second')
+         )
+         OR (
+           status = 'sending' AND attempts < $2
+           AND processing_started_at <= now() - ($5 * interval '1 second')
+         )
+       )
      RETURNING id`,
-    [id, CLAIM_PLACEHOLDER_ERROR]
+    [id, MAX_MATCH_EMAIL_ATTEMPTS, backoffAfterAttempt1, backoffAfterAttempt2, MATCH_EMAIL_LEASE_SECONDS]
   )
   return result.rows.length > 0
 }
@@ -153,9 +205,24 @@ async function markSent(id: string): Promise<void> {
   await db.query(`UPDATE match_notifications SET status = 'sent', sent_at = now(), last_error = NULL WHERE id = $1`, [id])
 }
 
-async function markFailed(id: string, errorMessage: string): Promise<void> {
+/**
+ * Bei einem permanenten Fehler (Resend würde denselben Request garantiert wieder ablehnen) wird
+ * `attempts` zusätzlich auf MAX_MATCH_EMAIL_ATTEMPTS angehoben (GREATEST, nie verringern) – die
+ * Zeile ist damit sofort dauerhaft von weiteren automatischen Retries ausgeschlossen, ohne einen
+ * eigenen "permanent failed"-Status zu erfinden (Phase 3.6F §15: kein sinnloser Retry-Loop bei
+ * bekannt ungültigen Anfragen).
+ */
+async function markFailed(id: string, errorMessage: string, permanent: boolean): Promise<void> {
   const db = getDb()
-  await db.query(`UPDATE match_notifications SET last_error = $2 WHERE id = $1`, [id, errorMessage])
+  if (permanent) {
+    await db.query(`UPDATE match_notifications SET status = 'failed', last_error = $2, attempts = GREATEST(attempts, $3) WHERE id = $1`, [
+      id,
+      errorMessage,
+      MAX_MATCH_EMAIL_ATTEMPTS,
+    ])
+  } else {
+    await db.query(`UPDATE match_notifications SET status = 'failed', last_error = $2 WHERE id = $1`, [id, errorMessage])
+  }
 }
 
 /** Begrenzte, sichere Fehlermeldung ohne mögliche Secrets/Zugangsdaten für last_error. */
