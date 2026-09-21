@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { sendMatchNotificationEmail, ResendSendError } from '@/lib/email'
 import { MAX_MATCH_EMAIL_ATTEMPTS, MATCH_EMAIL_BACKOFF_SECONDS, MATCH_EMAIL_LEASE_SECONDS } from '@/lib/matching/email-retry-config'
+import { ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEvent } from '@/lib/analytics-events'
 
 const emailSchema = z.string().email()
 
@@ -19,6 +21,8 @@ export interface SendMatchNotificationOutcome {
 
 interface CandidateRow {
   notification_id: string
+  job_id: string
+  provider_id: string
   provider_email: string
   email_notifications: boolean
   provider_role: 'auftraggeber' | 'subunternehmer'
@@ -108,7 +112,7 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
 
   const db = getDb()
   const candidates = await db.query<CandidateRow>(
-    `SELECT n.id AS notification_id, u.email AS provider_email, u.email_notifications, u.role AS provider_role,
+    `SELECT n.id AS notification_id, n.job_id, n.provider_id, u.email AS provider_email, u.email_notifications, u.role AS provider_role,
             j.title, j.gewerk, j.plz, j.ort, j.description, j.budget_min, j.budget_max, j.deadline
      FROM match_notifications n
      JOIN users u ON u.id = n.provider_id
@@ -153,6 +157,25 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
         deadline: row.deadline,
       })
       await markSent(row.notification_id)
+      // Phase 3.6G: MATCH_EMAIL_SENT NUR nach bestätigtem Resend-Erfolg + erfolgreichem finalen
+      // 'sent'-Status (nicht bereits beim Claim/'sending', siehe Zustandsmaschine oben). Die
+      // Idempotenz über notificationId sorgt dafür, dass ein bei einem früheren Versuch
+      // fehlgeschlagenes und danach erfolgreich wiederholtes Retry genau EIN fachliches Event
+      // erzeugt (Phase 3.6F/3.6G, kein Doppel-Event über mehrere Retry-Versuche hinweg). EIGENES
+      // try/catch: ein Analytics-Fehler HIER darf den bereits erfolgreichen Versand (status
+      // bereits 'sent' in der DB) NIEMALS nachträglich als fehlgeschlagen behandeln – deshalb
+      // separat vom äußeren catch (der markFailed() aufruft).
+      try {
+        await trackEvent({
+          event: ANALYTICS_EVENTS.MATCH_EMAIL_SENT,
+          jobId: row.job_id,
+          providerId: row.provider_id,
+          notificationId: row.notification_id,
+          idempotencyKey: `match_email_sent:${row.notification_id}`,
+        })
+      } catch (analyticsError) {
+        console.error('MATCH_EMAIL_SENT-Analytics fehlgeschlagen:', row.notification_id, analyticsError)
+      }
       outcomes.push({ notificationId: row.notification_id, sent: true })
     } catch (err) {
       await markFailed(row.notification_id, errorToSafeMessage(err), isPermanentError(err))

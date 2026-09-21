@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }))
+const { queryMock, trackEventsBatchMock } = vi.hoisted(() => ({ queryMock: vi.fn(), trackEventsBatchMock: vi.fn() }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
+vi.mock('@/lib/analytics-events', () => ({ trackEventsBatch: trackEventsBatchMock }))
 
 import { createMatchNotifications } from '@/lib/matching/create-match-notifications'
 import { MATCH_NOTIFICATION_THRESHOLD } from '@/lib/matching/score-config'
@@ -10,6 +11,8 @@ describe('createMatchNotifications — Phase 3.6C (SQL-Struktur, gemockte DB)', 
   beforeEach(() => {
     queryMock.mockReset()
     queryMock.mockResolvedValue({ rows: [] })
+    trackEventsBatchMock.mockReset()
+    trackEventsBatchMock.mockResolvedValue(undefined)
   })
 
   it('führt genau eine parametrisierte Query aus (keine N+1)', async () => {
@@ -57,5 +60,63 @@ describe('createMatchNotifications — Phase 3.6C (SQL-Struktur, gemockte DB)', 
     queryMock.mockResolvedValueOnce({ rows: [] })
     const result = await createMatchNotifications('job-1')
     expect(result).toEqual({ createdCount: 0, createdIds: [] })
+  })
+
+  it('RETURNING liefert zusätzlich provider_id (für Analytics), ohne die bestehenden Felder zu verändern', async () => {
+    await createMatchNotifications('job-1')
+    const [sql] = queryMock.mock.calls[0]
+    expect(sql).toContain('RETURNING id, provider_id')
+  })
+})
+
+describe('createMatchNotifications — Phase 3.6G MATCH_NOTIFICATION_CREATED Analytics', () => {
+  beforeEach(() => {
+    queryMock.mockReset()
+    trackEventsBatchMock.mockReset()
+    trackEventsBatchMock.mockResolvedValue(undefined)
+  })
+
+  it('trackt MATCH_NOTIFICATION_CREATED NUR für tatsächlich neu erzeugte Zeilen, mit Threshold aus der zentralen Konfiguration', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', provider_id: 'p1' }, { id: 'n2', provider_id: 'p2' }] })
+    await createMatchNotifications('job-1')
+    expect(trackEventsBatchMock).toHaveBeenCalledTimes(1)
+    expect(trackEventsBatchMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        event: 'match_notification_created',
+        jobId: 'job-1',
+        providerId: 'p1',
+        notificationId: 'n1',
+        metadata: { threshold: MATCH_NOTIFICATION_THRESHOLD },
+        idempotencyKey: 'match_notification_created:n1',
+      }),
+      expect.objectContaining({
+        event: 'match_notification_created',
+        jobId: 'job-1',
+        providerId: 'p2',
+        notificationId: 'n2',
+        metadata: { threshold: MATCH_NOTIFICATION_THRESHOLD },
+        idempotencyKey: 'match_notification_created:n2',
+      }),
+    ])
+  })
+
+  it('reiner Re-Run ohne neue Zeilen (ON CONFLICT DO NOTHING): kein Analytics-Aufruf', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    await createMatchNotifications('job-1')
+    expect(trackEventsBatchMock).not.toHaveBeenCalled()
+  })
+
+  it('keine matched_factors/missing_data/exclusion_reason in den Analytics-Metadaten', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', provider_id: 'p1' }] })
+    await createMatchNotifications('job-1')
+    const [events] = trackEventsBatchMock.mock.calls[0]
+    expect(events[0].metadata).toEqual({ threshold: MATCH_NOTIFICATION_THRESHOLD })
+  })
+
+  it('ein Fehler beim Analytics-Tracking lässt createMatchNotifications trotzdem erfolgreich zurückkehren', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', provider_id: 'p1' }] })
+    trackEventsBatchMock.mockRejectedValue(new Error('Analytics-DB down'))
+    const result = await createMatchNotifications('job-1')
+    expect(result).toEqual({ createdCount: 1, createdIds: ['n1'] })
   })
 })

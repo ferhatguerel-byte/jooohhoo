@@ -4,7 +4,8 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
-import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEvent } from '@/lib/analytics-events'
 import { runMatchingForJob } from '@/lib/matching/run-matching'
 
 const lineItemSchema = z.object({
@@ -96,12 +97,29 @@ export async function POST(req: NextRequest) {
       client.release()
     }
 
-    // Nur Gewerk/Kategorien-Daten, keine personenbezogenen Angaben (kein Titel/Beschreibungstext).
-    track(ANALYTICS_EVENTS.PROJECT_CREATED, {
-      jobId,
-      gewerk: body.gewerk,
-      hasLineItems: !!(body.lineItems && body.lineItems.length > 0),
-    })
+    // Phase 3.6G: PROJECT_CREATED wird erst NACH dem erfolgreichen COMMIT persistiert (best-effort,
+    // wirft nie – ein Analytics-Fehler darf eine erfolgreiche Auftragserstellung nie beeinflussen).
+    // Nur Gewerk/Kategorien-Daten und Booleans, keine personenbezogenen Angaben (kein Titel/
+    // Beschreibungstext). idempotencyKey verhindert ein doppeltes Event bei einem unwahrscheinlichen
+    // erneuten Aufruf mit derselben jobId.
+    try {
+      await trackEvent({
+        event: ANALYTICS_EVENTS.PROJECT_CREATED,
+        actorUserId: user.id,
+        jobId,
+        metadata: {
+          gewerk: body.gewerk,
+          hasLineItems: !!(body.lineItems && body.lineItems.length > 0),
+          hasBudget: !!(body.budgetMin || body.budgetMax),
+          hasDeadline: !!body.deadline,
+          hasAttachments: !!(body.attachments && body.attachments.length > 0),
+        },
+        idempotencyKey: `project_created:${jobId}`,
+      })
+    } catch {
+      // trackEvent() wirft bereits nie – dieser catch ist Verteidigung in der Tiefe, konsistent
+      // mit dem best-effort-Muster der Matching-/Notification-Pipeline unten.
+    }
 
     // Matching läuft erst NACH dem erfolgreichen Commit, best-effort und vollständig isoliert:
     // ein Matching-Fehler darf einen gültig erstellten Auftrag niemals rückgängig machen oder

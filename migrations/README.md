@@ -56,3 +56,7 @@ angewendete automatisch.
   `match_notification_status` sowie `match_notifications.processing_started_at` (Lease-Timeout
   für hängende Zustellungen + Backoff-Basis für Retries; siehe
   `src/lib/matching/send-match-notification-emails.ts`).
+- `0010_analytics_events.sql` – Phase 3.6G: `analytics_events` (First-Party-PostgreSQL-Analytics
+  für den Matching-Funnel; `event_type` TEXT statt ENUM, `idempotency_key` NULLable + UNIQUE für
+  deterministische Einmaligkeit pro Event, `job_id`/`provider_id`/`actor_user_id`/
+  `notification_id` alle `ON DELETE SET NULL`; siehe `src/lib/analytics-events.ts`).

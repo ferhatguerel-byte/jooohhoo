@@ -8,6 +8,7 @@ const {
   releaseMock,
   createMatchNotificationsMock,
   sendMatchNotificationEmailsMock,
+  trackEventsBatchMock,
 } = vi.hoisted(() => ({
   getScoredProvidersForJobMock: vi.fn(),
   connectMock: vi.fn(),
@@ -15,11 +16,13 @@ const {
   releaseMock: vi.fn(),
   createMatchNotificationsMock: vi.fn(),
   sendMatchNotificationEmailsMock: vi.fn(),
+  trackEventsBatchMock: vi.fn(),
 }))
 vi.mock('@/lib/matching/scored-providers', () => ({ getScoredProvidersForJob: getScoredProvidersForJobMock }))
 vi.mock('@/lib/matching/create-match-notifications', () => ({ createMatchNotifications: createMatchNotificationsMock }))
 vi.mock('@/lib/matching/send-match-notification-emails', () => ({ sendMatchNotificationEmails: sendMatchNotificationEmailsMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ connect: connectMock }) }))
+vi.mock('@/lib/analytics-events', () => ({ trackEventsBatch: trackEventsBatchMock }))
 
 import { runMatchingForJob } from '@/lib/matching/run-matching'
 
@@ -48,6 +51,8 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
     releaseMock.mockReset()
     createMatchNotificationsMock.mockReset()
     sendMatchNotificationEmailsMock.mockReset()
+    trackEventsBatchMock.mockReset()
+    trackEventsBatchMock.mockResolvedValue(undefined)
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockResolvedValue({ rows: [] })
     // Notification-Erstellung/-Versand sind ab Phase 3.6C/3.6D Teil der Pipeline, werden hier aber
@@ -281,5 +286,57 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
     expect(result).toEqual({ jobId: 'job-1', resultCount: 1, eligibleCount: 1, excludedCount: 0 })
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Notification'), 'job-1', expect.any(Error))
     consoleErrorSpy.mockRestore()
+  })
+
+  describe('Phase 3.6G — MATCH_CREATED Analytics', () => {
+    it('23. trackt MATCH_CREATED für jeden eligiblen Provider in einem einzigen Batch-Aufruf (keine N+1)', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90), eligibleResult('p2', 60)])
+      await runMatchingForJob('job-1')
+      expect(trackEventsBatchMock).toHaveBeenCalledTimes(1)
+      expect(trackEventsBatchMock).toHaveBeenCalledWith([
+        expect.objectContaining({ event: 'match_created', jobId: 'job-1', providerId: 'p1', idempotencyKey: 'match_created:job-1:p1' }),
+        expect.objectContaining({ event: 'match_created', jobId: 'job-1', providerId: 'p2', idempotencyKey: 'match_created:job-1:p2' }),
+      ])
+    })
+
+    it('24. trackt KEIN MATCH_CREATED für ausgeschlossene (excluded) Provider', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90), excludedResult('p2', 'gewerk_mismatch')])
+      await runMatchingForJob('job-1')
+      expect(trackEventsBatchMock).toHaveBeenCalledWith([expect.objectContaining({ providerId: 'p1' })])
+    })
+
+    it('25. 0 eligible Provider: trackEventsBatch wird gar nicht aufgerufen', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([excludedResult('p1', 'gewerk_mismatch')])
+      await runMatchingForJob('job-1')
+      expect(trackEventsBatchMock).not.toHaveBeenCalled()
+    })
+
+    it('26. MATCH_CREATED-Tracking läuft NACH dem erfolgreichen COMMIT', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+      await runMatchingForJob('job-1')
+      const commitCallIndex = clientQueryMock.mock.calls.findIndex(([sql]) => sql === 'COMMIT')
+      const commitInvocationOrder = clientQueryMock.mock.invocationCallOrder[commitCallIndex]
+      const trackInvocationOrder = trackEventsBatchMock.mock.invocationCallOrder[0]
+      expect(trackInvocationOrder).toBeGreaterThan(commitInvocationOrder)
+    })
+
+    it('27. ein Fehler beim MATCH_CREATED-Tracking lässt runMatchingForJob trotzdem erfolgreich zurückkehren', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+      trackEventsBatchMock.mockRejectedValue(new Error('Analytics-DB down'))
+      const result = await runMatchingForJob('job-1')
+      expect(result).toEqual({ jobId: 'job-1', resultCount: 1, eligibleCount: 1, excludedCount: 0 })
+    })
+
+    it('28. keine Scores/Exclusion-Details in den getrackten MATCH_CREATED-Events', async () => {
+      getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+      await runMatchingForJob('job-1')
+      const [events] = trackEventsBatchMock.mock.calls[0]
+      for (const event of events) {
+        expect(event).not.toHaveProperty('score')
+        expect(event).not.toHaveProperty('matchedFactors')
+        expect(event).not.toHaveProperty('exclusionReason')
+        expect(event.metadata).toBeUndefined()
+      }
+    })
   })
 })

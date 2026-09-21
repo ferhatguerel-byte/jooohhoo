@@ -90,7 +90,7 @@ export default async function PassendeAuftraegePage() {
                 </p>
               )}
               <p className="text-sm text-slate-600 mb-4 line-clamp-2">{n.description}</p>
-              <MarkNotificationReadLink notificationId={n.id} />
+              <MarkNotificationReadLink notificationId={n.id} jobId={n.job_id} />
             </div>
           )
         })}

@@ -9,13 +9,15 @@ import OfferChat, { ChatMessage } from '@/components/OfferChat'
 import HideJobButton from './HideJobButton'
 import { isMeisterpflichtig } from '@/lib/gewerke'
 import { Lock, CheckCircle2, Circle } from 'lucide-react'
+import { ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEvent } from '@/lib/analytics-events'
 
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gewerke?: string; plz?: string; radius?: string; ausgeblendet?: string }>
+  searchParams: Promise<{ gewerke?: string; plz?: string; radius?: string; ausgeblendet?: string; job?: string }>
 }) {
-  const { gewerke: gewerkeParam, plz, radius, ausgeblendet } = await searchParams
+  const { gewerke: gewerkeParam, plz, radius, ausgeblendet, job: viewedJobId } = await searchParams
   const showHidden = ausgeblendet === '1'
   const user = await getCurrentUser()
   if (!user) redirect('/login')
@@ -76,6 +78,25 @@ export default async function JobsPage({
     const radiusNum = Number(radius)
     jobs = jobs.filter((job) => job.distanceKm !== null && job.distanceKm <= radiusNum)
     jobs.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity))
+  }
+
+  // Phase 3.6G – JOB_VIEWED: nur wenn ?job=<id> tatsächlich auf einen für DIESEN Provider hier
+  // sichtbaren Auftrag zeigt (kommt vom expliziten Klick auf "Auftrag ansehen" in
+  // /dashboard/passende-auftraege, siehe MarkNotificationReadLink) – keine Erfassung für die
+  // normale Listenansicht ohne diesen Parameter, kein künstliches Uniqueness-Constraint (mehrfache
+  // Views sind fachlich zulässig, Phase 3.6G Teil 8/§5).
+  if (viewedJobId && jobs.some((j) => j.id === viewedJobId)) {
+    try {
+      await trackEvent({
+        event: ANALYTICS_EVENTS.JOB_VIEWED,
+        actorUserId: user.id,
+        providerId: user.id,
+        jobId: viewedJobId,
+        metadata: { source: 'matching_dashboard' },
+      })
+    } catch {
+      // trackEvent() wirft bereits nie – Verteidigung in der Tiefe.
+    }
   }
 
   const jobIds = jobs.map((j) => j.id)

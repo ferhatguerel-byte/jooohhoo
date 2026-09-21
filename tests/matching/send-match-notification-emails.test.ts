@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { queryMock, sendMatchNotificationEmailMock } = vi.hoisted(() => ({
+const { queryMock, sendMatchNotificationEmailMock, trackEventMock } = vi.hoisted(() => ({
   queryMock: vi.fn(),
   sendMatchNotificationEmailMock: vi.fn(),
+  trackEventMock: vi.fn(),
 }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 vi.mock('@/lib/email', async () => {
   const actual = await vi.importActual<typeof import('@/lib/email')>('@/lib/email')
   return { ...actual, sendMatchNotificationEmail: sendMatchNotificationEmailMock }
 })
+vi.mock('@/lib/analytics-events', () => ({ trackEvent: trackEventMock }))
 
 import { sendMatchNotificationEmails } from '@/lib/matching/send-match-notification-emails'
 import { ResendSendError } from '@/lib/email'
@@ -17,6 +19,8 @@ import { MAX_MATCH_EMAIL_ATTEMPTS } from '@/lib/matching/email-retry-config'
 function candidateRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     notification_id: 'n1',
+    job_id: 'job-1',
+    provider_id: 'provider-1',
     provider_email: 'provider@example.com',
     email_notifications: true,
     provider_role: 'subunternehmer',
@@ -36,6 +40,8 @@ describe('sendMatchNotificationEmails — Phase 3.6F Zustandsmaschine', () => {
   beforeEach(() => {
     queryMock.mockReset()
     sendMatchNotificationEmailMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
   })
 
   it('gibt eine leere Liste zurück und macht keine Query, wenn keine IDs übergeben werden', async () => {
@@ -167,5 +173,92 @@ describe('sendMatchNotificationEmails — Phase 3.6F Zustandsmaschine', () => {
     expect(candidateQueryCalls).toHaveLength(1)
     const [, params] = candidateQueryCalls[0]
     expect(params).toEqual([['n1', 'n2']])
+  })
+})
+
+describe('sendMatchNotificationEmails — Phase 3.6G MATCH_EMAIL_SENT Analytics', () => {
+  beforeEach(() => {
+    queryMock.mockReset()
+    sendMatchNotificationEmailMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
+  })
+
+  it('trackt MATCH_EMAIL_SENT NUR nach bestätigtem Resend-Erfolg', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockResolvedValue(undefined)
+
+    await sendMatchNotificationEmails(['n1'])
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith({
+      event: 'match_email_sent',
+      jobId: 'job-1',
+      providerId: 'provider-1',
+      notificationId: 'n1',
+      idempotencyKey: 'match_email_sent:n1',
+    })
+  })
+
+  it('Resend-Fehler (transient) → KEIN MATCH_EMAIL_SENT-Event', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockRejectedValue(new ResendSendError('Rate limit', 'rate_limit_exceeded'))
+
+    await sendMatchNotificationEmails(['n1'])
+
+    expect(trackEventMock).not.toHaveBeenCalled()
+  })
+
+  it('Resend-Fehler (permanent) → KEIN MATCH_EMAIL_SENT-Event', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockRejectedValue(new ResendSendError('Ungültige Adresse', 'validation_error'))
+
+    await sendMatchNotificationEmails(['n1'])
+
+    expect(trackEventMock).not.toHaveBeenCalled()
+  })
+
+  it('erfolgreicher Retry nach vorherigem Fehler erzeugt genau EIN MATCH_EMAIL_SENT-Event (Idempotency über notificationId)', async () => {
+    // Erster Versuch: Fehler, kein Event.
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockRejectedValueOnce(new Error('temporärer Netzwerkfehler'))
+    await sendMatchNotificationEmails(['n1'])
+    expect(trackEventMock).not.toHaveBeenCalled()
+
+    // Zweiter Versuch (Retry): Erfolg -> genau ein Event mit demselben deterministischen Key.
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockResolvedValueOnce(undefined)
+    await sendMatchNotificationEmails(['n1'])
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'match_email_sent:n1' }))
+  })
+
+  it('nicht versendete Skip-Fälle (email_notifications=false, invalid_email, not_a_provider, already_claimed) tracken nie MATCH_EMAIL_SENT', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow({ email_notifications: false })] })
+    await sendMatchNotificationEmails(['n1'])
+    expect(trackEventMock).not.toHaveBeenCalled()
+  })
+
+  it('ein Fehler beim MATCH_EMAIL_SENT-Tracking lässt sendMatchNotificationEmails trotzdem "sent: true" zurückgeben (bereits erfolgreich versendet)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [candidateRow()] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    sendMatchNotificationEmailMock.mockResolvedValue(undefined)
+    trackEventMock.mockRejectedValue(new Error('Analytics-DB down'))
+
+    const result = await sendMatchNotificationEmails(['n1'])
+
+    expect(result).toEqual([{ notificationId: 'n1', sent: true }])
   })
 })

@@ -2,6 +2,8 @@ import { getDb } from '@/lib/db'
 import { getScoredProvidersForJob, type ScoredProviderResult } from '@/lib/matching/scored-providers'
 import { createMatchNotifications } from '@/lib/matching/create-match-notifications'
 import { sendMatchNotificationEmails } from '@/lib/matching/send-match-notification-emails'
+import { ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEventsBatch } from '@/lib/analytics-events'
 
 /**
  * Phase 3.5 – Matching Engine: Match Storage/Persistence.
@@ -71,6 +73,32 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
     throw err
   } finally {
     client.release()
+  }
+
+  // Phase 3.6G: MATCH_CREATED wird NACH dem erfolgreichen Commit für jeden tatsächlich eligiblen
+  // (nicht ausgeschlossenen) Provider persistiert – ein Exklusionsergebnis ist fachlich kein
+  // "Match". EIN gebatchter INSERT für alle Provider dieses Laufs (kein Insert pro Provider,
+  // Phase 3.6G Teil 11). trackEventsBatch() fängt DB-Fehler bereits selbst ab; das try/catch hier
+  // ist zusätzliche Verteidigung in der Tiefe (derselbe Stil wie das Notification-/E-Mail-
+  // best-effort-Muster direkt darunter) – ein Analytics-Fehler darf den bereits erfolgreichen
+  // Matching-Commit niemals rückgängig machen oder runMatchingForJob() fehlschlagen lassen.
+  // idempotencyKey verhindert doppelte Events bei einem erneuten runMatchingForJob()-Lauf für
+  // dieselbe Job×Provider-Kombination (z.B. unveränderter Re-Match). Keine Scores/Exclusion-
+  // Details in den Metadaten (Phase 3.6G Datenschutz-Vorgabe).
+  const eligibleResults = results.filter((r) => r.eligible)
+  if (eligibleResults.length > 0) {
+    try {
+      await trackEventsBatch(
+        eligibleResults.map((r) => ({
+          event: ANALYTICS_EVENTS.MATCH_CREATED,
+          jobId,
+          providerId: r.providerId,
+          idempotencyKey: `match_created:${jobId}:${r.providerId}`,
+        }))
+      )
+    } catch (analyticsError) {
+      console.error('MATCH_CREATED-Analytics für Matching-Lauf fehlgeschlagen:', jobId, analyticsError)
+    }
   }
 
   // Matching ist an dieser Stelle bereits erfolgreich committed (Phase 3.6C §8/§9): Notification-

@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { getCurrentUserMock, queryMock, connectMock } = vi.hoisted(() => ({
+const { getCurrentUserMock, queryMock, connectMock, clientQueryMock, releaseMock, trackEventMock } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
   connectMock: vi.fn(),
+  clientQueryMock: vi.fn(),
+  releaseMock: vi.fn(),
+  trackEventMock: vi.fn(),
 }))
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock, connect: connectMock }) }))
 vi.mock('@/lib/email', () => ({ sendNewOfferEmail: vi.fn() }))
+vi.mock('@/lib/analytics-events', () => ({ trackEvent: trackEventMock }))
 
 import { POST as createJob } from '@/app/api/jobs/route'
 import { POST as submitOffer } from '@/app/api/jobs/[id]/offers/route'
@@ -76,5 +80,76 @@ describe('POST /api/jobs/[id]/offers — nur Unternehmer mit aktivem Abo dürfen
     })
     expect(res.status).toBe(402)
     expect(queryMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/jobs/[id]/offers — Phase 3.6G OFFER_RECEIVED (OFFER_CREATED) Analytics', () => {
+  beforeEach(() => {
+    getCurrentUserMock.mockReset()
+    queryMock.mockReset()
+    connectMock.mockReset()
+    clientQueryMock.mockReset()
+    releaseMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
+
+    getCurrentUserMock.mockResolvedValue({
+      id: 'sub-1',
+      role: 'subunternehmer',
+      subscriptionStatus: 'active',
+      subscriptionTier: 'monthly',
+      verifiedGewerke: [],
+      blockedGewerke: [],
+      companyName: 'Sub GmbH',
+    })
+    connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
+    queryMock.mockImplementation((sql: string) => {
+      if (typeof sql === 'string' && sql.includes('FROM jobs j JOIN users u')) {
+        return Promise.resolve({ rows: [{ id: 'j1', title: 'Test', gewerk: 'Trockenbau', email: 'ag@example.com', email_notifications: false }] })
+      }
+      if (typeof sql === 'string' && sql.includes('FROM offers WHERE job_id')) {
+        return Promise.resolve({ rows: [] })
+      }
+      if (typeof sql === 'string' && sql.includes('COUNT(*)::int AS count')) {
+        return Promise.resolve({ rows: [{ count: 0 }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+    clientQueryMock.mockImplementation((sql: string) => {
+      if (typeof sql === 'string' && sql.includes('INSERT INTO offers')) {
+        return Promise.resolve({ rows: [{ id: 'offer-1' }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+  })
+
+  it('trackt OFFER_RECEIVED (OFFER_CREATED-Äquivalent) NACH erfolgreichem Commit, mit offerId als idempotencyKey', async () => {
+    const res = await submitOffer(jsonReq('http://localhost/api/jobs/j1/offers', { price: 1000 }), {
+      params: Promise.resolve({ id: 'j1' }),
+    })
+    expect(res.status).toBe(200)
+    expect(trackEventMock).toHaveBeenCalledWith({
+      event: 'offer_received',
+      actorUserId: 'sub-1',
+      providerId: 'sub-1',
+      jobId: 'j1',
+      idempotencyKey: 'offer_created:offer-1',
+    })
+  })
+
+  it('kein Preiswert in den Analytics-Aufrufparametern', async () => {
+    await submitOffer(jsonReq('http://localhost/api/jobs/j1/offers', { price: 1000 }), {
+      params: Promise.resolve({ id: 'j1' }),
+    })
+    const [input] = trackEventMock.mock.calls[0]
+    expect(JSON.stringify(input)).not.toContain('1000')
+  })
+
+  it('ein Fehler beim Analytics-Tracking verhindert nicht die erfolgreiche Angebotsabgabe', async () => {
+    trackEventMock.mockRejectedValue(new Error('Analytics-DB down'))
+    const res = await submitOffer(jsonReq('http://localhost/api/jobs/j1/offers', { price: 1000 }), {
+      params: Promise.resolve({ id: 'j1' }),
+    })
+    expect(res.status).toBe(200)
   })
 })

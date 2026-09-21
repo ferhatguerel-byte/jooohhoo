@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { sendOfferAwardedEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEvent } from '@/lib/analytics-events'
 
 const awardSchema = z.object({ offerId: z.string().uuid() })
 
@@ -53,6 +54,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     track(ANALYTICS_EVENTS.OFFER_ACCEPTED, { jobId, offerId })
+    // Phase 3.6G: OFFER_ACCEPTED übernimmt fachlich den Funnel-Schritt "Auftrag vergeben"
+    // (JOB_AWARDED) – kein neuer, doppelter Event-Name (siehe src/lib/analytics.ts). Persistiert
+    // erst NACH den erfolgreichen UPDATEs oben, nie bei einer fehlgeschlagenen Vergabe.
+    try {
+      await trackEvent({
+        event: ANALYTICS_EVENTS.OFFER_ACCEPTED,
+        actorUserId: user.id,
+        providerId: offer.rows[0].subunternehmer_id,
+        jobId,
+        idempotencyKey: `job_awarded:${jobId}`,
+      })
+    } catch {
+      // trackEvent() wirft bereits nie – Verteidigung in der Tiefe.
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

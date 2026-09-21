@@ -7,6 +7,7 @@ import { TIERS } from '@/lib/tiers'
 import { isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEvent } from '@/lib/analytics-events'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const client = await pool.connect()
+    let offerId: string
     try {
       await client.query('BEGIN')
 
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
          RETURNING id`,
         [jobId, user.id, totalPrice, body.message || null, body.pricingType]
       )
-      const offerId = offerResult.rows[0].id
+      offerId = offerResult.rows[0].id
 
       if (hasLineItems) {
         await client.query('DELETE FROM offer_line_items WHERE offer_id = $1', [offerId])
@@ -131,6 +133,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Nur IDs/Kategorien, keine E-Mail/Namen/Nachrichtentexte.
     track(ANALYTICS_EVENTS.PROVIDER_CONTACT, { jobId, gewerk: job.rows[0].gewerk })
     track(ANALYTICS_EVENTS.OFFER_RECEIVED, { jobId })
+    // Phase 3.6G: OFFER_RECEIVED übernimmt fachlich den Funnel-Schritt "Angebot abgegeben"
+    // (OFFER_CREATED) – kein neuer, doppelter Event-Name (siehe src/lib/analytics.ts). Persistiert
+    // erst NACH dem erfolgreichen Commit oben. idempotencyKey=offerId: ein erneutes Einreichen
+    // desselben (noch nicht vom Auftraggeber gesehenen) Angebots aktualisiert per ON CONFLICT DO
+    // UPDATE dieselbe offers-Zeile/offerId – korrekt dedupliziert, kein zweites fachliches Event.
+    try {
+      await trackEvent({
+        event: ANALYTICS_EVENTS.OFFER_RECEIVED,
+        actorUserId: user.id,
+        providerId: user.id,
+        jobId,
+        idempotencyKey: `offer_created:${offerId}`,
+      })
+    } catch {
+      // trackEvent() wirft bereits nie – Verteidigung in der Tiefe.
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

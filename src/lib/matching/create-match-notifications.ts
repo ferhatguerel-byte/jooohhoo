@@ -1,5 +1,7 @@
 import { getDb } from '@/lib/db'
 import { MATCH_NOTIFICATION_THRESHOLD } from '@/lib/matching/score-config'
+import { ANALYTICS_EVENTS } from '@/lib/analytics'
+import { trackEventsBatch } from '@/lib/analytics-events'
 
 export interface CreateMatchNotificationsResult {
   /** Anzahl tatsächlich neu angelegter Zeilen (0 bei einem reinen Re-Run ohne neue Treffer). */
@@ -37,7 +39,7 @@ export interface CreateMatchNotificationsResult {
  */
 export async function createMatchNotifications(jobId: string): Promise<CreateMatchNotificationsResult> {
   const db = getDb()
-  const result = await db.query<{ id: string }>(
+  const result = await db.query<{ id: string; provider_id: string }>(
     `INSERT INTO match_notifications (job_id, provider_id, job_match_id, match_score)
      SELECT job_id, provider_id, id, match_score
      FROM job_matches
@@ -46,9 +48,31 @@ export async function createMatchNotifications(jobId: string): Promise<CreateMat
        AND match_score IS NOT NULL
        AND match_score >= $2
      ON CONFLICT (job_id, provider_id) DO NOTHING
-     RETURNING id`,
+     RETURNING id, provider_id`,
     [jobId, MATCH_NOTIFICATION_THRESHOLD]
   )
   const createdIds = result.rows.map((row) => row.id)
+
+  // Phase 3.6G: MATCH_NOTIFICATION_CREATED NUR für tatsächlich neu eingefügte Zeilen (bereits
+  // durch RETURNING garantiert – ein per ON CONFLICT DO NOTHING übersprungener Re-Run taucht hier
+  // nicht auf). Ein gebatchter INSERT für alle neuen Notifications dieses Laufs, kein Insert pro
+  // Notification. threshold kommt aus der zentralen Konfiguration, keine Magic Number.
+  if (result.rows.length > 0) {
+    try {
+      await trackEventsBatch(
+        result.rows.map((row) => ({
+          event: ANALYTICS_EVENTS.MATCH_NOTIFICATION_CREATED,
+          jobId,
+          providerId: row.provider_id,
+          notificationId: row.id,
+          metadata: { threshold: MATCH_NOTIFICATION_THRESHOLD },
+          idempotencyKey: `match_notification_created:${row.id}`,
+        }))
+      )
+    } catch (analyticsError) {
+      console.error('MATCH_NOTIFICATION_CREATED-Analytics fehlgeschlagen:', jobId, analyticsError)
+    }
+  }
+
   return { createdCount: createdIds.length, createdIds }
 }

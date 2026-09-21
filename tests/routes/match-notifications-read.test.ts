@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { getCurrentUserMock, queryMock } = vi.hoisted(() => ({
+const { getCurrentUserMock, queryMock, trackEventMock } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
+  trackEventMock: vi.fn(),
 }))
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
+vi.mock('@/lib/analytics-events', () => ({ trackEvent: trackEventMock }))
 
 import { POST } from '@/app/api/match-notifications/[id]/read/route'
 
@@ -20,6 +22,8 @@ describe('POST /api/match-notifications/[id]/read — Phase 3.6E Security/IDOR',
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
   })
 
   it('1. Provider A kann eine eigene Notification als gelesen markieren → erlaubt', async () => {
@@ -96,6 +100,8 @@ describe('POST /api/match-notifications/[id]/read — Phase 3.6E Read-Semantik',
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
     getCurrentUserMock.mockResolvedValue(PROVIDER_A)
   })
 
@@ -133,5 +139,58 @@ describe('POST /api/match-notifications/[id]/read — Phase 3.6E Read-Semantik',
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }] })
     await POST(req('n1'), { params: Promise.resolve({ id: 'n1' }) })
     expect(queryMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('POST /api/match-notifications/[id]/read — Phase 3.6G MATCH_NOTIFICATION_READ Analytics', () => {
+  beforeEach(() => {
+    getCurrentUserMock.mockReset()
+    queryMock.mockReset()
+    trackEventMock.mockReset()
+    trackEventMock.mockResolvedValue(undefined)
+    getCurrentUserMock.mockResolvedValue(PROVIDER_A)
+  })
+
+  it('trackt MATCH_NOTIFICATION_READ beim ERSTEN tatsächlichen Lesen (just_read=true)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1', just_read: true }] })
+    await POST(req('n1'), { params: Promise.resolve({ id: 'n1' }) })
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
+    expect(trackEventMock).toHaveBeenCalledWith({
+      event: 'match_notification_read',
+      actorUserId: 'provider-a',
+      providerId: 'provider-a',
+      jobId: 'job-1',
+      notificationId: 'n1',
+      idempotencyKey: 'match_notification_read:n1',
+    })
+  })
+
+  it('wiederholtes Read (bereits gelesen, just_read=false) erzeugt KEIN zweites Read-Event', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1', just_read: false }] })
+    await POST(req('n1'), { params: Promise.resolve({ id: 'n1' }) })
+    expect(trackEventMock).not.toHaveBeenCalled()
+  })
+
+  it('fremde Notification (404, 0 Zeilen) kann kein Read-Analytics-Event erzeugen', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const res = await POST(req('foreign'), { params: Promise.resolve({ id: 'foreign' }) })
+    expect(res.status).toBe(404)
+    expect(trackEventMock).not.toHaveBeenCalled()
+  })
+
+  it('RETURNING liefert job_id und just_read zusätzlich zu id, ohne die bestehende SET-Klausel zu ändern', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1', just_read: true }] })
+    await POST(req('n1'), { params: Promise.resolve({ id: 'n1' }) })
+    const [sql] = queryMock.mock.calls[0]
+    expect(sql).toContain('SET read_at = COALESCE(read_at, now())')
+    expect(sql).toContain('RETURNING id, job_id, (read_at = now()) AS just_read')
+  })
+
+  it('ein Fehler beim Analytics-Tracking führt trotzdem zu einer erfolgreichen 200-Antwort (bereits committed)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1', just_read: true }] })
+    trackEventMock.mockRejectedValue(new Error('Analytics-DB down'))
+    const res = await POST(req('n1'), { params: Promise.resolve({ id: 'n1' }) })
+    expect(res.status).toBe(200)
   })
 })
