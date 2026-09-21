@@ -46,6 +46,9 @@ export default async function ProfilPage() {
           blockedGewerke={user.blockedGewerke}
           verificationStatus={user.verificationStatus}
           qualificationFiles={user.qualificationFiles as { fileId: string; name: string; label: string }[]}
+          serviceRadiusKm={user.serviceRadiusKm}
+          minProjectSize={user.minProjectSize}
+          maxProjectSize={user.maxProjectSize}
         />
       </div>
     </div>

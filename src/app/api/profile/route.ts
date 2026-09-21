@@ -11,14 +11,31 @@ const qualificationFileSchema = z.object({
   label: z.string().max(100),
 })
 
-const profileSchema = z.object({
-  companyName: z.string().min(2),
-  phone: z.string().optional(),
-  plz: z.string().min(4),
-  ort: z.string().min(2),
-  gewerke: z.array(z.enum(GEWERKE)).optional(),
-  qualificationFiles: z.array(qualificationFileSchema).optional(),
-})
+// Phase 3.2: rein optionale Matching-Präferenzen des Unternehmers, noch ohne Matching-Logik.
+// NULL/fehlend = "keine Angabe" – wird serverseitig nie in eine Zahl umgedeutet.
+// Obergrenzen sind bewusste Plausibilitätsgrenzen (keine reale Fachgrenze):
+// 1000 km deckt jeden denkbaren Einsatzradius innerhalb Deutschlands plus Grenzregionen ab,
+// 100 Mio. € begrenzt absurde/versehentliche Eingaben, ohne reale Großprojekte auszuschließen.
+const MAX_SERVICE_RADIUS_KM = 1000
+const MAX_PROJECT_SIZE_EUR = 100_000_000
+
+const profileSchema = z
+  .object({
+    companyName: z.string().min(2),
+    phone: z.string().optional(),
+    plz: z.string().min(4),
+    ort: z.string().min(2),
+    gewerke: z.array(z.enum(GEWERKE)).optional(),
+    qualificationFiles: z.array(qualificationFileSchema).optional(),
+    serviceRadiusKm: z.number().int().min(1).max(MAX_SERVICE_RADIUS_KM).nullable().optional(),
+    minProjectSize: z.number().int().min(0).max(MAX_PROJECT_SIZE_EUR).nullable().optional(),
+    maxProjectSize: z.number().int().min(0).max(MAX_PROJECT_SIZE_EUR).nullable().optional(),
+  })
+  .refine(
+    (data) =>
+      data.minProjectSize == null || data.maxProjectSize == null || data.minProjectSize <= data.maxProjectSize,
+    { message: 'Die minimale Projektgröße darf nicht größer als die maximale sein.', path: ['minProjectSize'] }
+  )
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -37,6 +54,13 @@ export async function POST(req: NextRequest) {
       gewerke = gewerke.filter((g) => !user.blockedGewerke.includes(g))
     }
     const qualificationFiles = user.role === 'subunternehmer' ? body.qualificationFiles || [] : []
+
+    // Mass-Assignment-Schutz: Matching-Präferenzen gelten nur für Unternehmer. Ein Auftraggeber
+    // kann diese Felder nicht setzen, selbst wenn er sie im Request-Body mitschickt – analog zur
+    // bestehenden Behandlung von gewerke/qualificationFiles oben.
+    const serviceRadiusKm = user.role === 'subunternehmer' ? body.serviceRadiusKm ?? null : null
+    const minProjectSize = user.role === 'subunternehmer' ? body.minProjectSize ?? null : null
+    const maxProjectSize = user.role === 'subunternehmer' ? body.maxProjectSize ?? null : null
 
     const filesChanged =
       JSON.stringify([...qualificationFiles].sort((a, b) => a.fileId.localeCompare(b.fileId))) !==
@@ -57,13 +81,26 @@ export async function POST(req: NextRequest) {
 
       await db.query(
         `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5,
-         qualification_files = $6, verification_status = 'pending' WHERE id = $7`,
-        [body.companyName, body.phone || null, body.plz, body.ort, gewerke, JSON.stringify(qualificationFiles), user.id]
+         qualification_files = $6, verification_status = 'pending',
+         service_radius_km = $7, min_project_size = $8, max_project_size = $9 WHERE id = $10`,
+        [
+          body.companyName,
+          body.phone || null,
+          body.plz,
+          body.ort,
+          gewerke,
+          JSON.stringify(qualificationFiles),
+          serviceRadiusKm,
+          minProjectSize,
+          maxProjectSize,
+          user.id,
+        ]
       )
     } else {
       await getDb().query(
-        `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5 WHERE id = $6`,
-        [body.companyName, body.phone || null, body.plz, body.ort, gewerke, user.id]
+        `UPDATE users SET company_name = $1, phone = $2, plz = $3, ort = $4, gewerke = $5,
+         service_radius_km = $6, min_project_size = $7, max_project_size = $8 WHERE id = $9`,
+        [body.companyName, body.phone || null, body.plz, body.ort, gewerke, serviceRadiusKm, minProjectSize, maxProjectSize, user.id]
       )
     }
 

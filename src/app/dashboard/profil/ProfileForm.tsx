@@ -20,6 +20,9 @@ interface Props {
   blockedGewerke?: string[]
   verificationStatus?: 'unverified' | 'pending' | 'verified' | 'rejected'
   qualificationFiles?: QualificationFile[]
+  serviceRadiusKm?: number | null
+  minProjectSize?: number | null
+  maxProjectSize?: number | null
 }
 
 const VERIFICATION_LABELS: Record<string, { text: string; className: string }> = {
@@ -39,13 +42,24 @@ export default function ProfileForm({
   blockedGewerke = [],
   verificationStatus = 'unverified',
   qualificationFiles: initialQualificationFiles = [],
+  serviceRadiusKm: initialServiceRadiusKm = null,
+  minProjectSize: initialMinProjectSize = null,
+  maxProjectSize: initialMaxProjectSize = null,
 }: Props) {
   const router = useRouter()
   const [gewerke, setGewerke] = useState<string[]>(initialGewerke)
   const [qualificationFiles, setQualificationFiles] = useState<QualificationFile[]>(initialQualificationFiles)
+  const [serviceRadiusKm, setServiceRadiusKm] = useState(initialServiceRadiusKm?.toString() ?? '')
+  const [minProjectSize, setMinProjectSize] = useState(initialMinProjectSize?.toString() ?? '')
+  const [maxProjectSize, setMaxProjectSize] = useState(initialMaxProjectSize?.toString() ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+
+  // Reine Komfort-/Plausibilitätsprüfung im Client – die verbindliche Prüfung erfolgt serverseitig
+  // in /api/profile (Zod). Leere Felder sind erlaubt und bedeuten "keine Angabe".
+  const projectSizeRangeInvalid =
+    minProjectSize !== '' && maxProjectSize !== '' && Number(minProjectSize) > Number(maxProjectSize)
 
   function setFilesForLabel(label: string, files: UploadedFile[]) {
     setQualificationFiles((prev) => [
@@ -60,6 +74,12 @@ export default function ProfileForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    if (role === 'subunternehmer' && projectSizeRangeInvalid) {
+      setError('Die minimale Projektgröße darf nicht größer als die maximale sein.')
+      return
+    }
+
     setLoading(true)
     setError('')
     setSaved(false)
@@ -72,6 +92,9 @@ export default function ProfileForm({
       ort: form.get('ort'),
       gewerke: role === 'subunternehmer' ? gewerke : undefined,
       qualificationFiles: role === 'subunternehmer' ? qualificationFiles : undefined,
+      serviceRadiusKm: role === 'subunternehmer' ? (serviceRadiusKm === '' ? null : Number(serviceRadiusKm)) : undefined,
+      minProjectSize: role === 'subunternehmer' ? (minProjectSize === '' ? null : Number(minProjectSize)) : undefined,
+      maxProjectSize: role === 'subunternehmer' ? (maxProjectSize === '' ? null : Number(maxProjectSize)) : undefined,
     }
 
     try {
@@ -160,6 +183,80 @@ export default function ProfileForm({
               🔒 Meisterpflichtige Gewerke (Elektro, Sanitär & Heizung) werden erst freigeschaltet, sobald Ihr
               Meisterbrief/Qualifikationsnachweis unten hochgeladen und verifiziert wurde.
             </p>
+          )}
+        </div>
+      )}
+
+      {role === 'subunternehmer' && (
+        <div className="border-t border-slate-200 pt-4 space-y-4">
+          <h3 className="font-bold text-slate-900">Projektpräferenzen</h3>
+          <p className="text-sm text-slate-500">
+            Diese Angaben helfen BAUVERSUS, dir passende Bauprojekte anzuzeigen. Sie sind optional und werden
+            aktuell als Präferenzen gespeichert – ob und wie sie in die Auftragsanzeige einfließen, wird in einem
+            späteren Schritt umgesetzt.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="serviceRadiusKm" className="block text-sm font-semibold text-slate-700 mb-1">
+                Einsatzradius
+              </label>
+              <p className="text-xs text-slate-400 mb-1.5">Wie weit fahren Sie für Bauprojekte?</p>
+              <div className="relative">
+                <input
+                  id="serviceRadiusKm"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  step={1}
+                  placeholder="z.B. 50"
+                  value={serviceRadiusKm}
+                  onChange={(e) => setServiceRadiusKm(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-12"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">km</span>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="minProjectSize" className="block text-sm font-semibold text-slate-700 mb-1">
+                Minimale Projektgröße
+              </label>
+              <p className="text-xs text-slate-400 mb-1.5">Welche Projektgrößen übernehmen Sie?</p>
+              <div className="relative">
+                <input
+                  id="minProjectSize"
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="z.B. 10.000"
+                  value={minProjectSize}
+                  onChange={(e) => setMinProjectSize(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-8"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">€</span>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="maxProjectSize" className="block text-sm font-semibold text-slate-700 mb-1">
+                Maximale Projektgröße
+              </label>
+              <p className="text-xs text-slate-400 mb-1.5">&nbsp;</p>
+              <div className="relative">
+                <input
+                  id="maxProjectSize"
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="z.B. 100.000"
+                  value={maxProjectSize}
+                  onChange={(e) => setMaxProjectSize(e.target.value)}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-8"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">€</span>
+              </div>
+            </div>
+          </div>
+          {projectSizeRangeInvalid && (
+            <p className="text-xs text-red-600">Die minimale Projektgröße darf nicht größer als die maximale sein.</p>
           )}
         </div>
       )}

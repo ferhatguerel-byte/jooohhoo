@@ -26,6 +26,10 @@ export interface CurrentUser {
   blockedGewerke: string[]
   directoryListed: boolean
   verifiedGewerke: string[]
+  /** Optionale Matching-Präferenzen (Phase 3.2). NULL = keine Angabe, nicht "0"/negativ interpretieren. */
+  serviceRadiusKm: number | null
+  minProjectSize: number | null
+  maxProjectSize: number | null
 }
 
 /**
@@ -44,7 +48,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
             subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id,
             verification_status, qualification_files, email_notifications, newsletter_opt_in,
             subscription_committed_until, subscription_cancel_at, account_status, blocked_gewerke,
-            directory_listed, verified_gewerke
+            directory_listed, verified_gewerke, service_radius_km, min_project_size, max_project_size
      FROM users WHERE id = $1`,
     [session.userId]
   )
@@ -74,5 +78,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     blockedGewerke: row.blocked_gewerke || [],
     directoryListed: row.directory_listed,
     verifiedGewerke: row.verified_gewerke || [],
+    serviceRadiusKm: row.service_radius_km,
+    minProjectSize: row.min_project_size,
+    maxProjectSize: row.max_project_size,
   }
 })

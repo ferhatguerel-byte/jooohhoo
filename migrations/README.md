@@ -42,3 +42,6 @@ angewendete automatisch.
   SEO-Landingpages, siehe `src/lib/seo/`).
 - `0005_seo_admin_notes.sql` – `seo_landing_pages.admin_note` für die SEO-Admin-Oberfläche
   (`/dashboard/admin/seo`).
+- `0006_provider_matching_profile.sql` – `users.service_radius_km`, `users.min_project_size`,
+  `users.max_project_size` (Phase 3.2 – optionale Matching-Präferenzen des Unternehmers, noch
+  ohne Matching-Logik; siehe `src/app/dashboard/profil/ProfileForm.tsx`).
