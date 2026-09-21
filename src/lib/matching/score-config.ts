@@ -87,3 +87,13 @@ export const MATCH_RESPONSE_TIME_BANDS: { maxHours: number; points: number }[] =
   { maxHours: 24, points: 2 },
   { maxHours: Infinity, points: 0 },
 ]
+
+/**
+ * Phase 3.6C – Schwellenwert, ab dem ein Provider für einen Job als "benachrichtigungswürdig"
+ * gilt (siehe src/lib/matching/create-match-notifications.ts). Eine initiale Produktkonfiguration,
+ * keine fest eingebrannte Business-Regel – zentral hier definiert, damit sie nirgends im Code als
+ * Magic Number wiederholt wird und später ohne Codeänderung an anderer Stelle anpassbar bleibt.
+ * Bewusst getrennt von MATCH_SCORE_WEIGHTS: der Threshold entscheidet über Benachrichtigung,
+ * nicht über die Score-Berechnung selbst.
+ */
+export const MATCH_NOTIFICATION_THRESHOLD = 70

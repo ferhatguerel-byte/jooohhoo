@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db'
 import { getScoredProvidersForJob, type ScoredProviderResult } from '@/lib/matching/scored-providers'
+import { createMatchNotifications } from '@/lib/matching/create-match-notifications'
 
 /**
  * Phase 3.5 – Matching Engine: Match Storage/Persistence.
@@ -10,8 +11,12 @@ import { getScoredProvidersForJob, type ScoredProviderResult } from '@/lib/match
  * job_matches. Keine zweite Hard-Filter- oder Score-Logik – diese Funktion berechnet nichts
  * selbst, sie ruft nur die bestehende Pipeline auf und schreibt deren Ergebnis.
  *
- * Bleibt eine rein interne Funktion: keine automatische Ausführung bei Job-Erstellung, kein
- * Cronjob, keine Queue, kein Aufrufer im Produktcode.
+ * Bleibt eine rein interne Funktion; einzige Aufrufstelle im Produktcode ist POST /api/jobs
+ * (Phase 3.6A, best-effort nach dem Job-Commit) – kein Cronjob, keine Queue.
+ *
+ * Seit Phase 3.6C: nach dem erfolgreichen Matching-Commit wird zusätzlich
+ * createMatchNotifications(jobId) aufgerufen (Pipeline: persist job_matches → createMatchNotifications
+ * → INSERT eligible notifications), ebenfalls best-effort/isoliert – siehe unten.
  */
 
 export interface RunMatchingResult {
@@ -65,6 +70,18 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
     throw err
   } finally {
     client.release()
+  }
+
+  // Matching ist an dieser Stelle bereits erfolgreich committed (Phase 3.6C §8/§9): die
+  // Notification-Erstellung ist ein nachgelagerter, ISOLIERTER Schritt in einer eigenen kurzen
+  // Transaktion (siehe createMatchNotifications). Ein Fehler hier darf weder den bereits
+  // erfolgreichen Matching-Lauf rückgängig machen noch runMatchingForJob() insgesamt fehlschlagen
+  // lassen – exakt dieselbe Best-Effort-Isolierung wie der äußere Aufruf aus POST /api/jobs
+  // (Phase 3.6A). Deshalb wird hier gefangen statt weitergeworfen.
+  try {
+    await createMatchNotifications(jobId)
+  } catch (notificationError) {
+    console.error('Notification-Erstellung für Matching-Lauf fehlgeschlagen:', jobId, notificationError)
   }
 
   return {

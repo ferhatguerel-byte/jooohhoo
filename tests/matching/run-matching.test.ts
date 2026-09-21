@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ScoredProviderResult } from '@/lib/matching/scored-providers'
 
-const { getScoredProvidersForJobMock, connectMock, clientQueryMock, releaseMock } = vi.hoisted(() => ({
+const { getScoredProvidersForJobMock, connectMock, clientQueryMock, releaseMock, createMatchNotificationsMock } = vi.hoisted(() => ({
   getScoredProvidersForJobMock: vi.fn(),
   connectMock: vi.fn(),
   clientQueryMock: vi.fn(),
   releaseMock: vi.fn(),
+  createMatchNotificationsMock: vi.fn(),
 }))
 vi.mock('@/lib/matching/scored-providers', () => ({ getScoredProvidersForJob: getScoredProvidersForJobMock }))
+vi.mock('@/lib/matching/create-match-notifications', () => ({ createMatchNotifications: createMatchNotificationsMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ connect: connectMock }) }))
 
 import { runMatchingForJob } from '@/lib/matching/run-matching'
@@ -35,8 +37,12 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
     connectMock.mockReset()
     clientQueryMock.mockReset()
     releaseMock.mockReset()
+    createMatchNotificationsMock.mockReset()
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockResolvedValue({ rows: [] })
+    // Notification-Erstellung ist ab Phase 3.6C Teil der Pipeline, wird hier aber isoliert
+    // gemockt – ihr Verhalten wird in tests/matching/create-match-notifications.test.ts geprüft.
+    createMatchNotificationsMock.mockResolvedValue({ createdCount: 0 })
   })
 
   it('1. erster Matching-Lauf: mehrere geeignete Provider werden als Datensätze geschrieben', async () => {
@@ -215,5 +221,27 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
       ([sql]) => typeof sql === 'string' && (sql.includes('INSERT INTO job_matches') || sql.includes('DELETE FROM job_matches'))
     )
     expect(writeCalls).toHaveLength(2) // genau 1 Bulk-INSERT + 1 DELETE, unabhängig von 5 Providern
+  })
+
+  it('18. (Phase 3.6C) ruft createMatchNotifications mit der jobId auf, NACHDEM der Matching-Commit erfolgt ist', async () => {
+    getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+    await runMatchingForJob('job-1')
+    expect(createMatchNotificationsMock).toHaveBeenCalledWith('job-1')
+    const commitCallIndex = clientQueryMock.mock.calls.findIndex(([sql]) => sql === 'COMMIT')
+    const commitInvocationOrder = clientQueryMock.mock.invocationCallOrder[commitCallIndex]
+    const notificationInvocationOrder = createMatchNotificationsMock.mock.invocationCallOrder[0]
+    expect(notificationInvocationOrder).toBeGreaterThan(commitInvocationOrder)
+  })
+
+  it('19. (Phase 3.6C) ein Fehler in createMatchNotifications lässt runMatchingForJob trotzdem erfolgreich zurückkehren (isoliert, geloggt)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+    createMatchNotificationsMock.mockRejectedValue(new Error('Notification-DB-Fehler'))
+
+    const result = await runMatchingForJob('job-1')
+
+    expect(result).toEqual({ jobId: 'job-1', resultCount: 1, eligibleCount: 1, excludedCount: 0 })
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Notification'), 'job-1', expect.any(Error))
+    consoleErrorSpy.mockRestore()
   })
 })
