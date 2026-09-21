@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db'
 import { getScoredProvidersForJob, type ScoredProviderResult } from '@/lib/matching/scored-providers'
 import { createMatchNotifications } from '@/lib/matching/create-match-notifications'
+import { sendMatchNotificationEmails } from '@/lib/matching/send-match-notification-emails'
 
 /**
  * Phase 3.5 – Matching Engine: Match Storage/Persistence.
@@ -72,16 +73,21 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
     client.release()
   }
 
-  // Matching ist an dieser Stelle bereits erfolgreich committed (Phase 3.6C §8/§9): die
-  // Notification-Erstellung ist ein nachgelagerter, ISOLIERTER Schritt in einer eigenen kurzen
-  // Transaktion (siehe createMatchNotifications). Ein Fehler hier darf weder den bereits
-  // erfolgreichen Matching-Lauf rückgängig machen noch runMatchingForJob() insgesamt fehlschlagen
-  // lassen – exakt dieselbe Best-Effort-Isolierung wie der äußere Aufruf aus POST /api/jobs
-  // (Phase 3.6A). Deshalb wird hier gefangen statt weitergeworfen.
+  // Matching ist an dieser Stelle bereits erfolgreich committed (Phase 3.6C §8/§9): Notification-
+  // Erstellung und (seit Phase 3.6D) der E-Mail-Versand für NEU erzeugte Notifications sind ein
+  // nachgelagerter, ISOLIERTER Schritt. Ein Fehler hier darf weder den bereits erfolgreichen
+  // Matching-Lauf rückgängig machen noch runMatchingForJob() insgesamt fehlschlagen lassen –
+  // exakt dieselbe Best-Effort-Isolierung wie der äußere Aufruf aus POST /api/jobs (Phase 3.6A).
+  // Deshalb wird hier gefangen statt weitergeworfen. sendMatchNotificationEmails() erhält
+  // ausschließlich createdIds (nicht "alle pending") – ein Re-Matching ohne neue Treffer
+  // (ON CONFLICT DO NOTHING) löst dadurch garantiert keinen erneuten Versand aus (Phase 3.6D §17).
   try {
-    await createMatchNotifications(jobId)
+    const { createdIds } = await createMatchNotifications(jobId)
+    if (createdIds.length > 0) {
+      await sendMatchNotificationEmails(createdIds)
+    }
   } catch (notificationError) {
-    console.error('Notification-Erstellung für Matching-Lauf fehlgeschlagen:', jobId, notificationError)
+    console.error('Notification-Erstellung/-Versand für Matching-Lauf fehlgeschlagen:', jobId, notificationError)
   }
 
   return {

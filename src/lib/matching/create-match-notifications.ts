@@ -4,6 +4,12 @@ import { MATCH_NOTIFICATION_THRESHOLD } from '@/lib/matching/score-config'
 export interface CreateMatchNotificationsResult {
   /** Anzahl tatsächlich neu angelegter Zeilen (0 bei einem reinen Re-Run ohne neue Treffer). */
   createdCount: number
+  /**
+   * IDs der tatsächlich NEU angelegten Zeilen (nicht der bereits vorhandenen). Phase 3.6D nutzt
+   * ausschließlich diese Liste als Versandkandidaten – ein Re-Matching, das wegen ON CONFLICT DO
+   * NOTHING keine neuen Zeilen erzeugt, darf auch keine E-Mail erneut auslösen.
+   */
+  createdIds: string[]
 }
 
 /**
@@ -31,7 +37,7 @@ export interface CreateMatchNotificationsResult {
  */
 export async function createMatchNotifications(jobId: string): Promise<CreateMatchNotificationsResult> {
   const db = getDb()
-  const result = await db.query(
+  const result = await db.query<{ id: string }>(
     `INSERT INTO match_notifications (job_id, provider_id, job_match_id, match_score)
      SELECT job_id, provider_id, id, match_score
      FROM job_matches
@@ -43,5 +49,6 @@ export async function createMatchNotifications(jobId: string): Promise<CreateMat
      RETURNING id`,
     [jobId, MATCH_NOTIFICATION_THRESHOLD]
   )
-  return { createdCount: result.rows.length }
+  const createdIds = result.rows.map((row) => row.id)
+  return { createdCount: createdIds.length, createdIds }
 }

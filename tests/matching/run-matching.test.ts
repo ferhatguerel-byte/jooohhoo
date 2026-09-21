@@ -1,15 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ScoredProviderResult } from '@/lib/matching/scored-providers'
 
-const { getScoredProvidersForJobMock, connectMock, clientQueryMock, releaseMock, createMatchNotificationsMock } = vi.hoisted(() => ({
+const {
+  getScoredProvidersForJobMock,
+  connectMock,
+  clientQueryMock,
+  releaseMock,
+  createMatchNotificationsMock,
+  sendMatchNotificationEmailsMock,
+} = vi.hoisted(() => ({
   getScoredProvidersForJobMock: vi.fn(),
   connectMock: vi.fn(),
   clientQueryMock: vi.fn(),
   releaseMock: vi.fn(),
   createMatchNotificationsMock: vi.fn(),
+  sendMatchNotificationEmailsMock: vi.fn(),
 }))
 vi.mock('@/lib/matching/scored-providers', () => ({ getScoredProvidersForJob: getScoredProvidersForJobMock }))
 vi.mock('@/lib/matching/create-match-notifications', () => ({ createMatchNotifications: createMatchNotificationsMock }))
+vi.mock('@/lib/matching/send-match-notification-emails', () => ({ sendMatchNotificationEmails: sendMatchNotificationEmailsMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ connect: connectMock }) }))
 
 import { runMatchingForJob } from '@/lib/matching/run-matching'
@@ -38,11 +47,13 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
     clientQueryMock.mockReset()
     releaseMock.mockReset()
     createMatchNotificationsMock.mockReset()
+    sendMatchNotificationEmailsMock.mockReset()
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockResolvedValue({ rows: [] })
-    // Notification-Erstellung ist ab Phase 3.6C Teil der Pipeline, wird hier aber isoliert
-    // gemockt – ihr Verhalten wird in tests/matching/create-match-notifications.test.ts geprüft.
-    createMatchNotificationsMock.mockResolvedValue({ createdCount: 0 })
+    // Notification-Erstellung/-Versand sind ab Phase 3.6C/3.6D Teil der Pipeline, werden hier aber
+    // isoliert gemockt – ihr Verhalten wird in den jeweils eigenen Testdateien geprüft.
+    createMatchNotificationsMock.mockResolvedValue({ createdCount: 0, createdIds: [] })
+    sendMatchNotificationEmailsMock.mockResolvedValue([])
   })
 
   it('1. erster Matching-Lauf: mehrere geeignete Provider werden als Datensätze geschrieben', async () => {
@@ -237,6 +248,33 @@ describe('runMatchingForJob — Phase 3.5 Match Storage', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
     createMatchNotificationsMock.mockRejectedValue(new Error('Notification-DB-Fehler'))
+
+    const result = await runMatchingForJob('job-1')
+
+    expect(result).toEqual({ jobId: 'job-1', resultCount: 1, eligibleCount: 1, excludedCount: 0 })
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Notification'), 'job-1', expect.any(Error))
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('20. (Phase 3.6D) ruft sendMatchNotificationEmails NUR mit den neu erzeugten IDs auf', async () => {
+    getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+    createMatchNotificationsMock.mockResolvedValue({ createdCount: 2, createdIds: ['n1', 'n2'] })
+    await runMatchingForJob('job-1')
+    expect(sendMatchNotificationEmailsMock).toHaveBeenCalledWith(['n1', 'n2'])
+  })
+
+  it('21. (Phase 3.6D) löst KEINEN E-Mail-Versand aus, wenn ein Re-Matching keine neuen Notifications erzeugt', async () => {
+    getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+    createMatchNotificationsMock.mockResolvedValue({ createdCount: 0, createdIds: [] })
+    await runMatchingForJob('job-1')
+    expect(sendMatchNotificationEmailsMock).not.toHaveBeenCalled()
+  })
+
+  it('22. (Phase 3.6D) ein Fehler beim E-Mail-Versand lässt runMatchingForJob trotzdem erfolgreich zurückkehren (isoliert, geloggt)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    getScoredProvidersForJobMock.mockResolvedValue([eligibleResult('p1', 90)])
+    createMatchNotificationsMock.mockResolvedValue({ createdCount: 1, createdIds: ['n1'] })
+    sendMatchNotificationEmailsMock.mockRejectedValue(new Error('Resend down'))
 
     const result = await runMatchingForJob('job-1')
 

@@ -47,15 +47,15 @@ describe('createMatchNotifications — Phase 3.6C (SQL-Struktur, gemockte DB)', 
     expect(sql).toContain('SELECT job_id, provider_id, id, match_score')
   })
 
-  it('createdCount entspricht der Anzahl tatsächlich eingefügter Zeilen (RETURNING id)', async () => {
+  it('createdCount/createdIds entsprechen den tatsächlich eingefügten Zeilen (RETURNING id)', async () => {
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1' }, { id: 'n2' }] })
     const result = await createMatchNotifications('job-1')
-    expect(result).toEqual({ createdCount: 2 })
+    expect(result).toEqual({ createdCount: 2, createdIds: ['n1', 'n2'] })
   })
 
-  it('createdCount ist 0, wenn ON CONFLICT alle Zeilen übersprungen hat (reiner Re-Run)', async () => {
+  it('createdCount ist 0 und createdIds leer, wenn ON CONFLICT alle Zeilen übersprungen hat (reiner Re-Run)', async () => {
     queryMock.mockResolvedValueOnce({ rows: [] })
     const result = await createMatchNotifications('job-1')
-    expect(result).toEqual({ createdCount: 0 })
+    expect(result).toEqual({ createdCount: 0, createdIds: [] })
   })
 })

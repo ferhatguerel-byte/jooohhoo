@@ -20,12 +20,18 @@ function getResend(): Resend {
   return resendClient
 }
 
-async function send(to: string, subject: string, html: string) {
+async function send(to: string, subject: string, html: string, text?: string) {
   if (!process.env.RESEND_API_KEY || !process.env.FROM_EMAIL) {
     console.log(`[E-Mail nicht versendet – kein RESEND_API_KEY] An: ${to} | Betreff: ${subject}`)
     return
   }
-  await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html })
+  await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html, ...(text ? { text } : {}) })
+}
+
+/** Kürzt einen Text auf eine sinnvolle Länge für E-Mails, ohne HTML mitten in einer Entität abzuschneiden. */
+function truncate(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength).trimEnd()}…`
 }
 
 export async function sendNewOfferEmail(to: string, jobTitle: string, price: number, companyName: string) {
@@ -137,4 +143,75 @@ export async function sendOfferAwardedEmail(to: string, companyName: string) {
       </a>
     </div>`
   )
+}
+
+export interface MatchNotificationJobInfo {
+  title: string
+  gewerk: string
+  plz: string
+  ort: string
+  description: string
+  budgetMin: number | null
+  budgetMax: number | null
+  deadline: string | Date | null
+}
+
+/**
+ * Phase 3.6D – Match-Benachrichtigung an einen Unternehmer. Enthält AUSSCHLIESSLICH öffentlich
+ * bereits erreichbare Projekt-Eckdaten (Gewerk/Ort/Budget/gekürzte Beschreibung) – niemals Name,
+ * E-Mail oder Telefonnummer des Auftraggebers (diese Felder existieren ohnehin nicht auf `jobs`),
+ * niemals den internen Match-Score oder sonstige interne Matching-Daten. Der Score wird bewusst
+ * nicht als Zahl kommuniziert ("Sie haben 87 Punkte"), sondern nur als Einladung
+ * ("passt zu Ihrem Profil") – der Score ist ein internes technisches Signal, kein öffentliches
+ * Qualitätsurteil (siehe Phase-3.4/3.6-Architektur).
+ */
+export async function sendMatchNotificationEmail(to: string, job: MatchNotificationJobInfo) {
+  const safeTitle = escapeHtml(job.title)
+  const safeGewerk = escapeHtml(job.gewerk)
+  const safePlz = escapeHtml(job.plz)
+  const safeOrt = escapeHtml(job.ort)
+  const shortDescription = truncate(job.description, 280)
+  const safeDescription = escapeHtml(shortDescription)
+  const jobsUrl = `${getAppUrl()}/dashboard/jobs`
+
+  const budgetText =
+    job.budgetMin || job.budgetMax ? `€${job.budgetMin ?? '?'}${job.budgetMax ? ` – €${job.budgetMax}` : ''}` : null
+  const deadlineText = job.deadline ? new Date(job.deadline).toLocaleDateString('de-DE') : null
+
+  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #1e3a8a;">Ein neuer Auftrag passt zu Ihrem Profil</h1>
+      <p>Auf BAUVERSUS wurde ein Bauprojekt eingestellt, das zu Ihrem Gewerk und Ihrer Region passt.</p>
+      <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
+        <p style="margin: 0 0 8px 0; font-weight: bold;">${safeTitle}</p>
+        <p style="margin: 0 0 8px 0; color: #475569;">${safeGewerk} · ${safePlz} ${safeOrt}</p>
+        ${budgetText ? `<p style="margin: 0 0 8px 0;"><strong>Budget:</strong> ${escapeHtml(budgetText)}</p>` : ''}
+        ${deadlineText ? `<p style="margin: 0 0 8px 0;"><strong>Gewünschter Termin:</strong> ${escapeHtml(deadlineText)}</p>` : ''}
+        <p style="margin: 8px 0 0 0; color: #475569;">${safeDescription}</p>
+      </div>
+      <a href="${jobsUrl}"
+         style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 8px;">
+        Auftrag ansehen →
+      </a>
+      <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+        Sie erhalten diese Nachricht, weil BAUVERSUS diesen Auftrag als passend zu Ihrem Unternehmensprofil
+        eingestuft hat. Melden Sie sich an, um Details zu sehen und ein Angebot abzugeben.
+      </p>
+    </div>`
+
+  const text = [
+    'Ein neuer Auftrag passt zu Ihrem Profil',
+    '',
+    job.title,
+    `${job.gewerk} · ${job.plz} ${job.ort}`,
+    budgetText ? `Budget: ${budgetText}` : null,
+    deadlineText ? `Gewünschter Termin: ${deadlineText}` : null,
+    '',
+    shortDescription,
+    '',
+    `Auftrag ansehen: ${jobsUrl}`,
+  ]
+    .filter((line) => line !== null)
+    .join('\n')
+
+  await send(to, `🔧 Neuer passender Auftrag: „${job.title}“`, html, text)
 }
