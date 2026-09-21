@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { runMatchingForJob } from '@/lib/matching/run-matching'
 
 const lineItemSchema = z.object({
   gewerk: z.enum(GEWERKE),
@@ -101,6 +102,16 @@ export async function POST(req: NextRequest) {
       gewerk: body.gewerk,
       hasLineItems: !!(body.lineItems && body.lineItems.length > 0),
     })
+
+    // Matching läuft erst NACH dem erfolgreichen Commit, best-effort und vollständig isoliert:
+    // ein Matching-Fehler darf einen gültig erstellten Auftrag niemals rückgängig machen oder
+    // die Erfolgsantwort verhindern (Phase 3.6A). Einziger Trigger-Punkt im gesamten Code -
+    // weder award/offer/PATCH noch ein Dashboard-Aufruf lösen erneut Matching aus.
+    try {
+      await runMatchingForJob(jobId)
+    } catch (matchingError) {
+      console.error('Matching für neuen Auftrag fehlgeschlagen:', jobId, matchingError)
+    }
 
     return NextResponse.json({ ok: true, id: jobId })
   } catch (err: unknown) {

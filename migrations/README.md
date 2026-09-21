@@ -48,3 +48,7 @@ angewendete automatisch.
 - `0007_job_matches.sql` – `job_matches` (Phase 3.5 – ein aktueller Match-Snapshot pro
   job_id×provider_id, inkl. Score-Range-Check und Exclusion-Consistency-Check; siehe
   `src/lib/matching/run-matching.ts`).
+- `0008_match_notifications.sql` – `match_notifications` (Phase 3.6B – Idempotenz-Grundlage für
+  künftige Match-Benachrichtigungen, UNIQUE(job_id, provider_id), `job_match_id` verweist auf
+  `job_matches(id)` mit `ON DELETE SET NULL`; noch keine automatische Befüllung, kein E-Mail-
+  Versand).
