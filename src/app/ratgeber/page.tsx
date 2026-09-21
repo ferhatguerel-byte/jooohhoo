@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { getPublishedArticles } from '@/lib/guide'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '../HomeHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,6 +44,7 @@ export default async function RatgeberPage() {
           ))}
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

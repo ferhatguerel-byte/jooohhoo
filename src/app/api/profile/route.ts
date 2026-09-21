@@ -21,7 +21,7 @@ const MAX_PROJECT_SIZE_EUR = 100_000_000
 
 const profileSchema = z
   .object({
-    companyName: z.string().min(2),
+    companyName: z.string().min(2).max(150),
     phone: z.string().optional(),
     plz: z.string().min(4),
     ort: z.string().min(2),

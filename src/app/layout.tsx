@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getAppUrl } from "@/lib/url";
+import { toSafeJsonLdString } from "@/lib/seo/structured-data";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -78,7 +79,7 @@ export default function RootLayout({
       <head>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>

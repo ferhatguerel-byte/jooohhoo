@@ -13,6 +13,8 @@ import { buildLandingPageMetadata } from '@/lib/seo/metadata'
 import { buildBreadcrumbJsonLd, buildServiceJsonLd } from '@/lib/seo/structured-data'
 import { getRelatedServiceLinks, getRelatedCityLinks } from '@/lib/seo/internal-links'
 import InternalLinks from '@/components/seo/InternalLinks'
+import JsonLd from '@/components/seo/JsonLd'
+import SiteFooter from '@/components/layout/SiteFooter'
 import HomeHeader from '@/app/HomeHeader'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
@@ -150,8 +152,8 @@ export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Pr
 
   return (
     <div className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      {serviceJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }} />}
+      <JsonLd data={breadcrumbJsonLd} />
+      {serviceJsonLd && <JsonLd data={serviceJsonLd} />}
       <HomeHeader loggedIn={!!user} />
       <div className="max-w-6xl mx-auto px-6 py-16">
         <nav className="text-xs text-slate-400 mb-4">
@@ -205,6 +207,7 @@ export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Pr
           </p>
         )}
       </div>
+      <SiteFooter />
     </div>
   )
 }

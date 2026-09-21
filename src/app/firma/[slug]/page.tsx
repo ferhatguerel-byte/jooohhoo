@@ -8,6 +8,8 @@ import { getCurrentUser } from '@/lib/current-user'
 import { buildBreadcrumbJsonLd, buildAggregateRatingJsonLd } from '@/lib/seo/structured-data'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
+import JsonLd from '@/components/seo/JsonLd'
+import SiteFooter from '@/components/layout/SiteFooter'
 import HomeHeader from '../../HomeHeader'
 
 export const dynamic = 'force-dynamic'
@@ -88,8 +90,8 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={jsonLd} />
       <HomeHeader loggedIn={!!user} />
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link href="/branchenbuch" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-brand mb-6">
@@ -166,6 +168,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
           </TrackedCtaLink>
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

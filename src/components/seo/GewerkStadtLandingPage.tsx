@@ -12,6 +12,8 @@ import { buildBreadcrumbJsonLd, buildServiceJsonLd } from '@/lib/seo/structured-
 import { getAppUrl } from '@/lib/url'
 import InternalLinks from '@/components/seo/InternalLinks'
 import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
+import JsonLd from '@/components/seo/JsonLd'
+import SiteFooter from '@/components/layout/SiteFooter'
 import HomeHeader from '@/app/HomeHeader'
 import { getCurrentUser } from '@/lib/current-user'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -102,8 +104,8 @@ export async function GewerkStadtLandingPage({ data }: { data: GewerkStadtLandin
 
   return (
     <div className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <JsonLd data={serviceJsonLd} />
       <HomeHeader loggedIn={!!user} />
 
       <div className="max-w-4xl mx-auto px-6 py-16">
@@ -182,6 +184,7 @@ export async function GewerkStadtLandingPage({ data }: { data: GewerkStadtLandin
           </p>
         )}
       </div>
+      <SiteFooter />
     </div>
   )
 }

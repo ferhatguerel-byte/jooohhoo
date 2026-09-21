@@ -38,8 +38,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         if (job.auftraggeber_id === user.id) {
           authorized = true
         } else if (job.status === 'open' && user.role === 'subunternehmer') {
-          // Entspricht der bisherigen Sichtbarkeit im offenen Auftrags-Marktplatz.
-          authorized = true
+          // Entspricht der bisherigen Sichtbarkeit im offenen Auftrags-Marktplatz UND dessen
+          // Zugriffsvoraussetzungen (Phase 4.1): dashboard/layout.tsx sperrt gesperrte Konten
+          // (account_status='suspended') vollständig aus /dashboard/*, dashboard/jobs/page.tsx
+          // zeigt die Auftragsliste (und damit auch die Anhänge) nur bei aktivem Abo. Bewusst
+          // NICHT zusätzlich blockedGewerke/Verifizierung geprüft – diese schränken laut
+          // bestehender UI nur die Angebotsabgabe ein, nicht die reine Sichtbarkeit der Liste.
+          authorized =
+            user.accountStatus === 'active' &&
+            user.subscriptionStatus === 'active' &&
+            !!user.subscriptionTier
         } else {
           const offerResult = await db.query(
             'SELECT 1 FROM offers WHERE job_id = $1 AND subunternehmer_id = $2 LIMIT 1',

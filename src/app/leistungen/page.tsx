@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getActiveLeistungen } from '@/lib/seo/leistungen'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '@/app/HomeHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const revalidate = 3600
 
@@ -34,6 +35,7 @@ export default async function LeistungenIndexPage() {
           ))}
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

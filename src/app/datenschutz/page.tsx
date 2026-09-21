@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const metadata: Metadata = { title: 'Datenschutzerklärung – BAUVERSUS' }
 
 export default function DatenschutzPage() {
   return (
+    <>
     <div className="max-w-3xl mx-auto px-6 py-16 text-slate-700">
       <Link href="/" className="text-sm text-brand hover:underline">← Zurück zur Startseite</Link>
       <h1 className="text-3xl font-black text-slate-900 mt-6 mb-8">Datenschutzerklärung</h1>
@@ -100,5 +102,7 @@ export default function DatenschutzPage() {
         </p>
       </section>
     </div>
+    <SiteFooter />
+    </>
   )
 }

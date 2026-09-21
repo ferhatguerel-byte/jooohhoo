@@ -5,6 +5,7 @@ import { getLeistungBySlug } from '@/lib/seo/leistungen'
 import { getGewerkSeoBySlug } from '@/lib/seo/gewerke-seo'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '@/app/HomeHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const revalidate = 3600
 
@@ -59,6 +60,7 @@ export default async function LeistungPage({ params }: { params: Promise<{ leist
           </Link>
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

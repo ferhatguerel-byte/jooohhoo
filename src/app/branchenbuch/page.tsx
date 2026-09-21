@@ -7,6 +7,7 @@ import { getActiveCities } from '@/lib/seo/cities'
 import { ensureCompanySlugs } from '@/lib/company-slug'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '../HomeHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,6 +107,7 @@ export default async function BranchenbuchPage() {
           ))}
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

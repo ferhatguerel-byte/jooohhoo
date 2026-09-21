@@ -93,12 +93,74 @@ describe('GET /api/files/[id] — privater Datei-Zugriff', () => {
       expect(res.status).toBe(200)
     })
 
-    it('allows any Subunternehmer to view attachments of a currently open job (matches marketplace visibility)', async () => {
-      getCurrentUserMock.mockResolvedValue({ id: 'browsing-sub', role: 'subunternehmer' })
+    it('allows a Subunternehmer with an active subscription to view attachments of a currently open job (matches marketplace visibility)', async () => {
+      getCurrentUserMock.mockResolvedValue({
+        id: 'browsing-sub',
+        role: 'subunternehmer',
+        accountStatus: 'active',
+        subscriptionStatus: 'active',
+        subscriptionTier: 'basic',
+      })
       queryMock.mockResolvedValueOnce({ rows: [fileRow] })
       queryMock.mockResolvedValueOnce({ rows: [{ id: 'job-1', auftraggeber_id: 'owner-1', status: 'open' }] })
       const res = await GET(req(), { params: Promise.resolve({ id: 'f2' }) })
       expect(res.status).toBe(200)
+    })
+
+    it('Phase 4.1: denies a Subunternehmer WITHOUT an active subscription from viewing attachments of an open job (Paywall-Bypass-Fix)', async () => {
+      getCurrentUserMock.mockResolvedValue({
+        id: 'unsubbed-sub',
+        role: 'subunternehmer',
+        accountStatus: 'active',
+        subscriptionStatus: 'inactive',
+        subscriptionTier: null,
+      })
+      queryMock.mockResolvedValueOnce({ rows: [fileRow] })
+      queryMock.mockResolvedValueOnce({ rows: [{ id: 'job-1', auftraggeber_id: 'owner-1', status: 'open' }] })
+      const res = await GET(req(), { params: Promise.resolve({ id: 'f2' }) })
+      expect(res.status).toBe(403)
+    })
+
+    it('Phase 4.1: denies a Subunternehmer with a canceled subscription from viewing attachments of an open job', async () => {
+      getCurrentUserMock.mockResolvedValue({
+        id: 'canceled-sub',
+        role: 'subunternehmer',
+        accountStatus: 'active',
+        subscriptionStatus: 'canceled',
+        subscriptionTier: 'basic',
+      })
+      queryMock.mockResolvedValueOnce({ rows: [fileRow] })
+      queryMock.mockResolvedValueOnce({ rows: [{ id: 'job-1', auftraggeber_id: 'owner-1', status: 'open' }] })
+      const res = await GET(req(), { params: Promise.resolve({ id: 'f2' }) })
+      expect(res.status).toBe(403)
+    })
+
+    it('Phase 4.1: denies a Subunternehmer with past_due subscription status from viewing attachments of an open job', async () => {
+      getCurrentUserMock.mockResolvedValue({
+        id: 'pastdue-sub',
+        role: 'subunternehmer',
+        accountStatus: 'active',
+        subscriptionStatus: 'past_due',
+        subscriptionTier: 'basic',
+      })
+      queryMock.mockResolvedValueOnce({ rows: [fileRow] })
+      queryMock.mockResolvedValueOnce({ rows: [{ id: 'job-1', auftraggeber_id: 'owner-1', status: 'open' }] })
+      const res = await GET(req(), { params: Promise.resolve({ id: 'f2' }) })
+      expect(res.status).toBe(403)
+    })
+
+    it('Phase 4.1: denies a suspended Subunternehmer account from viewing attachments of an open job, even with an active subscription', async () => {
+      getCurrentUserMock.mockResolvedValue({
+        id: 'suspended-sub',
+        role: 'subunternehmer',
+        accountStatus: 'suspended',
+        subscriptionStatus: 'active',
+        subscriptionTier: 'basic',
+      })
+      queryMock.mockResolvedValueOnce({ rows: [fileRow] })
+      queryMock.mockResolvedValueOnce({ rows: [{ id: 'job-1', auftraggeber_id: 'owner-1', status: 'open' }] })
+      const res = await GET(req(), { params: Promise.resolve({ id: 'f2' }) })
+      expect(res.status).toBe(403)
     })
 
     it('denies a Subunternehmer without an offer from viewing attachments of a closed job (IDOR)', async () => {

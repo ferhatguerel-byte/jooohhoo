@@ -5,6 +5,7 @@ import { getGewerkSeoBySlug } from '@/lib/seo/gewerke-seo'
 import { getActiveCities } from '@/lib/seo/cities'
 import { getCurrentUser } from '@/lib/current-user'
 import HomeHeader from '@/app/HomeHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const revalidate = 3600
 
@@ -53,6 +54,7 @@ export default async function HandwerkerGewerkPage({ params }: { params: Promise
           Jetzt kostenlos Auftrag erstellen →
         </Link>
       </div>
+      <SiteFooter />
     </div>
   )
 }

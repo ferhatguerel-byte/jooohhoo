@@ -11,6 +11,7 @@ import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
 import { getActiveCities } from '@/lib/seo/cities'
 import { getCurrentUser } from '@/lib/current-user'
 import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
+import SiteFooter from '@/components/layout/SiteFooter'
 import HomeHeader from './HomeHeader'
 
 const STEPS = [
@@ -315,20 +316,7 @@ export default async function HomePage() {
         </TrackedCtaLink>
       </section>
 
-      {/* Footer */}
-      <footer className="px-6 py-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-slate-500 max-w-6xl mx-auto">
-        <div>© {new Date().getFullYear()} BAUVERSUS – eine Marke der GGV BAU GmbH.</div>
-        <div className="flex gap-4 flex-wrap justify-center">
-          <Link href="/handwerker" className="hover:text-[#17202a]">Handwerker</Link>
-          <Link href="/nachunternehmer" className="hover:text-[#17202a]">Nachunternehmer</Link>
-          <Link href="/baukosten" className="hover:text-[#17202a]">Baukosten</Link>
-          <Link href="/branchenbuch" className="hover:text-[#17202a]">Branchenbuch</Link>
-          <Link href="/ratgeber" className="hover:text-[#17202a]">Ratgeber</Link>
-          <Link href="/impressum" className="hover:text-[#17202a]">Impressum</Link>
-          <Link href="/datenschutz" className="hover:text-[#17202a]">Datenschutz</Link>
-          <Link href="/agb" className="hover:text-[#17202a]">AGB</Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

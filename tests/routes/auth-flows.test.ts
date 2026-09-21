@@ -104,6 +104,41 @@ describe('POST /api/auth/register', () => {
     )
     expect(res.status).toBe(409)
   })
+
+  it('Phase 4.1: lehnt einen zu langen Firmennamen ab (>150 Zeichen), Zod validiert vor jedem DB-Zugriff', async () => {
+    const res = await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'neu@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'A'.repeat(151),
+        plz: '10115',
+        ort: 'Berlin',
+      })
+    )
+    expect(res.status).toBe(400)
+    // Zod wirft vor dem Rate-Limit-Check/DB-Zugriff (siehe route.ts: registerSchema.parse() zuerst).
+    expect(queryMock).not.toHaveBeenCalled()
+  })
+
+  it('Phase 4.1: akzeptiert einen Firmennamen an der exakten Grenze (150 Zeichen)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] }) // Rate-Limit COUNT
+    queryMock.mockResolvedValueOnce({}) // Rate-Limit INSERT
+    queryMock.mockResolvedValueOnce({ rows: [] }) // E-Mail noch nicht vergeben
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'new-user' }] }) // INSERT users
+
+    const res = await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'grenzfall@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'A'.repeat(150),
+        plz: '10115',
+        ort: 'Berlin',
+      })
+    )
+    expect(res.status).not.toBe(400)
+  })
 })
 
 describe('POST /api/auth/reset-password', () => {

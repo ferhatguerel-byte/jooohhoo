@@ -6,6 +6,8 @@ import { getArticleBySlug, getPublishedArticles } from '@/lib/guide'
 import ArticleContent from '@/components/ArticleContent'
 import { getCurrentUser } from '@/lib/current-user'
 import { buildBreadcrumbJsonLd } from '@/lib/seo/structured-data'
+import JsonLd from '@/components/seo/JsonLd'
+import SiteFooter from '@/components/layout/SiteFooter'
 import HomeHeader from '../../HomeHeader'
 
 export const dynamic = 'force-dynamic'
@@ -47,8 +49,8 @@ export default async function RatgeberArtikelPage({ params }: { params: Promise<
 
   return (
     <div className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <HomeHeader loggedIn={!!user} />
       <div className="max-w-2xl mx-auto px-6 py-16">
         <Link href="/ratgeber" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-brand mb-6">
@@ -83,6 +85,7 @@ export default async function RatgeberArtikelPage({ params }: { params: Promise<
           </div>
         )}
       </div>
+      <SiteFooter />
     </div>
   )
 }

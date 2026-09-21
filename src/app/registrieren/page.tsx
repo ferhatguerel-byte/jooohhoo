@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { HardHat, ArrowRight } from 'lucide-react'
 import { GEWERK_GROUPS } from '@/lib/gewerke'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 type Role = 'auftraggeber' | 'subunternehmer'
 
@@ -56,7 +57,8 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="flex-1 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         <Link href="/" className="flex items-center gap-2 font-black text-xl text-slate-900 justify-center mb-8">
           <span className="bg-brand text-white rounded-lg w-9 h-9 flex items-center justify-center">
@@ -177,6 +179,8 @@ function RegisterForm() {
           </p>
         </div>
       </div>
+    </div>
+    <SiteFooter />
     </div>
   )
 }

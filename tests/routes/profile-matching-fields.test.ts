@@ -58,6 +58,20 @@ describe('POST /api/profile — Phase 3.2 Matching-Präferenzen (Validierung)', 
     expect(res.status).toBe(200)
   })
 
+  it('Phase 4.1: lehnt einen zu langen Firmennamen ab (>150 Zeichen)', async () => {
+    getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
+    const res = await POST(req({ ...validBody, companyName: 'A'.repeat(151) }))
+    expect(res.status).toBe(400)
+    // Zod validiert vor jedem DB-Zugriff (profileSchema.parse() zuerst in route.ts).
+    expect(queryMock).not.toHaveBeenCalled()
+  })
+
+  it('Phase 4.1: akzeptiert einen Firmennamen an der exakten Grenze (150 Zeichen)', async () => {
+    getCurrentUserMock.mockResolvedValue(baseAuftraggeber)
+    const res = await POST(req({ ...validBody, companyName: 'A'.repeat(150) }))
+    expect(res.status).not.toBe(400)
+  })
+
   it('lehnt einen negativen service_radius_km ab', async () => {
     getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
     const res = await POST(req({ ...validBody, serviceRadiusKm: -10 }))
