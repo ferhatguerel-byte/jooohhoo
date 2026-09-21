@@ -2,13 +2,43 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/current-user'
 import { getDb } from '@/lib/db'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
+import { reconcileUserStripeSubscription } from '@/lib/billing/reconcile-subscription'
 import CheckoutButton from './CheckoutButton'
 import PortalButton from './PortalButton'
 
-export default async function AboPage() {
-  const user = await getCurrentUser()
+export default async function AboPage({ searchParams }: { searchParams: Promise<{ success?: string }> }) {
+  const { success } = await searchParams
+  let user = await getCurrentUser()
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
+
+  // Phase 4.2 (Teil K) – Fallback gegen die Lücke zwischen erfolgreicher Stripe-Zahlung und dem
+  // (ggf. verspäteten) Webhook: kommt der Nutzer frisch von einem erfolgreichen Checkout zurück
+  // (`?success=1`) und zeigt die lokale DB noch KEIN aktives Abo, wird Stripe genau EINMAL
+  // gezielt live abgefragt (Reconciliation, nicht blind gewartet, nicht die UI ungeprüft auf
+  // "aktiv" gesetzt – Stripe bleibt Source of Truth). War der Webhook zu diesem Zeitpunkt bereits
+  // durch, ist dieser Aufruf ein No-op (Reconciliation liefert denselben, bereits aktiven Zustand).
+  if (success === '1' && user.subscriptionStatus !== 'active') {
+    await reconcileUserStripeSubscription(user.id)
+    // getCurrentUser() ist React.cache()-memoisiert für die Dauer dieses Requests – nach dem
+    // Reconciliation-Schreiben muss der Nutzer frisch aus der DB gelesen werden, sonst zeigt diese
+    // Server-Response weiterhin den zwischengespeicherten, veralteten Zustand.
+    const refreshed = await getDb().query(
+      `SELECT subscription_status, subscription_tier, subscription_cancel_at, subscription_committed_until
+       FROM users WHERE id = $1`,
+      [user.id]
+    )
+    const row = refreshed.rows[0]
+    if (row) {
+      user = {
+        ...user,
+        subscriptionStatus: row.subscription_status,
+        subscriptionTier: row.subscription_tier,
+        subscriptionCancelAt: row.subscription_cancel_at,
+        subscriptionCommittedUntil: row.subscription_committed_until,
+      }
+    }
+  }
 
   const currentTierDef = user.subscriptionTier ? TIERS[user.subscriptionTier] : undefined
   const hasActiveSub = user.subscriptionStatus === 'active' && !!currentTierDef

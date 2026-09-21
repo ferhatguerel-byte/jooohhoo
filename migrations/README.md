@@ -60,3 +60,7 @@ angewendete automatisch.
   für den Matching-Funnel; `event_type` TEXT statt ENUM, `idempotency_key` NULLable + UNIQUE für
   deterministische Einmaligkeit pro Event, `job_id`/`provider_id`/`actor_user_id`/
   `notification_id` alle `ON DELETE SET NULL`; siehe `src/lib/analytics-events.ts`).
+- `0011_stripe_webhook_events.sql` – Phase 4.2: `stripe_webhook_events` (DB-garantierte
+  Stripe-Webhook-Idempotenz, `stripe_event_id UNIQUE` + `ON CONFLICT DO NOTHING`) sowie
+  `users.subscription_state_updated_at` (Ordering-Guard gegen verspätete/ungeordnete
+  Stripe-Events; siehe `src/lib/billing/` und `docs/phase-4.2-stripe-hardening.md`).

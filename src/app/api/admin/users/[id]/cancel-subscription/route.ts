@@ -21,8 +21,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await stripe.subscriptions.cancel(subscriptionId)
     }
 
+    // Phase 4.2: subscription_state_updated_at = now() stempeln, damit ein noch ausstehender,
+    // älterer Webhook (z.B. ein verspätetes subscription.updated von VOR dieser Admin-Kündigung)
+    // diesen Zustand nicht über den Ordering-Guard rückgängig macht (siehe
+    // src/lib/billing/subscription-state.ts).
     await db.query(
-      `UPDATE users SET subscription_status = 'canceled', subscription_cancel_at = NULL WHERE id = $1`,
+      `UPDATE users SET subscription_status = 'canceled', subscription_cancel_at = NULL,
+       subscription_state_updated_at = now() WHERE id = $1`,
       [userId]
     )
 

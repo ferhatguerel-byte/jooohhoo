@@ -55,11 +55,16 @@ export async function POST(req: NextRequest) {
         proration_behavior: 'create_prorations',
       })
 
+      // Phase 4.2: subscription_state_updated_at = now() stempeln (siehe
+      // src/lib/billing/subscription-state.ts) – verhindert, dass ein noch ausstehender,
+      // älterer Webhook (mit dem vorherigen Tarif in seinem Payload/Metadata) diesen
+      // gerade erst vollzogenen Tarifwechsel über den Ordering-Guard rückgängig macht.
       const minimumTermMonths = tierDef.minimumTermMonths
       await getDb().query(
         `UPDATE users SET subscription_tier = $1,
          subscription_committed_until = CASE WHEN $2::int > 0 THEN now() + make_interval(months => $2::int) ELSE NULL END,
-         subscription_cancel_at = NULL
+         subscription_cancel_at = NULL,
+         subscription_state_updated_at = now()
          WHERE id = $3`,
         [tier, minimumTermMonths, user.id]
       )
