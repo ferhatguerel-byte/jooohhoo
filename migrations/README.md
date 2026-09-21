@@ -45,3 +45,6 @@ angewendete automatisch.
 - `0006_provider_matching_profile.sql` – `users.service_radius_km`, `users.min_project_size`,
   `users.max_project_size` (Phase 3.2 – optionale Matching-Präferenzen des Unternehmers, noch
   ohne Matching-Logik; siehe `src/app/dashboard/profil/ProfileForm.tsx`).
+- `0007_job_matches.sql` – `job_matches` (Phase 3.5 – ein aktueller Match-Snapshot pro
+  job_id×provider_id, inkl. Score-Range-Check und Exclusion-Consistency-Check; siehe
+  `src/lib/matching/run-matching.ts`).
