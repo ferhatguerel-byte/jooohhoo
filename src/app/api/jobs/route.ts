@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 const lineItemSchema = z.object({
   gewerk: z.enum(GEWERKE),
@@ -93,6 +94,13 @@ export async function POST(req: NextRequest) {
     } finally {
       client.release()
     }
+
+    // Nur Gewerk/Kategorien-Daten, keine personenbezogenen Angaben (kein Titel/Beschreibungstext).
+    track(ANALYTICS_EVENTS.PROJECT_CREATED, {
+      jobId,
+      gewerk: body.gewerk,
+      hasLineItems: !!(body.lineItems && body.lineItems.length > 0),
+    })
 
     return NextResponse.json({ ok: true, id: jobId })
   } catch (err: unknown) {

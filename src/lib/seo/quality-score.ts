@@ -52,6 +52,19 @@ export interface QualityScoreInput {
 export interface QualityScoreResult {
   score: number
   breakdown: Record<QualityCriterion, number>
+  /** Für jedes Kriterium: warum es nicht die volle Punktzahl erreicht hat (leer = voll erreicht). */
+  missingReasons: Partial<Record<QualityCriterion, string>>
+}
+
+export const CRITERION_LABELS: Record<QualityCriterion, string> = {
+  uniqueContent: 'Unique Content',
+  realProviderData: 'Echte Anbieterdaten',
+  localRelevance: 'Lokale Relevanz',
+  serviceRelevance: 'Leistungs-Relevanz',
+  internalLinks: 'Interne Links',
+  metadata: 'Metadata',
+  structuredData: 'Structured Data',
+  userIntent: 'User Intent',
 }
 
 function scaleStep(value: number, steps: { min: number; points: number }[]): number {
@@ -105,7 +118,45 @@ export function computeQualityScore(input: QualityScoreInput): QualityScoreResul
   }
 
   const score = Object.values(breakdown).reduce((sum, v) => sum + v, 0)
-  return { score, breakdown }
+  const missingReasons: Partial<Record<QualityCriterion, string>> = {}
+
+  if (breakdown.uniqueContent < QUALITY_WEIGHTS.uniqueContent) {
+    missingReasons.uniqueContent = input.hasCuratedIntro
+      ? ''
+      : input.hasLocalFactsInTemplate
+      ? 'Nur templatebasierter Text mit lokalen Fakten, keine redaktionell kuratierte Beschreibung.'
+      : 'Kein redaktioneller Text und keine lokalen Fakten im Template vorhanden.'
+  }
+  if (breakdown.realProviderData < QUALITY_WEIGHTS.realProviderData) {
+    missingReasons.realProviderData =
+      input.realProviderCount === 0
+        ? 'Keine echten, aktiven Anbieter für diese Kombination gefunden.'
+        : `Nur ${input.realProviderCount} echte Anbieter gefunden (für volle Punktzahl: 6+).`
+  }
+  if (breakdown.localRelevance < QUALITY_WEIGHTS.localRelevance) {
+    missingReasons.localRelevance = !input.isRecognizedCity
+      ? 'Stadt ist nicht Teil des gepflegten Städte-Datenmodells.'
+      : 'Stadt ist bekannt, aber es gibt noch keine echten Anbieter dort.'
+  }
+  if (breakdown.serviceRelevance < QUALITY_WEIGHTS.serviceRelevance) {
+    missingReasons.serviceRelevance = !input.isRecognizedService
+      ? 'Gewerk/Leistung ist nicht Teil des gepflegten Datenmodells.'
+      : 'Keine gepflegten verwandten Leistungen (relatedServices) hinterlegt.'
+  }
+  if (breakdown.internalLinks < QUALITY_WEIGHTS.internalLinks) {
+    missingReasons.internalLinks = `Nur ${input.internalLinksCount} interne Links (für volle Punktzahl: 6+).`
+  }
+  if (breakdown.metadata < QUALITY_WEIGHTS.metadata) {
+    missingReasons.metadata = 'title/description/canonical sind nicht vollständig individuell gesetzt.'
+  }
+  if (breakdown.structuredData < QUALITY_WEIGHTS.structuredData) {
+    missingReasons.structuredData = 'Kein zutreffendes JSON-LD-Schema vorhanden.'
+  }
+  if (breakdown.userIntent < QUALITY_WEIGHTS.userIntent) {
+    missingReasons.userIntent = 'Kombination gehört nicht zur bewusst kuratierten Erstauswahl (kein belegter Suchintent).'
+  }
+
+  return { score, breakdown, missingReasons }
 }
 
 export type ScoreSuggestion = 'NOINDEX' | 'REVIEW' | 'INDEXABLE_CANDIDATE'

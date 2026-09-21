@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart } from 'lucide-react'
+import { Users, ShieldCheck, LifeBuoy, Newspaper, LineChart, Search } from 'lucide-react'
 import { requireAdmin } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 
@@ -7,12 +7,13 @@ export default async function AdminDashboardPage() {
   await requireAdmin()
 
   const db = getDb()
-  const [pendingVerifications, openTickets, suspendedUsers, totalUnternehmer, articleCount] = await Promise.all([
+  const [pendingVerifications, openTickets, suspendedUsers, totalUnternehmer, articleCount, seoReviewCount] = await Promise.all([
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer' AND verification_status = 'pending'`),
     db.query(`SELECT COUNT(*)::int AS count FROM support_tickets WHERE status = 'open'`),
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer' AND account_status = 'suspended'`),
     db.query(`SELECT COUNT(*)::int AS count FROM users WHERE role = 'subunternehmer'`),
     db.query(`SELECT COUNT(*)::int AS count FROM guide_articles`),
+    db.query(`SELECT COUNT(*)::int AS count FROM seo_landing_pages WHERE status = 'REVIEW'`),
   ])
 
   const tiles = [
@@ -52,6 +53,14 @@ export default async function AdminDashboardPage() {
       title: 'Tracking-Dashboard',
       desc: 'Onboarding- und Aktivierungs-Funnel: Registrierungen, Verifizierungen, Abos, Aufträge und Vergaben.',
       stat: 'Übersicht',
+    },
+    {
+      href: '/dashboard/admin/seo',
+      icon: Search,
+      title: 'SEO-Landingpages',
+      desc: 'Quality-Score, Status und Freigabe der programmatischen SEO-Seiten (Handwerker, Nachunternehmer, Branchenbuch).',
+      stat: `${seoReviewCount.rows[0].count} zur Prüfung`,
+      urgent: seoReviewCount.rows[0].count > 0,
     },
   ]
 

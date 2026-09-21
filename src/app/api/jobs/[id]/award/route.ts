@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendOfferAwardedEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 const awardSchema = z.object({ offerId: z.string().uuid() })
 
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         console.error('Benachrichtigung fehlgeschlagen:', emailErr)
       }
     }
+
+    track(ANALYTICS_EVENTS.OFFER_ACCEPTED, { jobId, offerId })
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {

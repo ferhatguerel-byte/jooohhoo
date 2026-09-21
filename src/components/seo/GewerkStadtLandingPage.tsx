@@ -8,11 +8,13 @@ import { getRealProviders, countRealProviders, countRealReviews } from '@/lib/se
 import { evaluateLandingPage, type SeoPageType } from '@/lib/seo/status'
 import { isCuratedCombination } from '@/lib/seo/curated-combinations'
 import { getRelatedServiceLinks, getRelatedCityLinks } from '@/lib/seo/internal-links'
-import { buildBreadcrumbJsonLd, buildServiceJsonLd, buildAggregateRatingJsonLd } from '@/lib/seo/structured-data'
+import { buildBreadcrumbJsonLd, buildServiceJsonLd } from '@/lib/seo/structured-data'
 import { getAppUrl } from '@/lib/url'
 import InternalLinks from '@/components/seo/InternalLinks'
+import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
 import HomeHeader from '@/app/HomeHeader'
 import { getCurrentUser } from '@/lib/current-user'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 export type LandingIntent = 'auftraggeber' | 'nachunternehmer'
 
@@ -65,10 +67,18 @@ export const evaluateGewerkStadtPage = cache(async (data: GewerkStadtLandingData
 })
 
 export async function GewerkStadtLandingPage({ data }: { data: GewerkStadtLandingData }) {
-  const { providers, realReviewCount, evaluation } = await evaluateGewerkStadtPage(data)
+  const { providers, evaluation } = await evaluateGewerkStadtPage(data)
   const user = await getCurrentUser()
-  const { gewerk, city, intent, basePath } = data
+  const { gewerk, city, intent, basePath, pageType } = data
   const canonicalPath = `${basePath}/${gewerk.slug}/${city.slug}`
+
+  // Keine personenbezogenen Daten: nur Seiten-Identität und Bewertungsergebnis.
+  track(ANALYTICS_EVENTS.SEO_LANDING_VIEW, {
+    pageType,
+    gewerkSlug: gewerk.slug,
+    citySlug: city.slug,
+    status: evaluation.status,
+  })
 
   const heading = intent === 'auftraggeber' ? `${gewerk.name} in ${city.name}` : `${gewerk.name}-Nachunternehmer in ${city.name}`
   const ctaHref = '/registrieren?rolle=auftraggeber'
@@ -84,12 +94,11 @@ export async function GewerkStadtLandingPage({ data }: { data: GewerkStadtLandin
     { name: city.name, path: canonicalPath },
   ])
 
-  const serviceJsonLd = {
-    ...buildServiceJsonLd({ name: heading, description: gewerk.shortDescription, areaServed: city.name }),
-    ...(realReviewCount > 0 && providers.some((p) => p.reviewCount > 0)
-      ? { aggregateRating: buildAggregateRatingJsonLd(providers[0].avgRating || 0, realReviewCount) }
-      : {}),
-  }
+  // Kein aggregateRating hier: diese Seite bündelt mehrere unabhängige Betriebe – eine
+  // "Gesamtbewertung" für die Kategorie wäre entweder erfunden oder (wenn aus einer einzelnen
+  // Firma übernommen) irreführende Structured Data. Echte Bewertungen gehören auf die jeweilige
+  // Firmenseite (/firma/[slug]), wo Rating und Reviewcount tatsächlich zusammengehören.
+  const serviceJsonLd = buildServiceJsonLd({ name: heading, description: gewerk.shortDescription, areaServed: city.name })
 
   return (
     <div className="min-h-screen bg-white">
@@ -110,9 +119,13 @@ export async function GewerkStadtLandingPage({ data }: { data: GewerkStadtLandin
           {' '}erhalten vergleichbare Angebote von aktiven Fachbetrieben – ohne Vermittlungsgebühr für Auftraggeber.
         </p>
 
-        <Link href={ctaHref} className="inline-block bg-accent hover:bg-accent-hover text-white font-bold py-3 px-6 rounded-lg mb-12">
+        <TrackedCtaLink
+          href={ctaHref}
+          source={`${pageType}_landing`}
+          className="inline-block bg-accent hover:bg-accent-hover text-white font-bold py-3 px-6 rounded-lg mb-12"
+        >
           {ctaLabel} →
-        </Link>
+        </TrackedCtaLink>
 
         <section className="mb-12">
           <h2 className="text-xl font-bold text-[#17202a] mb-4">

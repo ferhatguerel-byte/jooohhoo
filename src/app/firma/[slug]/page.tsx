@@ -6,6 +6,8 @@ import { getDb } from '@/lib/db'
 import { getResponseTimeStats } from '@/lib/response-time'
 import { getCurrentUser } from '@/lib/current-user'
 import { buildBreadcrumbJsonLd, buildAggregateRatingJsonLd } from '@/lib/seo/structured-data'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
 import HomeHeader from '../../HomeHeader'
 
 export const dynamic = 'force-dynamic'
@@ -43,6 +45,10 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
   const { slug } = await params
   const company = await getCompany(slug)
   if (!company) notFound()
+
+  // Nur die company_slug (öffentlicher Identifikator, keine E-Mail/Name-Kombination mit
+  // Klartextbezug zu einer Privatperson) – kein personenbezogenes Datum im engeren Sinn.
+  track(ANALYTICS_EVENTS.PROVIDER_PROFILE_VIEW, { companySlug: company.company_slug })
   const user = await getCurrentUser()
 
   const db = getDb()
@@ -149,12 +155,15 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
           <p className="text-slate-700 font-semibold mb-3">
             Haben Sie ein Projekt für {company.company_name}?
           </p>
-          <Link
+          <TrackedCtaLink
             href="/registrieren?rolle=auftraggeber"
+            source="firma_profil"
+            event={ANALYTICS_EVENTS.PROVIDER_CONTACT}
+            extraPayload={{ companySlug: company.company_slug }}
             className="bg-accent hover:bg-accent-hover text-white font-bold py-3 px-6 rounded-lg inline-block"
           >
             Jetzt kostenlos Auftrag erstellen →
-          </Link>
+          </TrackedCtaLink>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
 import { getActiveCities } from '@/lib/seo/cities'
 import { getCurrentUser } from '@/lib/current-user'
+import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
 import HomeHeader from './HomeHeader'
 
 const STEPS = [
@@ -305,9 +306,13 @@ export default async function HomePage() {
       <section className="bg-accent text-white py-20 text-center px-6">
         <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Dein Projekt. Die richtigen Fachleute.</h2>
         <p className="text-white/90 mb-6">Erstelle deinen ersten Auftrag kostenlos.</p>
-        <Link href="/registrieren?rolle=auftraggeber" className="bg-white text-[#17202a] font-bold py-3.5 px-8 rounded-lg inline-block hover:bg-slate-100 transition">
+        <TrackedCtaLink
+          href="/registrieren?rolle=auftraggeber"
+          source="homepage_bottom_cta"
+          className="bg-white text-[#17202a] font-bold py-3.5 px-8 rounded-lg inline-block hover:bg-slate-100 transition"
+        >
           Jetzt Auftrag erstellen →
-        </Link>
+        </TrackedCtaLink>
       </section>
 
       {/* Footer */}

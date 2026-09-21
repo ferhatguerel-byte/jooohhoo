@@ -15,8 +15,8 @@ export const dynamic = 'force-dynamic'
  *   Gate die Kombination tatsächlich auf status = 'INDEXABLE' gesetzt hat (nie automatisch
  *   allein aufgrund des Scores, siehe src/lib/seo/status.ts).
  * - /baukosten/[leistung] wird NICHT aufgenommen, solange keine Leistung echte Kostendaten hat.
- * - /branchenbuch/[gewerk]/[stadt]-Kombinationen werden aktuell nicht aufgenommen (noch nicht
- *   an das Quality Gate angebunden) – siehe Abschlussbericht "verbleibende Risiken".
+ * - /branchenbuch/[gewerk]/[stadt]-Kombinationen sind seit Phase 2.1 ebenfalls an das Quality
+ *   Gate angebunden und werden nur bei status = 'INDEXABLE' aufgenommen.
  * - Keine Dashboard-/Admin-/API-Routen, keine Filter-Query-Kombinationen.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -81,11 +81,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Nur Gewerk×Stadt-Kombinationen, die das Quality Gate tatsächlich freigegeben hat.
     const indexablePagesResult = await db.query(
       `SELECT page_type, gewerk_slug, city_slug FROM seo_landing_pages
-       WHERE status = 'INDEXABLE' AND page_type IN ('handwerker', 'nachunternehmer')
+       WHERE status = 'INDEXABLE' AND page_type IN ('handwerker', 'nachunternehmer', 'branchenbuch_kombi')
          AND gewerk_slug IS NOT NULL AND city_slug IS NOT NULL`
     )
+    const pathByType: Record<string, string> = {
+      handwerker: 'handwerker',
+      nachunternehmer: 'nachunternehmer',
+      branchenbuch_kombi: 'branchenbuch',
+    }
     const landingPageEntries: MetadataRoute.Sitemap = indexablePagesResult.rows.map((r) => ({
-      url: `${BASE_URL}/${r.page_type === 'handwerker' ? 'handwerker' : 'nachunternehmer'}/${r.gewerk_slug}/${r.city_slug}`,
+      url: `${BASE_URL}/${pathByType[r.page_type]}/${r.gewerk_slug}/${r.city_slug}`,
       changeFrequency: 'weekly',
       priority: 0.65,
     }))

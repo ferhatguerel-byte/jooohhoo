@@ -40,3 +40,5 @@ angewendete automatisch.
 - `0004_seo_architecture.sql` – `users.company_slug` (stabiler kanonischer Firmen-Slug für
   `/firma/[slug]`) sowie `seo_landing_pages` (Status/Quality-Score-Tracking für programmatische
   SEO-Landingpages, siehe `src/lib/seo/`).
+- `0005_seo_admin_notes.sql` – `seo_landing_pages.admin_note` für die SEO-Admin-Oberfläche
+  (`/dashboard/admin/seo`).

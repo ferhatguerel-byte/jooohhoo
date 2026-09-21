@@ -9,6 +9,7 @@ import AwardButton from './AwardButton'
 import ReviewForm from './ReviewForm'
 import EditJobButton from './EditJobButton'
 import OfferChat, { ChatMessage } from '@/components/OfferChat'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -29,7 +30,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   // Ab jetzt gilt der Auftraggeber als informiert – der Unternehmer kann sein
   // Angebot danach nicht mehr korrigieren.
-  await db.query("UPDATE offers SET viewed_at = now() WHERE job_id = $1 AND viewed_at IS NULL", [id])
+  const newlyViewed = await db.query(
+    "UPDATE offers SET viewed_at = now() WHERE job_id = $1 AND viewed_at IS NULL RETURNING id",
+    [id]
+  )
+  if (newlyViewed.rows.length > 0) {
+    track(ANALYTICS_EVENTS.OFFER_OPENED, { jobId: id, count: newlyViewed.rows.length })
+  }
 
   const offersResult = await db.query(
     `SELECT o.id, o.price, o.message, o.status, o.pricing_type, o.created_at,

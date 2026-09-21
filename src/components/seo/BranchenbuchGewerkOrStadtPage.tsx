@@ -7,30 +7,39 @@ import { ensureCompanySlugs } from '@/lib/company-slug'
 import type { GewerkSeo } from '@/lib/seo/gewerke-seo'
 import type { City } from '@/lib/seo/cities'
 import { cityPlzPatterns } from '@/lib/seo/cities'
+import { evaluateLandingPage } from '@/lib/seo/status'
+import { isCuratedCombination } from '@/lib/seo/curated-combinations'
+import { buildLandingPageMetadata } from '@/lib/seo/metadata'
+import { buildBreadcrumbJsonLd, buildServiceJsonLd } from '@/lib/seo/structured-data'
+import { getRelatedServiceLinks, getRelatedCityLinks } from '@/lib/seo/internal-links'
+import InternalLinks from '@/components/seo/InternalLinks'
 import HomeHeader from '@/app/HomeHeader'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 interface Props {
   gewerk?: GewerkSeo
   city?: City
 }
 
-export function buildBranchenbuchMetadata({ gewerk, city }: Props): Metadata {
-  const parts = [gewerk?.name, city?.name].filter(Boolean)
-  const title = `${parts.join(' in ')} – Branchenbuch | BAUVERSUS`
-  const description = gewerk && city
-    ? `Geprüfte ${gewerk.name}-Betriebe in ${city.name} im BAUVERSUS-Branchenbuch.`
-    : gewerk
-    ? `Geprüfte ${gewerk.name}-Betriebe im BAUVERSUS-Branchenbuch.`
-    : `Geprüfte Handwerksbetriebe in ${city?.name} im BAUVERSUS-Branchenbuch.`
-  const path = gewerk && city ? `/branchenbuch/${gewerk.slug}/${city.slug}` : `/branchenbuch/${gewerk?.slug ?? city?.slug}`
-
-  return { title, description, alternates: { canonical: path } }
+interface CompanyRow {
+  id: string
+  company_name: string
+  company_slug: string | null
+  gewerke: string[]
+  plz: string
+  ort: string
+  verification_status: string
+  avg_rating: number | null
+  review_count: number
 }
 
-export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Props) {
-  const user = await getCurrentUser()
+/**
+ * Lädt die Firmen einmalig und liefert sowohl die Liste als auch die daraus abgeleiteten
+ * Zähler (Anbieter/Bewertungen) zurück – vermeidet zusätzliche COUNT-Queries für das Quality
+ * Gate (Phase 2.1 §9: "Keine unnötigen N+1 Queries").
+ */
+async function loadCompanies(gewerk?: GewerkSeo, city?: City) {
   const db = getDb()
-
   const conditions = ["role = 'subunternehmer'", 'directory_listed = true', "subscription_status = 'active'", 'company_name IS NOT NULL']
   const params: unknown[] = []
   if (gewerk) {
@@ -42,19 +51,107 @@ export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Pr
     conditions.push(`plz LIKE ANY($${params.length}::text[])`)
   }
 
-  const result = await db.query(
+  const result = await db.query<CompanyRow>(
     `SELECT id, company_name, company_slug, gewerke, plz, ort, verification_status,
             (SELECT AVG(rating)::numeric(2,1) FROM reviews WHERE reviewee_id = users.id) AS avg_rating,
             (SELECT COUNT(*)::int FROM reviews WHERE reviewee_id = users.id) AS review_count
      FROM users WHERE ${conditions.join(' AND ')} ORDER BY company_name ASC`,
     params
   )
-  const companies = await ensureCompanySlugs(result.rows)
+  return ensureCompanySlugs(result.rows)
+}
 
+/** Nur für die Gewerk×Stadt-Kombination relevant: Kategorie-Seiten (nur Gewerk ODER nur Stadt) sind ein kleines, festes Set und bleiben immer indexierbar. */
+async function evaluateBranchenbuchCombo(gewerk: GewerkSeo, city: City, companies: Awaited<ReturnType<typeof loadCompanies>>) {
+  const realProviderCount = companies.length
+  const realReviewCount = companies.reduce((sum, c) => sum + (c.review_count || 0), 0)
+  const relatedServiceLinks = getRelatedServiceLinks(gewerk.slug, city.slug, '/branchenbuch')
+  const relatedCityLinks = getRelatedCityLinks(gewerk.slug, city.slug, '/branchenbuch')
+
+  return evaluateLandingPage(
+    { pageType: 'branchenbuch_kombi', gewerkSlug: gewerk.slug, citySlug: city.slug },
+    {
+      hasCuratedIntro: false,
+      hasLocalFactsInTemplate: true,
+      realProviderCount,
+      realReviewCount,
+      isRecognizedCity: true,
+      isRecognizedService: true,
+      hasRelatedServices: gewerk.relatedServices.length > 0,
+      internalLinksCount: relatedServiceLinks.length + relatedCityLinks.length + 1,
+      hasCompleteMetadata: true,
+      hasStructuredData: true,
+      isCuratedCombination: isCuratedCombination(gewerk.slug, city.slug),
+    }
+  )
+}
+
+export async function buildBranchenbuchMetadata({ gewerk, city }: Props): Promise<Metadata> {
+  const parts = [gewerk?.name, city?.name].filter(Boolean)
+  const title = `${parts.join(' in ')} – Branchenbuch | BAUVERSUS`
+  const description = gewerk && city
+    ? `Geprüfte ${gewerk.name}-Betriebe in ${city.name} im BAUVERSUS-Branchenbuch.`
+    : gewerk
+    ? `Geprüfte ${gewerk.name}-Betriebe im BAUVERSUS-Branchenbuch.`
+    : `Geprüfte Handwerksbetriebe in ${city?.name} im BAUVERSUS-Branchenbuch.`
+
+  // Nur die Gewerk×Stadt-Kombination durchläuft das Quality Gate; reine Gewerk- oder
+  // Stadt-Übersichten sind ein kleines, festes Kategorie-Set und bleiben immer indexierbar.
+  if (gewerk && city) {
+    const companies = await loadCompanies(gewerk, city)
+    const evaluation = await evaluateBranchenbuchCombo(gewerk, city, companies)
+    return buildLandingPageMetadata({
+      title,
+      description,
+      canonicalPath: `/branchenbuch/${gewerk.slug}/${city.slug}`,
+      status: evaluation.status,
+    })
+  }
+
+  const path = `/branchenbuch/${gewerk?.slug ?? city?.slug}`
+  return { title, description, alternates: { canonical: path } }
+}
+
+export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Props) {
+  const user = await getCurrentUser()
+  const companies = await loadCompanies(gewerk, city)
   const heading = gewerk && city ? `${gewerk.name} in ${city.name}` : gewerk ? gewerk.name : `Handwerksbetriebe in ${city?.name}`
+
+  const isCombo = !!(gewerk && city)
+  const evaluation = isCombo ? await evaluateBranchenbuchCombo(gewerk!, city!, companies) : null
+
+  if (isCombo) {
+    // Keine personenbezogenen Daten: nur Seiten-Identität und Bewertungsergebnis.
+    track(ANALYTICS_EVENTS.SEO_LANDING_VIEW, {
+      pageType: 'branchenbuch_kombi',
+      gewerkSlug: gewerk!.slug,
+      citySlug: city!.slug,
+      status: evaluation!.status,
+    })
+  }
+
+  const breadcrumbItems = [
+    { name: 'Start', path: '/' },
+    { name: 'Branchenbuch', path: '/branchenbuch' },
+    ...(gewerk ? [{ name: gewerk.name, path: `/branchenbuch/${gewerk.slug}` }] : []),
+    ...(city ? [{ name: city.name, path: isCombo ? `/branchenbuch/${gewerk!.slug}/${city.slug}` : `/branchenbuch/${city.slug}` }] : []),
+  ]
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(breadcrumbItems)
+  // Kein aggregateRating hier: diese Seite bündelt mehrere unabhängige Betriebe – eine
+  // "Gesamtbewertung" für die Kategorie wäre entweder erfunden oder (wenn aus einer einzelnen
+  // Firma übernommen) irreführende Structured Data. Echte Bewertungen gehören auf die jeweilige
+  // Firmenseite (/firma/[slug]), wo Rating und Reviewcount tatsächlich zusammengehören.
+  const serviceJsonLd = gewerk
+    ? buildServiceJsonLd({ name: heading, description: gewerk.shortDescription, areaServed: city?.name })
+    : null
+
+  const relatedServiceLinks = isCombo ? getRelatedServiceLinks(gewerk!.slug, city!.slug, '/branchenbuch') : []
+  const relatedCityLinks = isCombo ? getRelatedCityLinks(gewerk!.slug, city!.slug, '/branchenbuch') : []
 
   return (
     <div className="min-h-screen bg-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      {serviceJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }} />}
       <HomeHeader loggedIn={!!user} />
       <div className="max-w-6xl mx-auto px-6 py-16">
         <nav className="text-xs text-slate-400 mb-4">
@@ -67,7 +164,7 @@ export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Pr
           Plattform, indem Sie einen Auftrag einstellen.
         </p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
           {companies.length === 0 && (
             <p className="text-slate-500 col-span-full">Aktuell sind keine Betriebe für diese Auswahl gelistet.</p>
           )}
@@ -94,6 +191,19 @@ export default async function BranchenbuchGewerkOrStadtPage({ gewerk, city }: Pr
             </Link>
           ))}
         </div>
+
+        {isCombo && (
+          <div className="space-y-8">
+            <InternalLinks title="Verwandte Gewerke in dieser Stadt" links={relatedServiceLinks} />
+            <InternalLinks title={`${gewerk!.name} in anderen Städten`} links={relatedCityLinks} />
+          </div>
+        )}
+
+        {process.env.NODE_ENV !== 'production' && evaluation && (
+          <p className="mt-12 text-xs text-slate-300">
+            [Debug] Quality-Status: {evaluation.status} · Score: {evaluation.score}/100
+          </p>
+        )}
       </div>
     </div>
   )

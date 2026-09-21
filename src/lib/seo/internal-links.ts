@@ -15,23 +15,23 @@ export interface InternalLink {
 const MAX_RELATED_SERVICES = 4
 const MAX_RELATED_CITIES = 4
 
-export function getRelatedServiceLinks(gewerkSlug: string, citySlug: string): InternalLink[] {
+export function getRelatedServiceLinks(gewerkSlug: string, citySlug: string, basePath = '/handwerker'): InternalLink[] {
   const gewerk = getGewerkSeoBySlug(gewerkSlug)
   if (!gewerk) return []
   return gewerk.relatedServices
     .map((slug) => getGewerkSeoBySlug(slug))
     .filter((g): g is NonNullable<typeof g> => !!g)
     .slice(0, MAX_RELATED_SERVICES)
-    .map((g) => ({ label: `${g.name} in ${getCityBySlug(citySlug)?.name ?? ''}`.trim(), href: `/handwerker/${g.slug}/${citySlug}` }))
+    .map((g) => ({ label: `${g.name} in ${getCityBySlug(citySlug)?.name ?? ''}`.trim(), href: `${basePath}/${g.slug}/${citySlug}` }))
 }
 
-export function getRelatedCityLinks(gewerkSlug: string, currentCitySlug: string): InternalLink[] {
+export function getRelatedCityLinks(gewerkSlug: string, currentCitySlug: string, basePath = '/handwerker'): InternalLink[] {
   const gewerk = getGewerkSeoBySlug(gewerkSlug)
   if (!gewerk) return []
   return getActiveCities()
     .filter((c) => c.slug !== currentCitySlug)
     .slice(0, MAX_RELATED_CITIES)
-    .map((c) => ({ label: `${gewerk.name} in ${c.name}`, href: `/handwerker/${gewerkSlug}/${c.slug}` }))
+    .map((c) => ({ label: `${gewerk.name} in ${c.name}`, href: `${basePath}/${gewerkSlug}/${c.slug}` }))
 }
 
 export function getAllActiveGewerkLinks(): InternalLink[] {

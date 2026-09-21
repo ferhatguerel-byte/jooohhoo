@@ -6,6 +6,7 @@ import { sendNewOfferEmail } from '@/lib/email'
 import { TIERS } from '@/lib/tiers'
 import { isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
+import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -126,6 +127,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         console.error('Benachrichtigung fehlgeschlagen:', emailErr)
       }
     }
+
+    // Nur IDs/Kategorien, keine E-Mail/Namen/Nachrichtentexte.
+    track(ANALYTICS_EVENTS.PROVIDER_CONTACT, { jobId, gewerk: job.rows[0].gewerk })
+    track(ANALYTICS_EVENTS.OFFER_RECEIVED, { jobId })
 
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
