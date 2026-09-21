@@ -149,47 +149,10 @@ describe('POST /api/jobs — Phase 3.6G PROJECT_CREATED Analytics', () => {
   })
 })
 
-describe('Phase 3.6G — OFFER_ACCEPTED (JOB_AWARDED) Analytics im Award-Flow', () => {
-  beforeEach(() => {
-    getCurrentUserMock.mockReset()
-    queryMock.mockReset()
-    trackEventMock.mockReset()
-    trackEventMock.mockResolvedValue(undefined)
-  })
-
-  it('trackt OFFER_ACCEPTED (JOB_AWARDED-Äquivalent) NACH erfolgreicher Vergabe, mit providerId=vergebener Subunternehmer', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
-    queryMock.mockImplementation((sql: string) => {
-      if (typeof sql === 'string' && sql.startsWith('SELECT id FROM jobs')) return Promise.resolve({ rows: [{ id: 'job-1' }] })
-      if (typeof sql === 'string' && sql.includes('FROM offers o JOIN users u')) {
-        return Promise.resolve({ rows: [{ subunternehmer_id: 'sub-1', email: 'x@example.com', company_name: 'X GmbH', email_notifications: false }] })
-      }
-      return Promise.resolve({ rows: [] })
-    })
-
-    const res = await awardJob(jsonReq('http://localhost/api/jobs/job-1/award', { offerId: '11111111-1111-4111-8111-111111111111' }), {
-      params: Promise.resolve({ id: 'job-1' }),
-    })
-
-    expect(res.status).toBe(200)
-    expect(trackEventMock).toHaveBeenCalledWith({
-      event: 'offer_accepted',
-      actorUserId: 'ag-1',
-      providerId: 'sub-1',
-      jobId: 'job-1',
-      idempotencyKey: 'job_awarded:job-1',
-    })
-  })
-
-  it('kein Tracking, wenn der Job/das Angebot nicht gefunden wird (kein erfolgreicher Award)', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
-    queryMock.mockResolvedValueOnce({ rows: [] }) // Job nicht gefunden
-    await awardJob(jsonReq('http://localhost/api/jobs/job-1/award', { offerId: '11111111-1111-4111-8111-111111111111' }), {
-      params: Promise.resolve({ id: 'job-1' }),
-    })
-    expect(trackEventMock).not.toHaveBeenCalled()
-  })
-})
+// Die OFFER_ACCEPTED-Analytics-Tests für den Award-Flow sind seit Phase 3.6I (transaktionaler,
+// race-condition-sicherer Award über pool.connect()/client.query() statt pool.query()) nach
+// tests/routes/award-flow.test.ts umgezogen, wo sie zusammen mit der vollständigen
+// Transaktions-/Race-Condition-Abdeckung liegen.
 
 describe('Phase 3.6A — kein zweiter Matching-Trigger außerhalb von POST /api/jobs', () => {
   beforeEach(() => {

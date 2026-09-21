@@ -15,6 +15,19 @@ test.describe('Admin-Authorization', () => {
     await page.goto('/dashboard/admin')
     await expect(page).toHaveURL(/\/dashboard\/admin/)
     await expect(page.locator('body')).not.toContainText(/Zugriff verweigert/i)
+
+    // Phase 3.6I – Production Hardening: nach der Behebung des Branchenbuch-Routing-Konflikts
+    // (/branchenbuch/[gewerk]/[stadt] -> /branchenbuch/[slug]/[stadt]) muss der Dev-/Playwright-
+    // Flow insgesamt wieder funktionieren. Prüft im selben eingeloggten Kontext (keine zweite
+    // Registrierung derselben ADMIN_EMAIL nötig), dass beide betroffenen Bereiche
+    // (Admin-Analytics-Dashboard aus Phase 3.6H, Branchenbuch-Gewerk×Stadt-Route) ohne 500er
+    // erreichbar sind.
+    await page.goto('/dashboard/admin/analytics')
+    await expect(page).toHaveURL(/\/dashboard\/admin\/analytics/)
+    await expect(page.locator('body')).toContainText(/Matching Analytics/i)
+
+    const branchenbuchRes = await page.request.get('/branchenbuch/trockenbau/berlin')
+    expect(branchenbuchRes.status()).toBe(200)
   })
 
   test('ein normaler Nutzer kann den Admin-Bereich NICHT öffnen (Privilege Escalation)', async ({ page }) => {
