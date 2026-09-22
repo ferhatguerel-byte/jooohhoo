@@ -7,6 +7,8 @@ import { handleApiError } from '@/lib/api-error'
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEvent } from '@/lib/analytics-events'
 import { runMatchingForJob } from '@/lib/matching/run-matching'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const lineItemSchema = z.object({
   gewerk: z.enum(GEWERKE),
@@ -16,12 +18,14 @@ const lineItemSchema = z.object({
 
 const attachmentSchema = z.object({ fileId: z.string().uuid(), name: z.string().max(255) })
 
+// Phase 4.3 (Teil D): title/description hatten bisher nur eine Mindestlänge, keine
+// Maximallänge – ein unbegrenztes Freitextfeld (Spam/Payload-Aufblähung, Audit-Fund).
 const jobSchema = z.object({
-  title: z.string().min(5),
+  title: z.string().min(5).max(200),
   gewerk: z.enum(GEWERKE),
-  plz: z.string().min(4),
-  ort: z.string().min(2),
-  description: z.string().min(20),
+  plz: z.string().min(4).max(10),
+  ort: z.string().min(2).max(100),
+  description: z.string().min(20).max(5000),
   budgetMin: z.number().int().positive().optional(),
   budgetMax: z.number().int().positive().optional(),
   deadline: z.string().optional(),
@@ -38,7 +42,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = jobSchema.parse(await req.json())
+    // Phase 4.3 (Teil 2/A): Job-Erstellung hatte kein Rate Limit (Audit-Fund) – ein
+    // Auftraggeber-Konto könnte sonst unbegrenzt viele Aufträge anlegen (Spam, löst jeweils
+    // Matching + Benachrichtigungs-E-Mails an Unternehmer aus). Zwei unabhängige Limits wie
+    // beim bestehenden Upload-Endpunkt (pro Nutzer UND pro IP), damit weder ein kompromittiertes
+    // Konto noch mehrere Konten von derselben Quelle das eigentliche Ziel umgehen.
+    const body = jobSchema.parse(await readJsonBody(req))
+
+    await rateLimit({ key: `jobs-create:${user.id}`, limit: 10, windowSeconds: 3600 })
+    await rateLimit({ key: `jobs-create-ip:${getClientIp(req)}`, limit: 20, windowSeconds: 3600 })
+
     const pool = getDb()
 
     if (body.attachments && body.attachments.length > 0) {

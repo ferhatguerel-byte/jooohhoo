@@ -5,21 +5,23 @@ import { hashPassword, createSessionCookie } from '@/lib/auth'
 import { GEWERKE } from '@/lib/gewerke'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { handleApiError } from '@/lib/api-error'
+import { readJsonBody } from '@/lib/security/request-limits'
 
+// Phase 4.3 (Teil D): phone/plz/ort hatten keine Maximallänge.
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(['auftraggeber', 'subunternehmer']),
   companyName: z.string().min(2).max(150),
-  phone: z.string().optional(),
-  plz: z.string().min(4),
-  ort: z.string().min(2),
+  phone: z.string().max(30).optional(),
+  plz: z.string().min(4).max(10),
+  ort: z.string().min(2).max(100),
   gewerke: z.array(z.enum(GEWERKE)).optional(),
 })
 
 export async function POST(req: NextRequest) {
   try {
-    const body = registerSchema.parse(await req.json())
+    const body = registerSchema.parse(await readJsonBody(req))
 
     const allowed = await checkRateLimit('register', getClientIp(req), 8, 60)
     if (!allowed) {

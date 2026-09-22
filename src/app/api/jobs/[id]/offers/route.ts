@@ -8,6 +8,8 @@ import { isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEvent } from '@/lib/analytics-events'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const offerSchema = z.object({
   price: z.number().int().positive().optional(),
@@ -31,7 +33,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   try {
-    const body = offerSchema.parse(await req.json())
+    const body = offerSchema.parse(await readJsonBody(req))
+
+    // Phase 4.3 (Teil 2/A): Angebots-Erstellung/-Änderung hatte kein Rate Limit (Audit-Fund).
+    // Die bestehende monatliche Leads-Quote (oben, tierDef.leadsPerMonth) greift nur beim ERSTEN
+    // Kontakt zu einem Auftrag – ein noch nicht vom Auftraggeber gesehenes Angebot kann per
+    // ON CONFLICT DO UPDATE beliebig oft überschrieben werden, ohne die Quote zu berühren.
+    await rateLimit({ key: `offers-create:${user.id}`, limit: 30, windowSeconds: 3600 })
+
     const pool = getDb()
 
     const job = await pool.query(

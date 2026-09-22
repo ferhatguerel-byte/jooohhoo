@@ -3,10 +3,13 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { handleApiError } from '@/lib/api-error'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
+// Phase 4.3 (Teil D): title/description hatten bisher nur eine Mindestlänge (siehe /api/jobs).
 const updateSchema = z.object({
-  title: z.string().min(5),
-  description: z.string().min(20),
+  title: z.string().min(5).max(200),
+  description: z.string().min(20).max(5000),
   deadline: z.string().optional(),
 })
 
@@ -18,7 +21,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   try {
-    const body = updateSchema.parse(await req.json())
+    const body = updateSchema.parse(await readJsonBody(req))
+
+    // Phase 4.3: dieselbe Größenordnung wie die Job-Erstellung (Teil 2/A) – auch wiederholtes
+    // Bearbeiten desselben Auftrags soll nicht unbegrenzt möglich sein.
+    await rateLimit({ key: `jobs-update:${user.id}`, limit: 20, windowSeconds: 3600 })
+
     const db = getDb()
 
     const jobResult = await db.query(

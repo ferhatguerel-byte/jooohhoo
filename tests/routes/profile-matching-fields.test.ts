@@ -40,14 +40,17 @@ describe('POST /api/profile — Phase 3.2 Matching-Präferenzen (Validierung)', 
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
-    queryMock.mockResolvedValue({ rows: [] })
+    // Phase 4.3: POST /api/profile prüft nach der Zod-Validierung ein Rate Limit (COUNT + INSERT
+    // über denselben queryMock) – count:0 lässt es unbegrenzt oft durchlaufen. Die eigentliche
+    // UPDATE-Query ist danach der dritte Aufruf.
+    queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
   })
 
   it('akzeptiert einen gültigen service_radius_km', async () => {
     getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
     const res = await POST(req({ ...validBody, serviceRadiusKm: 50 }))
     expect(res.status).toBe(200)
-    const [sql, params] = queryMock.mock.calls[0]
+    const [sql, params] = queryMock.mock.calls[2]
     expect(sql).toContain('service_radius_km')
     expect(params).toContain(50)
   })
@@ -128,13 +131,15 @@ describe('POST /api/profile — Phase 3.2 Security', () => {
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
-    queryMock.mockResolvedValue({ rows: [] })
+    // Phase 4.3: siehe Kommentar im Validierungs-describe-Block oben – calls[0]/[1] sind die
+    // Rate-Limit-Prüfung, die eigentliche UPDATE-Query ist calls[2].
+    queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
   })
 
   it('ein angemeldeter Unternehmer ändert ausschließlich seine eigene Zeile (WHERE id = eigene id)', async () => {
     getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
     await POST(req({ ...validBody, serviceRadiusKm: 25 }))
-    const [, params] = queryMock.mock.calls[0]
+    const [, params] = queryMock.mock.calls[2]
     expect(params[params.length - 1]).toBe(baseSubunternehmer.id)
   })
 
@@ -149,7 +154,7 @@ describe('POST /api/profile — Phase 3.2 Security', () => {
     getCurrentUserMock.mockResolvedValue(baseAuftraggeber)
     const res = await POST(req({ ...validBody, serviceRadiusKm: 999, minProjectSize: 1, maxProjectSize: 2 }))
     expect(res.status).toBe(200)
-    const [, params] = queryMock.mock.calls[0]
+    const [, params] = queryMock.mock.calls[2]
     // Kein Wert 999/1/2 darf in den gespeicherten Parametern auftauchen – die Route erzwingt null
     // für Nicht-Unternehmer, unabhängig davon, was der Request-Body enthält (Mass-Assignment-Schutz).
     expect(params).not.toContain(999)
@@ -160,7 +165,7 @@ describe('POST /api/profile — Phase 3.2 Security', () => {
   it('es gibt keinen Weg, die id eines anderen Nutzers über den Body zu beeinflussen (kein userId-Feld im Schema)', async () => {
     getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
     await POST(req({ ...validBody, id: 'someone-elses-id', userId: 'someone-elses-id', serviceRadiusKm: 25 }))
-    const [, params] = queryMock.mock.calls[0]
+    const [, params] = queryMock.mock.calls[2]
     expect(params[params.length - 1]).toBe(baseSubunternehmer.id)
     expect(params).not.toContain('someone-elses-id')
   })

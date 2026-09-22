@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db'
 import { requireAuthenticatedUserApi, isAdmin, AuthorizationError } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 import { sendTicketReplyEmail } from '@/lib/email'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const schema = z.object({ message: z.string().min(1).max(4000) })
 
@@ -12,7 +14,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await requireAuthenticatedUserApi()
     const admin = isAdmin(user)
-    const { message } = schema.parse(await req.json())
+
+    const { message } = schema.parse(await readJsonBody(req))
+
+    // Phase 4.3 (Teil 6): dieselbe Begründung wie bei der Ticket-Erstellung – jede Antwort löst
+    // eine E-Mail aus. Admins bekommen ein großzügigeres Limit (legitim hohes Support-Aufkommen).
+    await rateLimit({
+      key: `support-ticket-message:${user.id}`,
+      limit: admin ? 60 : 20,
+      windowSeconds: 3600,
+    })
+
     const db = getDb()
 
     const ticket = await db.query(

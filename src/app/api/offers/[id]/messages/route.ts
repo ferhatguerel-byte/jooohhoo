@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewMessageEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const schema = z.object({ message: z.string().min(1).max(2000) })
 
@@ -15,7 +17,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   try {
-    const { message } = schema.parse(await req.json())
+    const { message } = schema.parse(await readJsonBody(req))
+
+    // Phase 4.3 (Teil 2/A): Chat-Nachrichten hatten kein Rate Limit (Audit-Fund) – jede
+    // Nachricht löst zusätzlich eine E-Mail an den Empfänger aus (E-Mail-Spam-Risiko), daher ein
+    // engeres Zeitfenster als bei selteneren Aktionen wie Auftrags-/Angebots-Erstellung.
+    await rateLimit({ key: `offer-messages:${user.id}`, limit: 20, windowSeconds: 300 })
+
     const db = getDb()
 
     const offer = await db.query(

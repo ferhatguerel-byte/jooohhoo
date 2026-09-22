@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { sendNewTicketEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const schema = z.object({
   category: z.string().min(1).max(60),
@@ -28,7 +30,11 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
 
   try {
-    const { category, subject, message } = schema.parse(await req.json())
+    const { category, subject, message } = schema.parse(await readJsonBody(req))
+
+    // Phase 4.3 (Teil 6): Support-Ticket-Erstellung hatte kein Rate Limit (Audit-Fund) – jedes
+    // Ticket löst zusätzlich eine E-Mail an ADMIN_EMAIL aus (E-Mail-Spam-Risiko für den Support).
+    await rateLimit({ key: `support-ticket-create:${user.id}`, limit: 5, windowSeconds: 3600 })
     const db = getDb()
 
     const client = await db.connect()

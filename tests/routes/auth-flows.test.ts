@@ -147,6 +147,9 @@ describe('POST /api/auth/reset-password', () => {
   })
 
   it('rejects an invalid or expired token', async () => {
+    // Phase 4.3 (Teil 5): Rate-Limit-Prüfung (COUNT + INSERT) läuft vor dem Token-Lookup.
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [] })
     const res = await resetPassword(
       jsonReq('http://localhost/api/auth/reset-password', { token: 'bad-token', password: 'newpassword123' })
@@ -155,6 +158,8 @@ describe('POST /api/auth/reset-password', () => {
   })
 
   it('resets the password for a valid token and marks the token as used', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] }) // Rate-Limit COUNT
+    queryMock.mockResolvedValueOnce({}) // Rate-Limit INSERT
     queryMock.mockResolvedValueOnce({ rows: [{ id: 'token-1', user_id: 'u1' }] })
     queryMock.mockResolvedValueOnce({}) // UPDATE users
     queryMock.mockResolvedValueOnce({}) // UPDATE password_reset_tokens
@@ -163,6 +168,6 @@ describe('POST /api/auth/reset-password', () => {
       jsonReq('http://localhost/api/auth/reset-password', { token: 'good-token', password: 'newpassword123' })
     )
     expect(res.status).toBe(200)
-    expect(queryMock).toHaveBeenCalledTimes(3)
+    expect(queryMock).toHaveBeenCalledTimes(5)
   })
 })

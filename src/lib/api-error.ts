@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { AuthorizationError } from '@/lib/authorization'
 import { RateLimitError } from '@/lib/rate-limit'
+import { PayloadTooLargeError } from '@/lib/security/request-limits'
 
 /**
  * Einheitliche Fehlerbehandlung für alle API Route Handler.
@@ -24,6 +25,9 @@ export function handleApiError(err: unknown, fallbackMessage = 'Ein Fehler ist a
   }
   if (err instanceof RateLimitError) {
     return NextResponse.json({ error: err.message }, { status: 429 })
+  }
+  if (err instanceof PayloadTooLargeError) {
+    return NextResponse.json({ error: err.message }, { status: 413 })
   }
   if (err instanceof z.ZodError) {
     return NextResponse.json({ error: err.issues[0]?.message || 'Ungültige Eingabe.' }, { status: 400 })

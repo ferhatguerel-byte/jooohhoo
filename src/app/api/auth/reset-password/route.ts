@@ -3,15 +3,23 @@ import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { hashPassword, hashResetToken } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
+import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 
 const schema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1).max(500),
   password: z.string().min(8),
 })
 
 export async function POST(req: NextRequest) {
   try {
     const { token, password } = schema.parse(await req.json())
+
+    // Phase 4.3 (Teil 5): das Token-Einlösen selbst hatte kein Rate Limit (nur die
+    // vorgelagerte Anfrage in /api/auth/forgot-password, siehe dort). Defense-in-depth gegen
+    // automatisiertes Durchprobieren von Tokens/allgemeinen Spam auf diesen Endpunkt, IP-basiert
+    // (der Token selbst ist unauthentifiziert per Definition).
+    await rateLimit({ key: `reset-password:${getClientIp(req)}`, limit: 10, windowSeconds: 3600 })
+
     const db = getDb()
     const tokenHash = hashResetToken(token)
 

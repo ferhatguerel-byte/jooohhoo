@@ -45,17 +45,22 @@ describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
 
   it('denies a third party (neither the offering Unternehmer nor the Auftraggeber) access to the chat', async () => {
     getCurrentUserMock.mockResolvedValue({ id: 'stranger-1', role: 'auftraggeber' })
+    // Phase 4.3: Rate-Limit-Prüfung (COUNT + INSERT) läuft vor dem Offer-Lookup.
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [offerRow] })
 
     const res = await POST(req({ message: 'ich will mitlesen' }), { params: Promise.resolve({ id: 'offer-1' }) })
 
     expect(res.status).toBe(403)
-    // Es darf kein INSERT für die fremde Nachricht ausgeführt worden sein.
-    expect(queryMock).toHaveBeenCalledTimes(1)
+    // Es darf kein INSERT für die fremde Nachricht ausgeführt worden sein (nur Rate-Limit + Lookup).
+    expect(queryMock).toHaveBeenCalledTimes(3)
   })
 
   it('allows the offering Unternehmer to post a message on their own offer', async () => {
     getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer' })
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [offerRow] })
     queryMock.mockResolvedValueOnce({})
 
@@ -66,6 +71,8 @@ describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
 
   it('allows the Auftraggeber who owns the job to post a message', async () => {
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [offerRow] })
     queryMock.mockResolvedValueOnce({})
 

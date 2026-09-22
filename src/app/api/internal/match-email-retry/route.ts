@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { runMatchEmailRetryBatch } from '@/lib/matching/retry-match-notification-emails'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /**
  * Phase 3.6F – interner Endpunkt für den periodischen Match-E-Mail-Retry. KEINE Provider-/
@@ -34,7 +35,22 @@ function isAuthorized(req: NextRequest): boolean {
 
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
+    // Phase 4.3 (Teil 7): bremst automatisiertes Durchprobieren des CRON_SECRET pro IP – zählt
+    // ausschließlich fehlgeschlagene Versuche, ein korrekt authentifizierter Cron-Aufruf ist davon
+    // nie betroffen. best-effort (.catch), ein Fehler hier darf die 401-Antwort nicht verhindern.
+    await checkRateLimit('cron-match-email-retry-authfail', getClientIp(req), 20, 10).catch(() => {})
     return NextResponse.json({ error: 'Nicht autorisiert.' }, { status: 401 })
+  }
+
+  // Phase 4.3 (Teil 7): zusätzliche Obergrenze auch mit korrektem Secret – schützt gegen eine
+  // fehlkonfigurierte/doppelt registrierte Cron-Quelle, die den Batch-Versand-Job unbeabsichtigt
+  // im Kurztakt auslöst (jeder Lauf verschickt E-Mails). Ein einzelner globaler Bucket, da dieser
+  // Endpunkt fachlich nur von EINER Cron-Quelle aufgerufen werden soll (siehe vercel.json:
+  // "*/5 * * * *" = 12 reguläre Aufrufe/Stunde). 20/60min lässt der regulären Frequenz reichlich
+  // Spielraum (manueller Debug-Aufruf, Cron-Jitter), blockt aber echtes Hämmern im Kurztakt.
+  const withinBudget = await checkRateLimit('cron-match-email-retry', 'global', 20, 60)
+  if (!withinBudget) {
+    return NextResponse.json({ error: 'Rate-Limit für diesen internen Endpunkt erreicht.' }, { status: 429 })
   }
 
   const result = await runMatchEmailRetryBatch()

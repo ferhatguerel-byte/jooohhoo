@@ -45,6 +45,10 @@ describe('POST /api/jobs — Phase 3.6A Match Trigger', () => {
     trackEventMock.mockResolvedValue(undefined)
 
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    // Phase 4.3: POST /api/jobs prüft vor der eigentlichen Erstellung zwei Rate Limits
+    // (pro Nutzer + pro IP) über pool.query() (= queryMock), unabhängig von der Transaktion
+    // (clientQueryMock). count:0 lässt beide Prüfungen unbegrenzt oft durchlaufen.
+    queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockImplementation((sql: string) => {
       if (typeof sql === 'string' && sql.includes('INSERT INTO jobs')) {
@@ -107,6 +111,8 @@ describe('POST /api/jobs — Phase 3.6G PROJECT_CREATED Analytics', () => {
     trackEventMock.mockResolvedValue(undefined)
 
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    // Phase 4.3: siehe Kommentar im ersten describe-Block oben.
+    queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockImplementation((sql: string) => {
       if (typeof sql === 'string' && sql.includes('INSERT INTO jobs')) {
@@ -178,6 +184,10 @@ describe('Phase 3.6A — kein zweiter Matching-Trigger außerhalb von POST /api/
 
   it('7. PATCH löst kein Matching aus', async () => {
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    // Phase 4.3: PATCH prüft zuerst ein Rate Limit (COUNT + INSERT über queryMock), bevor der
+    // eigentliche Job-Lookup läuft.
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [] }) // Job nicht gefunden -> 404
     await patchJob(
       jsonReq('http://localhost/api/jobs/job-1', { title: 'Neuer Titel lang genug', description: 'Neue Beschreibung, lang genug fuer die Validierung.' }, 'PATCH'),

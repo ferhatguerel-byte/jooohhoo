@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
+import { rateLimit } from '@/lib/security/rate-limit'
+import { readJsonBody } from '@/lib/security/request-limits'
 
 const qualificationFileSchema = z.object({
   fileId: z.string().uuid(),
@@ -22,9 +24,10 @@ const MAX_PROJECT_SIZE_EUR = 100_000_000
 const profileSchema = z
   .object({
     companyName: z.string().min(2).max(150),
-    phone: z.string().optional(),
-    plz: z.string().min(4),
-    ort: z.string().min(2),
+    // Phase 4.3 (Teil D): phone/plz/ort hatten keine Maximallänge.
+    phone: z.string().max(30).optional(),
+    plz: z.string().min(4).max(10),
+    ort: z.string().min(2).max(100),
     gewerke: z.array(z.enum(GEWERKE)).optional(),
     qualificationFiles: z.array(qualificationFileSchema).optional(),
     serviceRadiusKm: z.number().int().min(1).max(MAX_SERVICE_RADIUS_KM).nullable().optional(),
@@ -44,7 +47,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = profileSchema.parse(await req.json())
+    const body = profileSchema.parse(await readJsonBody(req))
+
+    // Phase 4.3: Profil-Updates waren bisher unbegrenzt aufrufbar – großzügiges Limit, das kein
+    // legitimes wiederholtes Speichern beim Ausfüllen des Formulars stört.
+    await rateLimit({ key: `profile-update:${user.id}`, limit: 30, windowSeconds: 3600 })
+
     let gewerke = user.role === 'subunternehmer' ? body.gewerke || [] : []
 
     if (user.role === 'subunternehmer' && user.verificationStatus !== 'verified') {
