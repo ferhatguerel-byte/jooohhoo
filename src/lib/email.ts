@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import type { ErrorResponse } from 'resend'
 import { getAppUrl } from '@/lib/url'
+import { logEvent } from '@/lib/observability/logger'
 
 /**
  * Phase 3.6F – Resend meldet API-Fehler (ungültige Adresse, Rate-Limit, ...) NICHT über eine
@@ -40,14 +41,29 @@ function getResend(): Resend {
   return resendClient
 }
 
+/**
+ * Phase 4.4 (Teil D/5) – zentrale Stelle für ALLE Resend-Aufrufe. Ein unerwarteter Resend-Fehler
+ * (Netzwerk-/SDK-Exception ODER `result.error`) wird hier EINMAL strukturiert geloggt + ans
+ * Error-Tracking gemeldet, statt an jeder der zahlreichen Aufrufstellen (Angebots-/Chat-
+ * Nachrichten, Support-Tickets, Match-Notifications, Passwort-Reset) einzeln. Niemals die
+ * Empfänger-E-Mail-Adresse loggen (Teil E) – nur Betreff-Länge/Fehlercode als unkritischer Kontext.
+ */
 async function send(to: string, subject: string, html: string, text?: string) {
   if (!process.env.RESEND_API_KEY || !process.env.FROM_EMAIL) {
     console.log(`[E-Mail nicht versendet – kein RESEND_API_KEY] An: ${to} | Betreff: ${subject}`)
     return
   }
-  const result = await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html, ...(text ? { text } : {}) })
-  if (result.error) {
-    throw new ResendSendError(result.error.message, result.error.name)
+  try {
+    const result = await getResend().emails.send({ from: process.env.FROM_EMAIL, to, subject, html, ...(text ? { text } : {}) })
+    if (result.error) {
+      logEvent('resend_send_failed', 'error', { operation: 'resend_send', errorCode: result.error.name })
+      throw new ResendSendError(result.error.message, result.error.name)
+    }
+  } catch (err) {
+    if (err instanceof ResendSendError) throw err
+    // Netzwerk-/SDK-Exception (nicht der reguläre `result.error`-Pfad oben, der bereits geloggt hat).
+    logEvent('resend_send_failed', 'error', { operation: 'resend_send' }, err)
+    throw err
   }
 }
 

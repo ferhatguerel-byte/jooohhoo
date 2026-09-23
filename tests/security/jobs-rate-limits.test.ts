@@ -39,6 +39,9 @@ describe('POST /api/jobs — Phase 4.3 Rate Limit (Teil 2/A: Job-Spam)', () => {
     clientQueryMock.mockReset()
     releaseMock.mockReset()
     runMatchingForJobMock.mockReset()
+    // Das beiläufige, zufällig ausgelöste Aufräumen alter Rate-Limit-Einträge (5% Chance) soll
+    // die exakt vorgegebenen Mock-Antwortsequenzen in diesen Tests nicht durcheinanderbringen.
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockResolvedValue({ rows: [{ id: 'job-123' }] })
@@ -106,6 +109,7 @@ describe('PATCH /api/jobs/[id] — Phase 4.3 Rate Limit', () => {
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
   })
 

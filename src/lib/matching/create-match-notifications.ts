@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db'
 import { MATCH_NOTIFICATION_THRESHOLD } from '@/lib/matching/score-config'
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEventsBatch } from '@/lib/analytics-events'
+import { captureError } from '@/lib/observability/sentry'
 
 export interface CreateMatchNotificationsResult {
   /** Anzahl tatsächlich neu angelegter Zeilen (0 bei einem reinen Re-Run ohne neue Treffer). */
@@ -71,6 +72,7 @@ export async function createMatchNotifications(jobId: string): Promise<CreateMat
       )
     } catch (analyticsError) {
       console.error('MATCH_NOTIFICATION_CREATED-Analytics fehlgeschlagen:', jobId, analyticsError)
+      captureError(analyticsError, { jobId, operation: 'match_notification_created_analytics' })
     }
   }
 

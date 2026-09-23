@@ -9,6 +9,7 @@ import { trackEvent } from '@/lib/analytics-events'
 import { runMatchingForJob } from '@/lib/matching/run-matching'
 import { rateLimit, getClientIp } from '@/lib/security/rate-limit'
 import { readJsonBody } from '@/lib/security/request-limits'
+import { captureError } from '@/lib/observability/sentry'
 
 const lineItemSchema = z.object({
   gewerk: z.enum(GEWERKE),
@@ -142,10 +143,11 @@ export async function POST(req: NextRequest) {
       await runMatchingForJob(jobId)
     } catch (matchingError) {
       console.error('Matching für neuen Auftrag fehlgeschlagen:', jobId, matchingError)
+      captureError(matchingError, { jobId, operation: 'run_matching_for_job' })
     }
 
     return NextResponse.json({ ok: true, id: jobId })
   } catch (err: unknown) {
-    return handleApiError(err, 'Auftrag konnte nicht erstellt werden.')
+    return handleApiError(err, 'Auftrag konnte nicht erstellt werden.', req)
   }
 }

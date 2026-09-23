@@ -33,6 +33,7 @@ const offerRow = {
 
 describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
   })

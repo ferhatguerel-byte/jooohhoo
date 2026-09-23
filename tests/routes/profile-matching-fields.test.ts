@@ -38,6 +38,7 @@ const validBody = { companyName: 'Muster GmbH', plz: '10115', ort: 'Berlin' }
 
 describe('POST /api/profile — Phase 3.2 Matching-Präferenzen (Validierung)', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     // Phase 4.3: POST /api/profile prüft nach der Zod-Validierung ein Rate Limit (COUNT + INSERT
@@ -129,6 +130,7 @@ describe('POST /api/profile — Phase 3.2 Matching-Präferenzen (Validierung)', 
 
 describe('POST /api/profile — Phase 3.2 Security', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     // Phase 4.3: siehe Kommentar im Validierungs-describe-Block oben – calls[0]/[1] sind die

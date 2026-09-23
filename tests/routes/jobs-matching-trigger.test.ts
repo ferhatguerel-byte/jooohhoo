@@ -35,6 +35,7 @@ function jsonReq(url: string, body: unknown, method = 'POST') {
 
 describe('POST /api/jobs — Phase 3.6A Match Trigger', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     connectMock.mockReset()
@@ -101,6 +102,7 @@ describe('POST /api/jobs — Phase 3.6A Match Trigger', () => {
 
 describe('POST /api/jobs — Phase 3.6G PROJECT_CREATED Analytics', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     connectMock.mockReset()
@@ -162,6 +164,7 @@ describe('POST /api/jobs — Phase 3.6G PROJECT_CREATED Analytics', () => {
 
 describe('Phase 3.6A — kein zweiter Matching-Trigger außerhalb von POST /api/jobs', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     connectMock.mockReset()

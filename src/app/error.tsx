@@ -2,10 +2,15 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { captureError } from '@/lib/observability/sentry'
 
 export default function GlobalErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error('Unerwarteter Fehler:', error)
+    // Phase 4.4 (Teil C/B): auch clientseitig ausgelöste, bis hierher durchgereichte Fehler
+    // gehen ans zentrale Error-Tracking (No-op ohne SENTRY_DSN). `digest` ist Next.js' eigene,
+    // bereits anonymisierte Kennung für serverseitig entstandene Fehler.
+    captureError(error, { extra: { digest: error.digest ?? null } })
   }, [error])
 
   return (

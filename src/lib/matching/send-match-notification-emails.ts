@@ -4,6 +4,7 @@ import { sendMatchNotificationEmail, ResendSendError } from '@/lib/email'
 import { MAX_MATCH_EMAIL_ATTEMPTS, MATCH_EMAIL_BACKOFF_SECONDS, MATCH_EMAIL_LEASE_SECONDS } from '@/lib/matching/email-retry-config'
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEvent } from '@/lib/analytics-events'
+import { captureError } from '@/lib/observability/sentry'
 
 const emailSchema = z.string().email()
 
@@ -175,9 +176,14 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
         })
       } catch (analyticsError) {
         console.error('MATCH_EMAIL_SENT-Analytics fehlgeschlagen:', row.notification_id, analyticsError)
+        captureError(analyticsError, { notificationId: row.notification_id, operation: 'match_email_sent_analytics' })
       }
       outcomes.push({ notificationId: row.notification_id, sent: true })
     } catch (err) {
+      // Phase 4.4 (Teil D/5): ein Resend-Sendefehler ist ein unerwarteter Fehler und wird ans
+      // Error-Tracking gemeldet – die bestehende Retry-/Backoff-Zustandsmaschine (markFailed)
+      // bleibt unverändert, nur zusätzliche Sichtbarkeit für den Produktivbetrieb.
+      captureError(err, { notificationId: row.notification_id, operation: 'match_notification_email_send' })
       await markFailed(row.notification_id, errorToSafeMessage(err), isPermanentError(err))
       outcomes.push({ notificationId: row.notification_id, sent: false })
     }

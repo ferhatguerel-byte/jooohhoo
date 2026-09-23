@@ -11,6 +11,8 @@ import {
   resolveTierFromSubscription,
 } from '@/lib/billing/subscription-state'
 import type Stripe from 'stripe'
+import { logEvent } from '@/lib/observability/logger'
+import { getRequestId, REQUEST_ID_HEADER } from '@/lib/observability/request-id'
 
 /**
  * Phase 4.2 – Stripe-Webhook-Härtung.
@@ -84,10 +86,22 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     // Bewusst ein Nicht-2xx-Ergebnis zurückgeben: Stripe wiederholt den Webhook dann automatisch.
     // Ein stilles Verschlucken hier würde den Abo-Status dauerhaft inkonsistent lassen.
+    //
+    // Phase 4.4 (Teil D/G): ein fehlgeschlagenes Stripe-Webhook-Event ist ein UNERWARTETER Fehler
+    // (DB-Fehler, Stripe-SDK-Fehler etc.) und wird daher strukturiert geloggt + ans Error-Tracking
+    // gemeldet – nie das komplette Event-Payload, nur IDs/Typ/Fehlermeldung (Teil E).
     const message = err instanceof Error ? err.message : String(err)
-    console.error(`Stripe-Webhook Fehler (event ${event.id}, type ${event.type}):`, message)
+    const requestId = getRequestId(req)
+    logEvent(
+      'stripe_webhook_failed',
+      'error',
+      { requestId, stripeEventId: event.id, eventType: event.type, operation: 'stripe_webhook' },
+      err
+    )
     await markStripeEventFailed(db, event.id, message)
-    return NextResponse.json({ error: 'Webhook-Verarbeitung fehlgeschlagen.' }, { status: 500 })
+    const response = NextResponse.json({ error: 'Webhook-Verarbeitung fehlgeschlagen.' }, { status: 500 })
+    response.headers.set(REQUEST_ID_HEADER, requestId)
+    return response
   }
 }
 

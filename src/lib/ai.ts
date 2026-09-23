@@ -1,4 +1,5 @@
 import { GEWERKE } from '@/lib/gewerke'
+import { logEvent } from '@/lib/observability/logger'
 
 export interface GeneratedLineItem {
   gewerk: string
@@ -51,6 +52,9 @@ export async function generateLeistungsverzeichnis(description: string): Promise
   if (!res.ok) {
     const errText = await res.text()
     console.error('Anthropic API Fehler:', res.status, errText)
+    // Phase 4.4 (Teil D): unerwarteter Fehler eines externen Providers -> Error-Tracking. Nur der
+    // HTTP-Status als strukturiertes Feld, nicht der volle Anthropic-Antworttext (Teil E).
+    logEvent('anthropic_api_failed', 'error', { operation: 'generate_lv', errorCode: String(res.status) })
     throw new Error('Leistungsverzeichnis konnte nicht generiert werden. Bitte später erneut versuchen.')
   }
 

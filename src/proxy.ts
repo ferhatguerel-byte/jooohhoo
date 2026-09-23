@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
+import { REQUEST_ID_HEADER, resolveRequestId } from '@/lib/observability/request-id'
 
 const SESSION_COOKIE = 'bp24_session'
 
@@ -17,7 +18,7 @@ function getSecret(): Uint8Array {
   )
 }
 
-export async function proxy(req: NextRequest) {
+async function handleDashboardAuth(req: NextRequest): Promise<NextResponse> {
   const token = req.cookies.get(SESSION_COOKIE)?.value
 
   if (!token) {
@@ -32,6 +33,38 @@ export async function proxy(req: NextRequest) {
   }
 }
 
+/**
+ * Phase 4.4 (Teil F) – Request-ID für jeden API-Request. Ein vom Client mitgelieferter
+ * `X-Request-ID`-Header wird nur übernommen, wenn er eine valide UUID ist (siehe
+ * src/lib/observability/request-id.ts), sonst serverseitig neu erzeugt. Auf dem
+ * WEITERGELEITETEN Request gesetzt (damit Route Handler ihn per `req.headers.get(...)` lesen
+ * können, siehe getRequestId()) UND auf der Response (Client-sichtbarer `X-Request-ID`-Header).
+ */
+function withRequestId(req: NextRequest): NextResponse {
+  const requestId = resolveRequestId(req.headers.get(REQUEST_ID_HEADER))
+
+  const requestHeaders = new Headers(req.headers)
+  requestHeaders.set(REQUEST_ID_HEADER, requestId)
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set(REQUEST_ID_HEADER, requestId)
+  return response
+}
+
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  if (pathname.startsWith('/dashboard')) {
+    return handleDashboardAuth(req)
+  }
+
+  if (pathname.startsWith('/api')) {
+    return withRequestId(req)
+  }
+
+  return NextResponse.next()
+}
+
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/api/:path*'],
 }

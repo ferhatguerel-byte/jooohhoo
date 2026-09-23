@@ -1,10 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
+import { captureError } from '@/lib/observability/sentry'
 
 export default function GlobalRootError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error('Kritischer Fehler:', error)
+    // global-error.tsx fängt Fehler im Root-Layout selbst (schwerwiegendster Fall) – besonders
+    // wichtig, dass diese das Error-Tracking erreichen, da hier keine andere Fehlerseite mehr greift.
+    captureError(error, { operation: 'root_layout_crash', extra: { digest: error.digest ?? null } })
   }, [error])
 
   return (

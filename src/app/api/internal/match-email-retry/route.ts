@@ -2,6 +2,8 @@ import { timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { runMatchEmailRetryBatch } from '@/lib/matching/retry-match-notification-emails'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { logEvent } from '@/lib/observability/logger'
+import { getRequestId } from '@/lib/observability/request-id'
 
 /**
  * Phase 3.6F – interner Endpunkt für den periodischen Match-E-Mail-Retry. KEINE Provider-/
@@ -53,15 +55,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Rate-Limit für diesen internen Endpunkt erreicht.' }, { status: 429 })
   }
 
-  const result = await runMatchEmailRetryBatch()
+  const requestId = getRequestId(req)
 
-  // Observability (Phase 3.6F §41): nur IDs/Zähler/Kategorien, keine E-Mail-Adressen, keine
-  // Secrets, keine Jobinhalte.
-  console.log('[match-email-retry]', {
-    candidateCount: result.candidateCount,
-    sent: result.outcomes.filter((o) => o.sent).length,
-    notSent: result.outcomes.filter((o) => !o.sent).length,
-  })
+  try {
+    const result = await runMatchEmailRetryBatch()
 
-  return NextResponse.json({ ok: true, candidateCount: result.candidateCount })
+    // Observability (Phase 3.6F §41, jetzt strukturiert Phase 4.4 Teil G): nur IDs/Zähler/
+    // Kategorien, keine E-Mail-Adressen, keine Secrets, keine Jobinhalte.
+    logEvent('match_email_retry_batch_completed', 'info', {
+      requestId,
+      operation: 'match_email_retry',
+      candidateCount: result.candidateCount,
+      sent: result.outcomes.filter((o) => o.sent).length,
+      notSent: result.outcomes.filter((o) => !o.sent).length,
+    })
+
+    return NextResponse.json({ ok: true, candidateCount: result.candidateCount })
+  } catch (err) {
+    // Phase 4.4 (Teil D/6): ein fehlgeschlagener Cron-Batch-Lauf ist ein unerwarteter Fehler
+    // (DB-/Resend-Fehler etc.) – strukturiert geloggt + ans Error-Tracking gemeldet.
+    logEvent('match_email_retry_batch_failed', 'error', { requestId, operation: 'match_email_retry' }, err)
+    return NextResponse.json({ error: 'Batch-Verarbeitung fehlgeschlagen.' }, { status: 500 })
+  }
 }

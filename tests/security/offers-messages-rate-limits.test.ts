@@ -26,6 +26,7 @@ describe('POST /api/jobs/[id]/offers — Phase 4.3 Rate Limit (Teil 2/A: Angebot
     connectMock.mockReset()
     clientQueryMock.mockReset()
     releaseMock.mockReset()
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockResolvedValue({
       id: 'sub-1',
       role: 'subunternehmer',
@@ -79,6 +80,7 @@ describe('POST /api/offers/[id]/messages — Phase 4.3 Rate Limit (Teil 2/A: Cha
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer' })
   })
 

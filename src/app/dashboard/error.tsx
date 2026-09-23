@@ -2,10 +2,12 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { captureError } from '@/lib/observability/sentry'
 
 export default function DashboardErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error('Dashboard-Fehler:', error)
+    captureError(error, { route: 'dashboard', extra: { digest: error.digest ?? null } })
   }, [error])
 
   return (

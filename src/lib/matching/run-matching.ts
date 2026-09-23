@@ -4,6 +4,7 @@ import { createMatchNotifications } from '@/lib/matching/create-match-notificati
 import { sendMatchNotificationEmails } from '@/lib/matching/send-match-notification-emails'
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEventsBatch } from '@/lib/analytics-events'
+import { captureError } from '@/lib/observability/sentry'
 
 /**
  * Phase 3.5 – Matching Engine: Match Storage/Persistence.
@@ -98,6 +99,9 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
       )
     } catch (analyticsError) {
       console.error('MATCH_CREATED-Analytics für Matching-Lauf fehlgeschlagen:', jobId, analyticsError)
+      // Phase 4.4 (Teil D/5): unerwarteter Fehler -> Error-Tracking (No-op ohne SENTRY_DSN),
+      // zusätzlich zum bestehenden console.error oben (unverändert, siehe bestehende Tests).
+      captureError(analyticsError, { jobId, operation: 'match_created_analytics' })
     }
   }
 
@@ -116,6 +120,7 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
     }
   } catch (notificationError) {
     console.error('Notification-Erstellung/-Versand für Matching-Lauf fehlgeschlagen:', jobId, notificationError)
+    captureError(notificationError, { jobId, operation: 'match_notification_pipeline' })
   }
 
   return {

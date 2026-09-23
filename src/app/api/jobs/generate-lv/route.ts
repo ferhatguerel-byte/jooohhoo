@@ -29,6 +29,6 @@ export async function POST(req: NextRequest) {
     const result = await generateLeistungsverzeichnis(description)
     return NextResponse.json(result)
   } catch (err: unknown) {
-    return handleApiError(err, 'Leistungsverzeichnis konnte nicht erstellt werden.')
+    return handleApiError(err, 'Leistungsverzeichnis konnte nicht erstellt werden.', req)
   }
 }

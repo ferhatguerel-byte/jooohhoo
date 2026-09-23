@@ -26,6 +26,7 @@ describe('POST /api/support/tickets — Phase 4.3 Rate Limit (Teil 6: Support-Ti
     connectMock.mockReset()
     clientQueryMock.mockReset()
     releaseMock.mockReset()
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'auftraggeber', companyName: 'Test GmbH' })
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
     clientQueryMock.mockResolvedValue({ rows: [{ id: 'ticket-1' }] })
@@ -53,6 +54,7 @@ describe('POST /api/support/tickets/[id]/messages — Phase 4.3 Rate Limit', () 
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
   })
 
   it('lehnt weitere Antworten eines normalen Nutzers ab, sobald das Limit (20/Stunde) erreicht ist', async () => {
