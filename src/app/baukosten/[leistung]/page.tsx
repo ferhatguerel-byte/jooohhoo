@@ -13,7 +13,9 @@ export async function generateMetadata({ params }: { params: Promise<{ leistung:
   const leistung = getLeistungBySlug(slug)
   if (!leistung) return {}
   return {
-    title: `${leistung.name} Kosten – unverbindliche Einschätzung | BAUVERSUS`,
+    // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+    // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+    title: `${leistung.name} Kosten – unverbindliche Einschätzung`,
     description: `Kostenorientierung für ${leistung.name}. Für ein verlässliches Angebot: Auftrag über BAUVERSUS erstellen und Angebote von Fachbetrieben vergleichen.`,
     alternates: { canonical: `/baukosten/${leistung.slug}` },
     // NOINDEX bis echte, validierte Kostendaten vorliegen (leistung.hasCostData) – siehe

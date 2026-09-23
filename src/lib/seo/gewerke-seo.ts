@@ -27,7 +27,9 @@ export interface GewerkSeo {
 }
 
 function titleTemplate(name: string): string {
-  return `${name} in {stadt} – Fachbetriebe & Angebote vergleichen | BAUVERSUS`
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  return `${name} in {stadt} – Fachbetriebe & Angebote vergleichen`
 }
 
 function descriptionTemplate(name: string): string {

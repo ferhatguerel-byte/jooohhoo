@@ -90,7 +90,9 @@ async function evaluateBranchenbuchCombo(gewerk: GewerkSeo, city: City, companie
 
 export async function buildBranchenbuchMetadata({ gewerk, city }: Props): Promise<Metadata> {
   const parts = [gewerk?.name, city?.name].filter(Boolean)
-  const title = `${parts.join(' in ')} – Branchenbuch | BAUVERSUS`
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  const title = `${parts.join(' in ')} – Branchenbuch`
   const description = gewerk && city
     ? `Geprüfte ${gewerk.name}-Betriebe in ${city.name} im BAUVERSUS-Branchenbuch.`
     : gewerk

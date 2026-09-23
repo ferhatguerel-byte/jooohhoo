@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import SiteFooter from '@/components/layout/SiteFooter'
 
-export const metadata: Metadata = { title: 'Widerruf – BAUVERSUS' }
+// Phase 4.5 QA: siehe Kommentar in src/app/agb/page.tsx.
+export const metadata: Metadata = { title: 'Widerruf' }
 
 /**
  * Phase 4.1 – Diese Seite erfindet KEINEN neuen juristischen Text. Sie verweist ausschließlich auf

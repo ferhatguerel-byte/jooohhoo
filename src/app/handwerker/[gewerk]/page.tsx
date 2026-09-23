@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: { params: Promise<{ gewerk: s
   const gewerk = getGewerkSeoBySlug(slug)
   if (!gewerk) return {}
   return {
-    title: `${gewerk.name} – Fachbetriebe finden | BAUVERSUS`,
+    // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+    // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+    title: `${gewerk.name} – Fachbetriebe finden`,
     description: gewerk.longDescription,
     alternates: { canonical: `/handwerker/${gewerk.slug}` },
   }

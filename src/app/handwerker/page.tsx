@@ -8,7 +8,9 @@ import SiteFooter from '@/components/layout/SiteFooter'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Handwerker finden – nach Gewerk | BAUVERSUS',
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  title: 'Handwerker finden – nach Gewerk',
   description: 'Handwerksbetriebe nach Gewerk finden: Trockenbau, Maler, Elektro, Sanitär & Heizung und mehr. Auftrag erstellen und vergleichbare Angebote erhalten.',
   alternates: { canonical: '/handwerker' },
 }

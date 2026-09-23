@@ -85,10 +85,12 @@ export default async function BranchenbuchPage() {
             <Link
               key={c.id}
               href={`/firma/${c.company_slug}`}
-              className="border border-slate-200 rounded-2xl p-5 hover:border-brand/40 hover:shadow-md transition"
+              className="border border-slate-200 rounded-2xl p-5 hover:border-brand/40 hover:shadow-md transition min-w-0"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h2 className="font-bold text-[#17202a]">{c.company_name}</h2>
+                {/* Phase 4.5 QA: break-words verhindert horizontales Overflow bei sehr langen,
+                    unzerbrochenen Firmennamen (CSS-Grid erzwingt sonst die Intrinsic-Breite). */}
+                <h2 className="font-bold text-[#17202a] break-words min-w-0">{c.company_name}</h2>
                 {c.verification_status === 'verified' && (
                   <BadgeCheck size={18} className="text-blue-600 shrink-0" />
                 )}

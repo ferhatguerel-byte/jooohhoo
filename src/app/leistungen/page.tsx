@@ -8,7 +8,9 @@ import SiteFooter from '@/components/layout/SiteFooter'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Bauleistungen im Überblick | BAUVERSUS',
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  title: 'Bauleistungen im Überblick',
   description: 'Typische Bauleistungen und Sanierungsprojekte im Überblick: Badsanierung, Wohnungssanierung, Altbausanierung und mehr.',
   alternates: { canonical: '/leistungen' },
 }

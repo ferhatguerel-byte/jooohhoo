@@ -24,7 +24,9 @@ export async function generateMetadata({
   })
 
   return buildLandingPageMetadata({
-    title: `${gewerk.name}-Nachunternehmer in ${city.name} finden | BAUVERSUS`,
+    // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+    // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+    title: `${gewerk.name}-Nachunternehmer in ${city.name} finden`,
     description: `Nachunternehmer für ${gewerk.name} in ${city.name} finden: strukturierte Ausschreibung erstellen, Angebote von Fachbetrieben vergleichen.`,
     canonicalPath: `/nachunternehmer/${gewerk.slug}/${city.slug}`,
     status: evaluation.status,

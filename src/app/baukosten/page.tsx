@@ -13,7 +13,9 @@ export const revalidate = 3600
 const hasAnyRealCostData = getActiveLeistungen().some((l) => l.hasCostData)
 
 export const metadata: Metadata = {
-  title: 'Baukosten – Kostenschätzungen für Bauprojekte | BAUVERSUS',
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  title: 'Baukosten – Kostenschätzungen für Bauprojekte',
   description: 'Kostenorientierung für typische Bauprojekte und Sanierungen. Unverbindliche Einschätzung – für ein verlässliches Angebot Auftrag über BAUVERSUS erstellen.',
   alternates: { canonical: '/baukosten' },
   robots: hasAnyRealCostData ? { index: true, follow: true } : { index: false, follow: true },

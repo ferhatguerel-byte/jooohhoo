@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import SiteFooter from '@/components/layout/SiteFooter'
 
-export const metadata: Metadata = { title: 'AGB – BAUVERSUS' }
+// Phase 4.5 QA: kein "– BAUVERSUS"-Suffix hier – das Root-Layout hängt es bereits per
+// Titel-Template an (siehe src/app/layout.tsx), sonst entsteht "AGB – BAUVERSUS – BAUVERSUS".
+export const metadata: Metadata = { title: 'AGB' }
 
 export default function AgbPage() {
   return (

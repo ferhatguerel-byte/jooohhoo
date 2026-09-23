@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import SiteFooter from '@/components/layout/SiteFooter'
 
-export const metadata: Metadata = { title: 'Datenschutzerklärung – BAUVERSUS' }
+// Phase 4.5 QA: siehe Kommentar in src/app/agb/page.tsx.
+export const metadata: Metadata = { title: 'Datenschutzerklärung' }
 
 export default function DatenschutzPage() {
   return (

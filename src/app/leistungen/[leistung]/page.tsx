@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: { params: Promise<{ leistung:
   const leistung = getLeistungBySlug(slug)
   if (!leistung) return {}
   return {
-    title: `${leistung.name} – Fachbetriebe & Ablauf | BAUVERSUS`,
+    // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+    // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+    title: `${leistung.name} – Fachbetriebe & Ablauf`,
     description: leistung.longDescription,
     alternates: { canonical: `/leistungen/${leistung.slug}` },
   }

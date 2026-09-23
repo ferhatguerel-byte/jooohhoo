@@ -33,7 +33,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!company) return {}
 
   const gewerkeText = (company.gewerke || []).join(', ')
-  const title = `${company.company_name} – ${gewerkeText} in ${company.ort} | BAUVERSUS`
+  // Phase 4.5 QA: kein "| BAUVERSUS"-Suffix hier – das Root-Layout hängt "– BAUVERSUS" bereits
+  // per Titel-Template an (siehe src/app/layout.tsx), sonst entsteht ein doppelter Markenname.
+  const title = `${company.company_name} – ${gewerkeText} in ${company.ort}`
   const description = `${company.company_name} ist ein Handwerksbetrieb für ${gewerkeText} in ${company.plz} ${company.ort}, gelistet auf BAUVERSUS. Jetzt Angebot anfragen.`
 
   return {
