@@ -1,13 +1,65 @@
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { getCurrentUser, type CurrentUser } from '@/lib/current-user'
 import { getStripe } from '@/lib/stripe'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getAppUrl } from '@/lib/url'
 import { handleApiError } from '@/lib/api-error'
 
 const checkoutSchema = z.object({ tier: z.enum(TIER_ORDER as [string, ...string[]]) })
+
+/**
+ * Deterministischer Stripe-Idempotency-Key für die Customer-Neuanlage eines Users (nie die rohe
+ * userId oder E-Mail als Key selbst – gehasht, damit kein internes Datum/PII direkt sichtbar wird,
+ * u.a. im Stripe-Dashboard-Log dieses Requests). Zwei praktisch gleichzeitige Checkout-Requests
+ * desselben Users (Doppelklick, zwei Tabs, Client-Retry) erzeugen denselben Key -> Stripe
+ * dedupliziert den zweiten `customers.create`-Aufruf serverseitig und liefert denselben Customer
+ * zurück, statt einen zweiten Live-Customer anzulegen (siehe https://stripe.com/docs/api/idempotent_requests).
+ */
+export function stripeCustomerCreateIdempotencyKey(userId: string): string {
+  return createHash('sha256').update(`checkout-customer-create:${userId}`).digest('hex')
+}
+
+/**
+ * Ermittelt eine gültige Stripe-Customer-ID für den Checkout. Eine bereits lokal gespeicherte
+ * `stripe_customer_id` kann ungültig sein, wenn sie aus einem anderen Stripe-Konto oder -Modus
+ * stammt (z. B. Test/Sandbox statt Live) – Stripe lehnt einen Checkout mit einer solchen ID mit
+ * "No such customer: cus_..." ab. Deshalb wird eine vorhandene ID vor der Verwendung verifiziert;
+ * ist sie ungültig oder gelöscht, greift dieselbe Lookup-per-E-Mail/Erstellung-Logik wie beim
+ * erstmaligen Checkout (verhindert doppelte Live-Customer für dieselbe E-Mail-Adresse), und die
+ * neue ID wird lokal nachgezogen. Die Neuanlage ist zusätzlich per Stripe-Idempotency-Key gegen
+ * echte Nebenläufigkeit abgesichert (siehe stripeCustomerCreateIdempotencyKey).
+ */
+async function resolveValidCustomerId(stripe: Stripe, user: CurrentUser): Promise<string> {
+  if (user.stripeCustomerId) {
+    try {
+      const existing = await stripe.customers.retrieve(user.stripeCustomerId)
+      if (!existing.deleted) return user.stripeCustomerId
+    } catch (err) {
+      if (!(err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'resource_missing')) {
+        throw err
+      }
+      // Gespeicherte ID existiert in diesem Stripe-Konto/-Modus nicht (mehr) – unten neu auflösen.
+    }
+  }
+
+  const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 })
+  const customerId =
+    existingCustomers.data.length > 0
+      ? existingCustomers.data[0].id
+      : (
+          await stripe.customers.create(
+            { email: user.email, name: user.companyName, metadata: { userId: user.id } },
+            { idempotencyKey: stripeCustomerCreateIdempotencyKey(user.id) }
+          )
+        ).id
+
+  await getDb().query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, user.id])
+  return customerId
+}
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser()
@@ -73,24 +125,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: `${appUrl}/dashboard/abo?success=1` })
     }
 
-    let customerId = user.stripeCustomerId
-
-    if (!customerId) {
-      // Sicherstellen, dass pro E-Mail-Adresse nur ein Stripe-Kunde/Abo existiert, auch wenn
-      // stripe_customer_id lokal aus irgendeinem Grund fehlt.
-      const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 })
-      if (existingCustomers.data.length > 0) {
-        customerId = existingCustomers.data[0].id
-      } else {
-        const customer = await stripe.customers.create({
-          email: user.email,
-          name: user.companyName,
-          metadata: { userId: user.id },
-        })
-        customerId = customer.id
-      }
-      await getDb().query('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [customerId, user.id])
-    }
+    const customerId = await resolveValidCustomerId(stripe, user)
 
     const appUrl = getAppUrl(req)
 
