@@ -34,20 +34,30 @@ export async function generateLeistungsverzeichnis(description: string): Promise
 
   const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001'
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: `Projektbeschreibung des Kunden:\n\n${description}` }],
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: `Projektbeschreibung des Kunden:\n\n${description}` }],
+      }),
+      // Phase 5: ohne explizites Timeout würde ein hängender Anthropic-Request die Serverless-
+      // Function bis zum Plattform-Timeout blockieren, statt kontrolliert mit einer verständlichen
+      // Fehlermeldung zurückzukehren.
+      signal: AbortSignal.timeout(30_000),
+    })
+  } catch (err) {
+    logEvent('anthropic_api_failed', 'error', { operation: 'generate_lv', errorCode: 'network_or_timeout' }, err)
+    throw new Error('Leistungsverzeichnis konnte nicht generiert werden. Bitte später erneut versuchen.')
+  }
 
   if (!res.ok) {
     const errText = await res.text()
