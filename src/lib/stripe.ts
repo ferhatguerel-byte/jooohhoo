@@ -20,6 +20,18 @@ export function getStripe(): Stripe {
           'verwendet werden. Bitte die Umgebungsvariable in den Vercel-Projekteinstellungen setzen.'
       )
     }
+    // Fail-fast statt eines erst beim tatsächlichen API-Call auftretenden, schwer zu diagnostizierenden
+    // Stripe-Fehlers ("This API call cannot be made with a publishable API key"): STRIPE_SECRET_KEY
+    // muss ein Secret Key (sk_...) sein, niemals ein Publishable Key (pk_...) – dieser gehört
+    // ausschließlich in clientseitigen Code, den dieses Projekt bewusst nicht verwendet (Hosted
+    // Checkout/Billing Portal statt @stripe/stripe-js/Elements, siehe docs/phase-4.1-security-hardening.md).
+    if (secretKey?.startsWith('pk_')) {
+      throw new Error(
+        'STRIPE_SECRET_KEY enthält einen Publishable Key (pk_...) statt eines Secret Keys (sk_...). ' +
+          'Bitte den Wert in den Vercel-Projekteinstellungen durch den Secret Key ersetzen: ' +
+          'https://dashboard.stripe.com/account/api-keys'
+      )
+    }
     stripeClient = new Stripe(secretKey || 'sk_test_build_placeholder')
   }
   return stripeClient

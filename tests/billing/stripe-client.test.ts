@@ -31,4 +31,23 @@ describe('getStripe — Phase 4.2 (Teil Y)', () => {
     const { getStripe } = await import('@/lib/stripe')
     expect(() => getStripe()).not.toThrow()
   })
+
+  /**
+   * Regression: eine versehentlich als STRIPE_SECRET_KEY hinterlegte Publishable-Key-URL
+   * (pk_...) führte bisher erst beim tatsächlichen Stripe-API-Call zu einem schwer zu
+   * diagnostizierenden Fehler ("This API call cannot be made with a publishable API key").
+   */
+  it('wirft einen klaren Fehler, wenn STRIPE_SECRET_KEY versehentlich einen Publishable Key (pk_...) enthält', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('STRIPE_SECRET_KEY', 'pk_live_test')
+    const { getStripe } = await import('@/lib/stripe')
+    expect(() => getStripe()).toThrow(/Publishable Key/)
+  })
+
+  it('wirft denselben Fehler auch außerhalb von Production, wenn ein Publishable Key gesetzt ist', async () => {
+    vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('STRIPE_SECRET_KEY', 'pk_test_test')
+    const { getStripe } = await import('@/lib/stripe')
+    expect(() => getStripe()).toThrow(/Publishable Key/)
+  })
 })
