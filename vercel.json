@@ -1,8 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "crons": [
-    { "path": "/api/internal/match-email-retry", "schedule": "*/5 * * * *" }
-  ]
+  "framework": "nextjs"
 }
