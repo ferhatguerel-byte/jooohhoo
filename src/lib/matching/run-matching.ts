@@ -5,6 +5,8 @@ import { sendMatchNotificationEmails } from '@/lib/matching/send-match-notificat
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
 import { trackEventsBatch } from '@/lib/analytics-events'
 import { captureError } from '@/lib/observability/sentry'
+import type { ExclusionReason } from '@/lib/matching/hard-filter'
+import type { MatchScoreResult } from '@/lib/matching/score'
 
 /**
  * Phase 3.5 – Matching Engine: Match Storage/Persistence.
@@ -131,36 +133,50 @@ export async function runMatchingForJob(jobId: string): Promise<RunMatchingResul
   }
 }
 
+export interface JobMatchUpsertRow {
+  jobId: string
+  providerId: string
+  eligible: boolean
+  /** Nur gesetzt, wenn eligible === true. */
+  score?: MatchScoreResult
+  exclusionReason?: ExclusionReason
+}
+
 /**
- * Baut ein einziges Bulk-INSERT ... VALUES (...),(...) ... ON CONFLICT DO UPDATE für alle
- * aktuellen Ergebnisse (Phase 3.5 §17/§24: kein Insert pro Provider, keine Schleife). Vollständig
+ * Baut ein einziges Bulk-INSERT ... VALUES (...),(...) ... ON CONFLICT DO UPDATE für beliebige
+ * job_id×provider_id-Zeilen (Phase 3.5 §17/§24: kein Insert pro Zeile, keine Schleife). Vollständig
  * parametrisiert – keine Nutzereingabe wird in den SQL-Text interpoliert.
  *
- * matched_factors/missing_data enthalten für ausgeschlossene Provider bewusst leere Objekte
+ * Bewusst generisch über job_id UND provider_id (statt nur provider_id wie ursprünglich): sowohl
+ * runMatchingForJob() (fixe jobId, variierende Provider) als auch das Matching-Lifecycle-Pendant
+ * matchProviderAgainstOpenJobs() (fixe providerId, variierende Jobs) schreiben in dieselbe
+ * job_matches-Struktur – eine einzige Bulk-UPSERT-Implementierung statt zwei fast identischer.
+ *
+ * matched_factors/missing_data enthalten für ausgeschlossene Kombinationen bewusst leere Objekte
  * ({}/[]) statt erfundener Werte – es gibt für sie keine Score-Berechnung. Die globale
  * Score-Konfiguration (Gewichte) wird nirgends dupliziert, nur das berechnete Ergebnis.
  */
-function buildUpsertQuery(jobId: string, results: ScoredProviderResult[]): { sql: string; params: unknown[] } {
-  const rows: string[] = []
+export function buildJobMatchesUpsertQuery(rows: JobMatchUpsertRow[]): { sql: string; params: unknown[] } {
+  const valueRows: string[] = []
   const params: unknown[] = []
 
-  results.forEach((result, index) => {
+  rows.forEach((row, index) => {
     const base = index * 7
-    rows.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7},now())`)
+    valueRows.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7},now())`)
     params.push(
-      jobId,
-      result.providerId,
-      result.eligible ? result.score!.score : null,
-      JSON.stringify(result.eligible ? result.score!.breakdown : {}),
-      JSON.stringify(result.eligible ? result.score!.missingData : []),
-      !result.eligible,
-      result.eligible ? null : result.exclusionReason
+      row.jobId,
+      row.providerId,
+      row.eligible ? row.score!.score : null,
+      JSON.stringify(row.eligible ? row.score!.breakdown : {}),
+      JSON.stringify(row.eligible ? row.score!.missingData : []),
+      !row.eligible,
+      row.eligible ? null : row.exclusionReason
     )
   })
 
   const sql = `
     INSERT INTO job_matches (job_id, provider_id, match_score, matched_factors, missing_data, excluded, exclusion_reason, calculated_at)
-    VALUES ${rows.join(',')}
+    VALUES ${valueRows.join(',')}
     ON CONFLICT (job_id, provider_id) DO UPDATE SET
       match_score = EXCLUDED.match_score,
       matched_factors = EXCLUDED.matched_factors,
@@ -171,4 +187,16 @@ function buildUpsertQuery(jobId: string, results: ScoredProviderResult[]): { sql
   `
 
   return { sql, params }
+}
+
+function buildUpsertQuery(jobId: string, results: ScoredProviderResult[]): { sql: string; params: unknown[] } {
+  return buildJobMatchesUpsertQuery(
+    results.map((result) => ({
+      jobId,
+      providerId: result.providerId,
+      eligible: result.eligible,
+      score: result.score,
+      exclusionReason: result.exclusionReason,
+    }))
+  )
 }

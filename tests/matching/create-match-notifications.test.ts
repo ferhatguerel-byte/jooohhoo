@@ -4,7 +4,7 @@ const { queryMock, trackEventsBatchMock } = vi.hoisted(() => ({ queryMock: vi.fn
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 vi.mock('@/lib/analytics-events', () => ({ trackEventsBatch: trackEventsBatchMock }))
 
-import { createMatchNotifications } from '@/lib/matching/create-match-notifications'
+import { createMatchNotifications, createMatchNotificationsForProvider } from '@/lib/matching/create-match-notifications'
 import { MATCH_NOTIFICATION_THRESHOLD } from '@/lib/matching/score-config'
 
 describe('createMatchNotifications — Phase 3.6C (SQL-Struktur, gemockte DB)', () => {
@@ -118,5 +118,57 @@ describe('createMatchNotifications — Phase 3.6G MATCH_NOTIFICATION_CREATED Ana
     trackEventsBatchMock.mockRejectedValue(new Error('Analytics-DB down'))
     const result = await createMatchNotifications('job-1')
     expect(result).toEqual({ createdCount: 1, createdIds: ['n1'] })
+  })
+})
+
+describe('createMatchNotificationsForProvider — Matching-Lifecycle Provider-zentriertes Gegenstück', () => {
+  beforeEach(() => {
+    queryMock.mockReset()
+    queryMock.mockResolvedValue({ rows: [] })
+    trackEventsBatchMock.mockReset()
+    trackEventsBatchMock.mockResolvedValue(undefined)
+  })
+
+  it('führt genau eine parametrisierte Query mit provider_id = $1 aus (keine N+1)', async () => {
+    await createMatchNotificationsForProvider('p1')
+    expect(queryMock).toHaveBeenCalledTimes(1)
+    const [sql, params] = queryMock.mock.calls[0]
+    expect(sql).toContain('WHERE provider_id = $1')
+    expect(sql).toContain('excluded = false')
+    expect(sql).toContain('match_score IS NOT NULL')
+    expect(params).toEqual(['p1', MATCH_NOTIFICATION_THRESHOLD])
+  })
+
+  it('nutzt dieselbe ON CONFLICT DO NOTHING-Idempotenzgarantie wie die job-zentrierte Variante', async () => {
+    await createMatchNotificationsForProvider('p1')
+    const [sql] = queryMock.mock.calls[0]
+    expect(sql).toContain('ON CONFLICT (job_id, provider_id) DO NOTHING')
+  })
+
+  it('createdCount/createdIds entsprechen den tatsächlich eingefügten Zeilen', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1' }] })
+    const result = await createMatchNotificationsForProvider('p1')
+    expect(result).toEqual({ createdCount: 1, createdIds: ['n1'] })
+  })
+
+  it('reiner Re-Run ohne neue Treffer (ON CONFLICT DO NOTHING übersprungen): kein Analytics-Aufruf, keine doppelte Notification', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const result = await createMatchNotificationsForProvider('p1')
+    expect(result).toEqual({ createdCount: 0, createdIds: [] })
+    expect(trackEventsBatchMock).not.toHaveBeenCalled()
+  })
+
+  it('trackt MATCH_NOTIFICATION_CREATED für neu erzeugte Zeilen mit der festen providerId und der jeweiligen job_id', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n1', job_id: 'job-1' }] })
+    await createMatchNotificationsForProvider('p1')
+    expect(trackEventsBatchMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        event: 'match_notification_created',
+        jobId: 'job-1',
+        providerId: 'p1',
+        notificationId: 'n1',
+        idempotencyKey: 'match_notification_created:n1',
+      }),
+    ])
   })
 })

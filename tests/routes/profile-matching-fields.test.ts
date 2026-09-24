@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { getCurrentUserMock, queryMock } = vi.hoisted(() => ({
+const { getCurrentUserMock, queryMock, matchProviderAgainstOpenJobsMock } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
+  matchProviderAgainstOpenJobsMock: vi.fn(),
 }))
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
+// Matching-Lifecycle (Phase C): eigenständig gemockt, damit dessen interne DB-Zugriffe die exakten
+// queryMock-Call-Indizes der bestehenden Profil-Tests nicht verschieben – eigene Tests weiter unten.
+vi.mock('@/lib/matching/run-provider-matching', () => ({ matchProviderAgainstOpenJobs: matchProviderAgainstOpenJobsMock }))
 
 import { POST } from '@/app/api/profile/route'
 
@@ -16,6 +20,10 @@ const baseSubunternehmer = {
   verificationStatus: 'unverified' as const,
   blockedGewerke: [] as string[],
   qualificationFiles: [] as { fileId: string; name: string; label: string }[],
+  gewerke: [] as string[],
+  serviceRadiusKm: null as number | null,
+  minProjectSize: null as number | null,
+  maxProjectSize: null as number | null,
 }
 
 const baseAuftraggeber = {
@@ -24,6 +32,10 @@ const baseAuftraggeber = {
   verificationStatus: 'unverified' as const,
   blockedGewerke: [] as string[],
   qualificationFiles: [] as { fileId: string; name: string; label: string }[],
+  gewerke: [] as string[],
+  serviceRadiusKm: null as number | null,
+  minProjectSize: null as number | null,
+  maxProjectSize: null as number | null,
 }
 
 function req(body: unknown) {
@@ -41,6 +53,7 @@ describe('POST /api/profile — Phase 3.2 Matching-Präferenzen (Validierung)', 
     vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    matchProviderAgainstOpenJobsMock.mockReset()
     // Phase 4.3: POST /api/profile prüft nach der Zod-Validierung ein Rate Limit (COUNT + INSERT
     // über denselben queryMock) – count:0 lässt es unbegrenzt oft durchlaufen. Die eigentliche
     // UPDATE-Query ist danach der dritte Aufruf.
@@ -133,6 +146,7 @@ describe('POST /api/profile — Phase 3.2 Security', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.9)
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    matchProviderAgainstOpenJobsMock.mockReset()
     // Phase 4.3: siehe Kommentar im Validierungs-describe-Block oben – calls[0]/[1] sind die
     // Rate-Limit-Prüfung, die eigentliche UPDATE-Query ist calls[2].
     queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
@@ -170,5 +184,59 @@ describe('POST /api/profile — Phase 3.2 Security', () => {
     const [, params] = queryMock.mock.calls[2]
     expect(params[params.length - 1]).toBe(baseSubunternehmer.id)
     expect(params).not.toContain('someone-elses-id')
+  })
+})
+
+describe('POST /api/profile — Matching-Lifecycle Phase C (Re-Matching bei relevantem Profil-Update)', () => {
+  beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9)
+    getCurrentUserMock.mockReset()
+    queryMock.mockReset()
+    matchProviderAgainstOpenJobsMock.mockReset()
+    queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
+  })
+
+  it('relevantes Profil-Update (Gewerke geändert) löst matchProviderAgainstOpenJobs aus', async () => {
+    getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
+    const res = await POST(req({ ...validBody, gewerke: ['Trockenbau'] }))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith(baseSubunternehmer.id)
+  })
+
+  it('relevantes Profil-Update (Radius geändert) löst Re-Matching aus', async () => {
+    getCurrentUserMock.mockResolvedValue({ ...baseSubunternehmer, serviceRadiusKm: 10 })
+    const res = await POST(req({ ...validBody, serviceRadiusKm: 50 }))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith(baseSubunternehmer.id)
+  })
+
+  it('relevantes Profil-Update (min/max Projektgröße geändert) löst Re-Matching aus', async () => {
+    getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
+    const res = await POST(req({ ...validBody, minProjectSize: 10000, maxProjectSize: 50000 }))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith(baseSubunternehmer.id)
+  })
+
+  it('unverändertes Profil (nur companyName/plz/ort wie vorher) löst KEIN Re-Matching aus', async () => {
+    getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
+    const res = await POST(req({ ...validBody, companyName: 'Neuer Name GmbH' }))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
+  it('ein Auftraggeber löst nie ein Re-Matching aus (nicht subunternehmer)', async () => {
+    getCurrentUserMock.mockResolvedValue(baseAuftraggeber)
+    const res = await POST(req({ ...validBody, serviceRadiusKm: 999 }))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
+  it('ein Fehler im Re-Matching lässt das Profil-Update trotzdem erfolgreich zurückkehren (isoliert)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    getCurrentUserMock.mockResolvedValue(baseSubunternehmer)
+    matchProviderAgainstOpenJobsMock.mockRejectedValueOnce(new Error('Matching-DB down'))
+    const res = await POST(req({ ...validBody, gewerke: ['Trockenbau'] }))
+    expect(res.status).toBe(200)
+    consoleErrorSpy.mockRestore()
   })
 })

@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db'
 import { requireAdminApi } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 import { logAdminAction } from '@/lib/admin-audit'
+import { matchProviderAgainstOpenJobs } from '@/lib/matching/run-provider-matching'
+import { captureError } from '@/lib/observability/sentry'
 
 const schema = z.object({
   userId: z.string().uuid(),
@@ -23,6 +25,19 @@ export async function POST(req: NextRequest) {
       [status, newlyVerified, userId]
     )
     await logAdminAction(admin.id, status === 'verified' ? 'DOCUMENT_APPROVED' : status === 'rejected' ? 'DOCUMENT_REJECTED' : 'USER_UNVERIFIED', 'user', userId, { status, verifiedGewerke: newlyVerified }, req)
+
+    // Matching-Lifecycle (Phase C): eine erfolgreiche Verifizierung kann den Provider neu für
+    // meisterpflichtige Gewerke qualifizieren (siehe filterProviderForJob/missing_master_qualification)
+    // – best-effort/isoliert, siehe profile/route.ts für dieselbe Begründung.
+    if (status === 'verified') {
+      try {
+        await matchProviderAgainstOpenJobs(userId)
+      } catch (err) {
+        console.error('Provider-Matching nach Verifizierung fehlgeschlagen:', userId, err)
+        captureError(err, { userId, operation: 'provider_matching_after_verification' })
+      }
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err: unknown) {
     return handleApiError(err, 'Aktion fehlgeschlagen.')

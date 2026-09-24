@@ -6,6 +6,8 @@ import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { rateLimit } from '@/lib/security/rate-limit'
 import { readJsonBody } from '@/lib/security/request-limits'
+import { matchProviderAgainstOpenJobs } from '@/lib/matching/run-provider-matching'
+import { captureError } from '@/lib/observability/sentry'
 
 const qualificationFileSchema = z.object({
   fileId: z.string().uuid(),
@@ -74,6 +76,17 @@ export async function POST(req: NextRequest) {
       JSON.stringify([...qualificationFiles].sort((a, b) => a.fileId.localeCompare(b.fileId))) !==
       JSON.stringify([...user.qualificationFiles].sort((a, b) => a.fileId.localeCompare(b.fileId)))
 
+    // Matching-Lifecycle (Phase C): nur die tatsächlich hard-filter-relevanten Felder lösen ein
+    // Re-Matching aus (Gewerke, Radius, Projektgrößen-Bereich) – companyName/phone/plz/ort/Dateien
+    // sind für filterProviderForJob() nicht relevant. Vergleich VOR dem UPDATE gegen den bereits
+    // über getCurrentUser() geladenen bisherigen Stand.
+    const matchingRelevantChanged =
+      user.role === 'subunternehmer' &&
+      (JSON.stringify([...gewerke].sort()) !== JSON.stringify([...user.gewerke].sort()) ||
+        serviceRadiusKm !== user.serviceRadiusKm ||
+        minProjectSize !== user.minProjectSize ||
+        maxProjectSize !== user.maxProjectSize)
+
     if (user.role === 'subunternehmer' && qualificationFiles.length > 0 && filesChanged) {
       const db = getDb()
       // Nur eigene, tatsächlich als Qualifikationsnachweis hochgeladene Dateien akzeptieren –
@@ -110,6 +123,18 @@ export async function POST(req: NextRequest) {
          service_radius_km = $6, min_project_size = $7, max_project_size = $8 WHERE id = $9`,
         [body.companyName, body.phone || null, body.plz, body.ort, gewerke, serviceRadiusKm, minProjectSize, maxProjectSize, user.id]
       )
+    }
+
+    // Matching-Lifecycle (Phase C): best-effort/isoliert, exakt dasselbe Muster wie
+    // runMatchingForJob() aus POST /api/jobs – ein Fehler hier darf das bereits erfolgreich
+    // gespeicherte Profil-Update niemals rückgängig machen oder den Request fehlschlagen lassen.
+    if (matchingRelevantChanged) {
+      try {
+        await matchProviderAgainstOpenJobs(user.id)
+      } catch (err) {
+        console.error('Provider-Matching nach Profil-Update fehlgeschlagen:', user.id, err)
+        captureError(err, { userId: user.id, operation: 'provider_matching_after_profile_update' })
+      }
     }
 
     return NextResponse.json({ ok: true })

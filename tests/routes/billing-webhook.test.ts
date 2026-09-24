@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { queryMock, constructEventMock, retrieveSubscriptionMock } = vi.hoisted(() => ({
+const { queryMock, constructEventMock, retrieveSubscriptionMock, matchProviderAgainstOpenJobsMock } = vi.hoisted(() => ({
   queryMock: vi.fn(),
   constructEventMock: vi.fn(),
   retrieveSubscriptionMock: vi.fn(),
+  matchProviderAgainstOpenJobsMock: vi.fn(),
 }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 vi.mock('@/lib/stripe', () => ({
@@ -13,6 +14,10 @@ vi.mock('@/lib/stripe', () => ({
     subscriptions: { retrieve: retrieveSubscriptionMock },
   }),
 }))
+// Matching-Lifecycle (Phase B): eigenständig gemockt, damit dessen interne DB-Zugriffe die exakten
+// queryMock-Call-Zählungen/-Indizes der bestehenden Webhook-Tests nicht verschieben – siehe eigene
+// Tests weiter unten für das Trigger-Verhalten selbst.
+vi.mock('@/lib/matching/run-provider-matching', () => ({ matchProviderAgainstOpenJobs: matchProviderAgainstOpenJobsMock }))
 
 import { POST } from '@/app/api/billing/webhook/route'
 
@@ -37,6 +42,8 @@ beforeEach(() => {
   queryMock.mockReset()
   constructEventMock.mockReset()
   retrieveSubscriptionMock.mockReset()
+  matchProviderAgainstOpenJobsMock.mockReset()
+  matchProviderAgainstOpenJobsMock.mockResolvedValue({ providerId: 'u1', resultCount: 0, eligibleCount: 0, excludedCount: 0 })
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test')
   vi.stubEnv('STRIPE_PRICE_MONTHLY', 'price_monthly')
   vi.stubEnv('STRIPE_PRICE_YEARLY', 'price_yearly')
@@ -553,5 +560,99 @@ describe('POST /api/billing/webhook — customer.subscription.updated Tier-Mappi
     await POST(webhookReq('{}', 'sig_valid'))
     // tier-Parameter ist null -> SQL COALESCE($2, subscription_tier) behält bestehenden Wert.
     expect(queryMock.mock.calls[1][1]).toContain(null)
+  })
+})
+
+describe('POST /api/billing/webhook — Matching-Lifecycle Phase B (Re-Matching bei Abo-Aktivierung)', () => {
+  it('Abo-Aktivierung via checkout.session.completed löst matchProviderAgainstOpenJobs aus', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_checkout',
+      type: 'checkout.session.completed',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1', tier: 'monthly' }, subscription: 'sub_1', customer: 'cus_1', payment_status: 'paid' } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // applyCheckoutActivation: applied=true
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // markStripeEventProcessed
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith('u1')
+  })
+
+  it('ein veraltetes/bereits verarbeitetes Checkout-Event (Ordering-Guard schlägt fehl) löst KEIN Re-Matching aus', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_checkout_stale',
+      type: 'checkout.session.completed',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1', tier: 'monthly' }, subscription: 'sub_1', customer: 'cus_1', payment_status: 'paid' } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 0 }) // applyCheckoutActivation: applied=false
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
+  it('customer.subscription.updated auf status=active löst Re-Matching aus', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_updated_active',
+      type: 'customer.subscription.updated',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1' }, status: 'active', cancel_at: null, items: { data: [] } } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith('u1')
+  })
+
+  it('gekündigtes Abo (customer.subscription.deleted) führt zu KEINEM Re-Matching', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_deleted',
+      type: 'customer.subscription.deleted',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1' } } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
+  it('customer.subscription.updated auf status=past_due löst KEIN Re-Matching aus (kein neuer Matching-relevanter Zustand)', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_updated_past_due',
+      type: 'customer.subscription.updated',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1' }, status: 'past_due', cancel_at: null, items: { data: [] } } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
+  it('ein Fehler im Re-Matching lässt die Webhook-Verarbeitung trotzdem erfolgreich zurückkehren (isoliert)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    constructEventMock.mockReturnValue({
+      id: 'evt_match_error',
+      type: 'checkout.session.completed',
+      created: 1000,
+      data: { object: { metadata: { userId: 'u1', tier: 'monthly' }, subscription: 'sub_1', customer: 'cus_1', payment_status: 'paid' } },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    matchProviderAgainstOpenJobsMock.mockRejectedValueOnce(new Error('Matching-DB down'))
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    consoleErrorSpy.mockRestore()
   })
 })

@@ -78,3 +78,48 @@ export async function createMatchNotifications(jobId: string): Promise<CreateMat
 
   return { createdCount: createdIds.length, createdIds }
 }
+
+/**
+ * Matching-Lifecycle – provider-zentriertes Gegenstück zu createMatchNotifications(): identisches
+ * Eligibility-Kriterium und dieselbe ON CONFLICT DO NOTHING-Idempotenzgarantie (UNIQUE(job_id,
+ * provider_id) aus Migration 0008), nur mit provider_id = $1 statt job_id = $1 in der WHERE-
+ * Bedingung. Keine zweite match_notifications-Struktur, keine zweite Idempotenz-Logik – dieselbe
+ * Tabelle, dieselbe Garantie, nur die Aufrufrichtung (ein Provider gegen viele Jobs statt ein Job
+ * gegen viele Provider) ist umgekehrt.
+ */
+export async function createMatchNotificationsForProvider(providerId: string): Promise<CreateMatchNotificationsResult> {
+  const db = getDb()
+  const result = await db.query<{ id: string; job_id: string }>(
+    `INSERT INTO match_notifications (job_id, provider_id, job_match_id, match_score)
+     SELECT job_id, provider_id, id, match_score
+     FROM job_matches
+     WHERE provider_id = $1
+       AND excluded = false
+       AND match_score IS NOT NULL
+       AND match_score >= $2
+     ON CONFLICT (job_id, provider_id) DO NOTHING
+     RETURNING id, job_id`,
+    [providerId, MATCH_NOTIFICATION_THRESHOLD]
+  )
+  const createdIds = result.rows.map((row) => row.id)
+
+  if (result.rows.length > 0) {
+    try {
+      await trackEventsBatch(
+        result.rows.map((row) => ({
+          event: ANALYTICS_EVENTS.MATCH_NOTIFICATION_CREATED,
+          jobId: row.job_id,
+          providerId,
+          notificationId: row.id,
+          metadata: { threshold: MATCH_NOTIFICATION_THRESHOLD },
+          idempotencyKey: `match_notification_created:${row.id}`,
+        }))
+      )
+    } catch (analyticsError) {
+      console.error('MATCH_NOTIFICATION_CREATED-Analytics (Provider-Matching) fehlgeschlagen:', providerId, analyticsError)
+      captureError(analyticsError, { userId: providerId, operation: 'match_notification_created_analytics' })
+    }
+  }
+
+  return { createdCount: createdIds.length, createdIds }
+}

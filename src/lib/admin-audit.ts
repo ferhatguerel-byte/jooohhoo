@@ -24,6 +24,7 @@ export type AdminAction =
   | 'GUIDE_ARTICLE_DELETED'
   | 'SUPPORT_TICKET_STATUS_CHANGED'
   | 'SEO_STATUS_CHANGED'
+  | 'PROVIDER_REMATCHED'
 
 /**
  * Protokolliert eine sicherheitsrelevante Admin-Aktion in admin_audit_log.

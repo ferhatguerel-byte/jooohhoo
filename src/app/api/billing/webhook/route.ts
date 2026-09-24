@@ -13,6 +13,8 @@ import {
 import type Stripe from 'stripe'
 import { logEvent } from '@/lib/observability/logger'
 import { getRequestId, REQUEST_ID_HEADER } from '@/lib/observability/request-id'
+import { matchProviderAgainstOpenJobs } from '@/lib/matching/run-provider-matching'
+import { captureError } from '@/lib/observability/sentry'
 
 /**
  * Phase 4.2 – Stripe-Webhook-Härtung.
@@ -129,7 +131,7 @@ async function handleCheckoutCompleted(
   if (!customerId) return
 
   const minimumTermMonths = TIERS[tier].minimumTermMonths
-  await applyCheckoutActivation(db, {
+  const applied = await applyCheckoutActivation(db, {
     userId,
     tier,
     stripeSubscriptionId: subscriptionId,
@@ -137,6 +139,22 @@ async function handleCheckoutCompleted(
     minimumTermMonths,
     eventCreatedAt,
   })
+
+  // Matching-Lifecycle (Phase B): eine erstmalige/erneute Abo-Aktivierung macht den Provider
+  // ggf. neu für bereits bestehende offene Aufträge relevant (siehe Architektur-Lücke: Matching
+  // lief bisher NUR bei Job-Erstellung). Best-effort/isoliert – exakt dasselbe Muster wie
+  // runMatchingForJob() aus POST /api/jobs: ein Fehler hier darf die bereits erfolgreich
+  // angewendete Subscription-Aktivierung niemals rückgängig machen oder den Webhook fehlschlagen
+  // lassen. `applied === false` bedeutet ein veraltetes/bereits verarbeitetes Event (Ordering-
+  // Guard) – dann ist kein neuer Zustand entstanden, der ein Re-Matching rechtfertigen würde.
+  if (applied) {
+    try {
+      await matchProviderAgainstOpenJobs(userId)
+    } catch (err) {
+      console.error('Provider-Matching nach Checkout-Aktivierung fehlgeschlagen:', userId, err)
+      captureError(err, { userId, operation: 'provider_matching_after_checkout_activation' })
+    }
+  }
 }
 
 async function handleSubscriptionUpdated(
@@ -147,13 +165,27 @@ async function handleSubscriptionUpdated(
   const userId = subscription.metadata?.userId
   if (!userId) return
 
-  await applySubscriptionUpdated(db, {
+  const status = mapStripeSubscriptionStatus(subscription.status)
+  const applied = await applySubscriptionUpdated(db, {
     userId,
-    status: mapStripeSubscriptionStatus(subscription.status),
+    status,
     tier: resolveTierFromSubscription(subscription),
     cancelAt: subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null,
     eventCreatedAt,
   })
+
+  // Matching-Lifecycle (Phase B): nur bei tatsächlich angewendetem Übergang NACH 'active'
+  // auslösen (z.B. nach past_due wieder aktiv geworden) – nicht bei past_due/inactive/canceled,
+  // dort entstehen keine neuen Matching-Möglichkeiten. Best-effort/isoliert, siehe
+  // handleCheckoutCompleted oben für dieselbe Begründung.
+  if (applied && status === 'active') {
+    try {
+      await matchProviderAgainstOpenJobs(userId)
+    } catch (err) {
+      console.error('Provider-Matching nach Subscription-Update fehlgeschlagen:', userId, err)
+      captureError(err, { userId, operation: 'provider_matching_after_subscription_updated' })
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(

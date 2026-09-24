@@ -23,6 +23,19 @@ interface NotificationRow {
  * alleinige Autorisierungs-/Datengrundlage, nicht "alle offenen Jobs zum passenden Gewerk" –
  * ein Provider sieht hier nur Jobs, für die tatsächlich eine Notification für IHN existiert).
  *
+ * Matching-Lifecycle – Leseseiten-Invalidierung (defense-in-depth, ergänzt die schreibseitige
+ * Invalidierung über matchProviderAgainstOpenJobs()): match_notifications selbst bleibt für immer
+ * unverändert (historisches Ereignis, siehe Migration 0008) – ob ein Match aktuell noch gültig
+ * ist, ergibt sich stattdessen aus dem jeweils aktuellen job_matches-Snapshot (excluded=false)
+ * sowie jobs.status='open'. Ein INNER statt LEFT JOIN auf job_matches ist hier bewusst: fehlt der
+ * Snapshot (z.B. ein sehr alter, nie neu berechneter Datensatz), wird der Match sicherheitshalber
+ * ausgeblendet statt ungeprüft angezeigt.
+ *
+ * subscriptionStatus wird zusätzlich direkt aus der bereits geladenen Session geprüft (kein
+ * Auto-Trigger für Kündigung/Deaktivierung in Phase C, siehe Architekturentscheidung) – ein
+ * Provider ohne aktives Abo sieht hier grundsätzlich keine Matches, unabhängig vom job_matches-
+ * Snapshot. account_status='suspended' ist bereits vollständig über dashboard/layout.tsx gesperrt.
+ *
  * Eine einzige Query, provider_id kommt ausschließlich aus der authentifizierten Session
  * (niemals aus einem Request-Parameter) – nutzt idx_match_notifications_provider
  * (provider_id, created_at DESC) aus Migration 0008. Explizite Spaltenliste statt SELECT *:
@@ -36,18 +49,24 @@ export default async function PassendeAuftraegePage() {
   if (!user) redirect('/login')
   if (user.role !== 'subunternehmer') redirect('/dashboard')
 
-  const db = getDb()
-  const result = await db.query<NotificationRow>(
-    `SELECT mn.id, mn.job_id, mn.created_at, mn.read_at,
-            j.title, j.gewerk, j.plz, j.ort, j.description, j.budget_min, j.budget_max, j.deadline
-     FROM match_notifications mn
-     JOIN jobs j ON j.id = mn.job_id
-     WHERE mn.provider_id = $1
-     ORDER BY mn.created_at DESC
-     LIMIT 50`,
-    [user.id]
-  )
-  const notifications = result.rows
+  let notifications: NotificationRow[] = []
+  if (user.subscriptionStatus === 'active') {
+    const db = getDb()
+    const result = await db.query<NotificationRow>(
+      `SELECT mn.id, mn.job_id, mn.created_at, mn.read_at,
+              j.title, j.gewerk, j.plz, j.ort, j.description, j.budget_min, j.budget_max, j.deadline
+       FROM match_notifications mn
+       JOIN jobs j ON j.id = mn.job_id
+       JOIN job_matches jm ON jm.job_id = mn.job_id AND jm.provider_id = mn.provider_id
+       WHERE mn.provider_id = $1
+         AND j.status = 'open'
+         AND jm.excluded = false
+       ORDER BY mn.created_at DESC
+       LIMIT 50`,
+      [user.id]
+    )
+    notifications = result.rows
+  }
 
   return (
     <div>
