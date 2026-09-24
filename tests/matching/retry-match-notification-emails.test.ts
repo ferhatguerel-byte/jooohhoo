@@ -24,6 +24,14 @@ describe('getEmailRetryCandidateIds — Phase 3.6F', () => {
     expect(sql).toContain("status = 'sending' AND attempts < $1")
     expect(sql).toContain('ORDER BY created_at ASC')
     expect(sql).toContain('LIMIT $5')
+    // Regression: ohne ::int-Cast löst PostgreSQL den CASE-Ausdruck (alle Zweige sind reine,
+    // unbestimmt typisierte Query-Parameter) als `text` auf, wonach die anschließende
+    // Multiplikation mit `interval '1 second'` mit "operator does not exist: text * interval"
+    // scheitert (Fehlercode 42883 – reproduziert und verifiziert gegen eine echte, vollständig
+    // migrierte PostgreSQL-Instanz, siehe PR-Beschreibung/Commit; ein reiner getDb()-Mock kann
+    // diesen SQL-Typfehler nicht abbilden). Dieser Assert stellt sicher, dass die Casts nicht
+    // versehentlich wieder entfernt werden.
+    expect(sql).toContain('CASE attempts WHEN 1 THEN $2::int WHEN 2 THEN $3::int ELSE $3::int END')
     expect(params).toEqual([MAX_MATCH_EMAIL_ATTEMPTS, MATCH_EMAIL_BACKOFF_SECONDS[0], MATCH_EMAIL_BACKOFF_SECONDS[1], MATCH_EMAIL_LEASE_SECONDS, 20])
   })
 

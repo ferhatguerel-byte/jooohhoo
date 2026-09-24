@@ -48,7 +48,7 @@ export async function getEmailRetryCandidateIds(limit: number): Promise<string[]
      WHERE status = 'pending'
         OR (
           status = 'failed' AND attempts < $1
-          AND processing_started_at <= now() - (CASE attempts WHEN 1 THEN $2 WHEN 2 THEN $3 ELSE $3 END * interval '1 second')
+          AND processing_started_at <= now() - (CASE attempts WHEN 1 THEN $2::int WHEN 2 THEN $3::int ELSE $3::int END * interval '1 second')
         )
         OR (
           status = 'sending' AND attempts < $1
