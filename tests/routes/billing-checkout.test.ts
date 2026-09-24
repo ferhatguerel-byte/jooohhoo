@@ -60,6 +60,19 @@ function resourceMissingError() {
   })
 }
 
+/**
+ * Ein StripeInvalidRequestError OHNE (oder mit einem anderen) `code` als 'resource_missing' –
+ * z. B. bei einer nicht wie eine gültige Stripe-ID aussehenden gespeicherten Referenz. Der
+ * Fallback muss auch in diesem Fall greifen, nicht nur beim exakten Code 'resource_missing'.
+ */
+function invalidCustomerReferenceErrorWithoutResourceMissingCode() {
+  return new Stripe.errors.StripeInvalidRequestError({
+    message: 'Invalid customer ID.',
+    type: 'invalid_request_error',
+    // bewusst kein `code` gesetzt
+  })
+}
+
 describe('stripeCustomerCreateIdempotencyKey', () => {
   it('ist deterministisch für dieselbe userId', () => {
     expect(stripeCustomerCreateIdempotencyKey('u1')).toBe(stripeCustomerCreateIdempotencyKey('u1'))
@@ -115,6 +128,24 @@ describe('POST /api/billing/checkout — Stripe-Customer-Auflösung', () => {
     expect(res.status).toBe(200)
     expect(customersListMock).toHaveBeenCalledWith({ email: 'unternehmer@example.com', limit: 1 })
     expect(customersCreateMock).not.toHaveBeenCalled()
+    expect(queryMock).toHaveBeenCalledWith('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [
+      'cus_found_by_email',
+      'u1',
+    ])
+    expect(sessionsCreateMock).toHaveBeenCalledWith(expect.objectContaining({ customer: 'cus_found_by_email' }))
+  })
+
+  it('löst eine ungültige gespeicherte Customer-ID auch dann auf, wenn der StripeInvalidRequestError einen anderen/fehlenden code als resource_missing hat', async () => {
+    getCurrentUserMock.mockResolvedValue(baseUser({ stripeCustomerId: 'cus_malformed_reference' }))
+    customersRetrieveMock.mockRejectedValue(invalidCustomerReferenceErrorWithoutResourceMissingCode())
+    customersListMock.mockResolvedValue({ data: [{ id: 'cus_found_by_email' }] })
+    queryMock.mockResolvedValue({ rows: [] })
+    sessionsCreateMock.mockResolvedValue({ url: 'https://checkout.stripe.com/session/abc' })
+
+    const res = await POST(req())
+
+    expect(res.status).toBe(200)
+    expect(customersListMock).toHaveBeenCalledWith({ email: 'unternehmer@example.com', limit: 1 })
     expect(queryMock).toHaveBeenCalledWith('UPDATE users SET stripe_customer_id = $1 WHERE id = $2', [
       'cus_found_by_email',
       'u1',

@@ -39,7 +39,15 @@ async function resolveValidCustomerId(stripe: Stripe, user: CurrentUser): Promis
       const existing = await stripe.customers.retrieve(user.stripeCustomerId)
       if (!existing.deleted) return user.stripeCustomerId
     } catch (err) {
-      if (!(err instanceof Stripe.errors.StripeInvalidRequestError && err.code === 'resource_missing')) {
+      // An dieser Stelle wird ausschließlich eine einzelne Customer-ID nachgeschlagen – JEDER
+      // StripeInvalidRequestError aus genau diesem Aufruf bedeutet praktisch immer "diese
+      // ID-Referenz ist ungültig" (nicht existent, falsches Format, falscher Stripe-Konto/-Modus),
+      // unabhängig vom genauen `code` (der bei "No such customer" i.d.R. "resource_missing" ist,
+      // aber nicht die einzige denkbare Auslöser-Klassifizierung für eine kaputte ID sein muss).
+      // Andere Fehlerklassen (Auth-/Permission-/Rate-Limit-/Netzwerkfehler) sind im Stripe-SDK
+      // eigene, von StripeInvalidRequestError NICHT abgeleitete Klassen und werden weiterhin
+      // unverändert durchgereicht.
+      if (!(err instanceof Stripe.errors.StripeInvalidRequestError)) {
         throw err
       }
       // Gespeicherte ID existiert in diesem Stripe-Konto/-Modus nicht (mehr) – unten neu auflösen.
