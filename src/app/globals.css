@@ -30,3 +30,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Sanftes Scrollen zu Anchor-Zielen (z.B. /#so-funktionierts aus HomeHeader.tsx). Die eigentliche
+   Positionierung unter dem fixen Header übernimmt scroll-mt-* direkt an den Zielabschnitten
+   (siehe src/app/page.tsx), damit der Abschnittstitel nicht unter dem Header verschwindet. */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

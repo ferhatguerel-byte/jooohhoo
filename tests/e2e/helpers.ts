@@ -25,6 +25,7 @@ export async function registerAuftraggeber(page: Page, opts: { email: string; pa
   await page.getByLabel('Passwort *', { exact: true }).fill(opts.password)
   await page.getByLabel('PLZ *', { exact: true }).fill('10115')
   await page.getByLabel('Ort *', { exact: true }).fill('Berlin')
+  await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Konto erstellen', exact: true }).click()
   await page.waitForURL('**/dashboard**')
 }
@@ -41,6 +42,7 @@ export async function registerSubunternehmer(
   await page.getByLabel('PLZ *', { exact: true }).fill('10115')
   await page.getByLabel('Ort *', { exact: true }).fill('Berlin')
   await page.getByRole('button', { name: opts.gewerk, exact: true }).click()
+  await page.getByRole('checkbox').check()
   await page.getByRole('button', { name: 'Konto erstellen', exact: true }).click()
   await page.waitForURL('**/dashboard**')
 }

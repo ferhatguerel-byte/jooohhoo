@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { HardHat } from 'lucide-react'
 import { getCurrentUser } from '@/lib/current-user'
 import { isAdmin as checkIsAdmin } from '@/lib/authorization'
+import BackButton from '@/components/layout/BackButton'
 import AccountMenu from './AccountMenu'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -47,12 +48,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-lg text-slate-900">
-            <span className="bg-brand text-white rounded-lg w-8 h-8 flex items-center justify-center">
-              <HardHat size={16} />
-            </span>
-            BAU<span className="text-accent">VERSUS</span>
-          </Link>
+          <div className="flex items-center gap-4 min-w-0">
+            <BackButton fallbackHref="/dashboard" hiddenOn={['/dashboard']} />
+            <Link href="/" className="flex items-center gap-2 font-black text-lg text-slate-900">
+              <span className="bg-brand text-white rounded-lg w-8 h-8 flex items-center justify-center">
+                <HardHat size={16} />
+              </span>
+              BAU<span className="text-accent">VERSUS</span>
+            </Link>
+          </div>
           <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-slate-600">
             {links.map((l) => (
               <Link key={l.href} href={l.href} className="hover:text-brand">{l.label}</Link>

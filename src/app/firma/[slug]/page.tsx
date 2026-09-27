@@ -94,7 +94,10 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
     <div className="min-h-screen bg-white">
       <JsonLd data={breadcrumbJsonLd} />
       <JsonLd data={jsonLd} />
-      <HomeHeader loggedIn={!!user} />
+      {/* showBackButton=false: die Seite hat bereits einen eigenen, kontextuellen
+          "Zurück zum Branchenbuch"-Link direkt unter dem Header (siehe unten) – kein zweiter,
+          redundanter Zurück-Button im Header nötig. */}
+      <HomeHeader loggedIn={!!user} showBackButton={false} />
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link href="/branchenbuch" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-brand mb-6">
           <ArrowLeft size={14} /> Zurück zum Branchenbuch

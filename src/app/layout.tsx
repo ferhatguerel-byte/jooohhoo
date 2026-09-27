@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getAppUrl } from "@/lib/url";
 import { toSafeJsonLdString } from "@/lib/seo/structured-data";
+import NavigationHistoryTracker from "@/components/layout/NavigationHistoryTracker";
+import HashScrollHandler from "@/components/layout/HashScrollHandler";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -82,7 +84,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: toSafeJsonLdString(organizationJsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <NavigationHistoryTracker />
+        <HashScrollHandler />
+        {children}
+      </body>
     </html>
   );
 }

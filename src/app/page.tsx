@@ -103,7 +103,7 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section id="so-funktionierts" className="max-w-6xl mx-auto px-6 py-20 text-center">
+      <section id="so-funktionierts" className="scroll-mt-24 max-w-6xl mx-auto px-6 py-20 text-center">
         <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Einfacher Ablauf</div>
         <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">Von der Idee bis zum passenden Betrieb.</h2>
         <p className="text-slate-500 max-w-xl mx-auto mb-14">
@@ -172,7 +172,7 @@ export default async function HomePage() {
       </section>
 
       {/* Vorteile */}
-      <section id="vorteile" className="max-w-6xl mx-auto px-6 py-20 text-center">
+      <section id="vorteile" className="scroll-mt-24 max-w-6xl mx-auto px-6 py-20 text-center">
         <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Auftraggeber</div>
         <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-14">Mehr Kontrolle. Weniger Risiko.</h2>
         <div className="grid md:grid-cols-3 gap-6 text-left">
@@ -187,7 +187,7 @@ export default async function HomePage() {
       </section>
 
       {/* Für Unternehmen / Nachunternehmer-Börse */}
-      <section id="unternehmen" className="max-w-6xl mx-auto px-6 pb-20">
+      <section id="unternehmen" className="scroll-mt-24 max-w-6xl mx-auto px-6 pb-20">
         <div className="grid md:grid-cols-3 gap-6">
           <div className="md:col-span-2 border border-slate-200 rounded-2xl p-8 bg-slate-50">
             <div className="text-accent font-extrabold text-xs uppercase tracking-widest mb-3">Für Bauunternehmen</div>
