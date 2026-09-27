@@ -31,7 +31,7 @@ export default async function MitgliedschaftPage() {
         </div>
         {tierDef && (
           <p className="text-sm text-slate-500">
-            €{tierDef.priceEuroPerMonth} / Monat · {tierDef.billingNote}
+            €{tierDef.priceEuroPerMonth} / Monat zzgl. MwSt. · {tierDef.billingNote}
           </p>
         )}
         {user.subscriptionCommittedUntil && !user.subscriptionCancelAt && (

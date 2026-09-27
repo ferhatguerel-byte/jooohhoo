@@ -8,6 +8,10 @@ import { handleApiError } from '@/lib/api-error'
 import { readJsonBody } from '@/lib/security/request-limits'
 
 // Phase 4.3 (Teil D): phone/plz/ort hatten keine Maximallänge.
+// Rechtssicherheits-Fix: ohne nachweisbare Zustimmung zu AGB/Datenschutz bei Vertragsschluss war
+// die Registrierung rechtlich angreifbar (kein Nachweis einer Einwilligung). acceptTerms muss
+// serverseitig auf true geprüft werden – eine reine Client-Pflicht (HTML `required`) wäre ohne
+// diese Prüfung umgehbar (direkter API-Aufruf ohne Checkbox).
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -17,6 +21,9 @@ const registerSchema = z.object({
   plz: z.string().min(4).max(10),
   ort: z.string().min(2).max(100),
   gewerke: z.array(z.enum(GEWERKE)).optional(),
+  acceptTerms: z.literal(true, {
+    message: 'Bitte bestätigen Sie, dass Sie die AGB und die Datenschutzerklärung akzeptieren.',
+  }),
 })
 
 export async function POST(req: NextRequest) {

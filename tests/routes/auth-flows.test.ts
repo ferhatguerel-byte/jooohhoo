@@ -100,6 +100,7 @@ describe('POST /api/auth/register', () => {
         companyName: 'Test GmbH',
         plz: '10115',
         ort: 'Berlin',
+        acceptTerms: true,
       })
     )
     expect(res.status).toBe(409)
@@ -114,6 +115,7 @@ describe('POST /api/auth/register', () => {
         companyName: 'A'.repeat(151),
         plz: '10115',
         ort: 'Berlin',
+        acceptTerms: true,
       })
     )
     expect(res.status).toBe(400)
@@ -135,9 +137,41 @@ describe('POST /api/auth/register', () => {
         companyName: 'A'.repeat(150),
         plz: '10115',
         ort: 'Berlin',
+        acceptTerms: true,
       })
     )
     expect(res.status).not.toBe(400)
+  })
+
+  it('Rechtssicherheit: lehnt die Registrierung ohne Zustimmung zu AGB/Datenschutz ab (acceptTerms fehlt)', async () => {
+    const res = await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'ohne-zustimmung@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'Test GmbH',
+        plz: '10115',
+        ort: 'Berlin',
+      })
+    )
+    expect(res.status).toBe(400)
+    expect(queryMock).not.toHaveBeenCalled()
+  })
+
+  it('Rechtssicherheit: lehnt die Registrierung ab, wenn acceptTerms explizit false ist', async () => {
+    const res = await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'false-zustimmung@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'Test GmbH',
+        plz: '10115',
+        ort: 'Berlin',
+        acceptTerms: false,
+      })
+    )
+    expect(res.status).toBe(400)
+    expect(queryMock).not.toHaveBeenCalled()
   })
 })
 

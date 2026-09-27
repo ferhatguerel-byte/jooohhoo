@@ -16,6 +16,7 @@ function RegisterForm() {
 
   const [role, setRole] = useState<Role>(initialRole)
   const [gewerke, setGewerke] = useState<string[]>([])
+  const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -38,6 +39,7 @@ function RegisterForm() {
       plz: form.get('plz'),
       ort: form.get('ort'),
       gewerke: role === 'subunternehmer' ? gewerke : undefined,
+      acceptTerms,
     }
 
     try {
@@ -162,11 +164,28 @@ function RegisterForm() {
               </div>
             )}
 
+            <label className="flex items-start gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                required
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1 shrink-0"
+              />
+              <span>
+                Ich akzeptiere die{' '}
+                <Link href="/agb" target="_blank" className="text-brand font-semibold hover:underline">AGB</Link>{' '}
+                und habe die{' '}
+                <Link href="/datenschutz" target="_blank" className="text-brand font-semibold hover:underline">Datenschutzerklärung</Link>{' '}
+                zur Kenntnis genommen. *
+              </span>
+            </label>
+
             {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
-              disabled={loading || (role === 'subunternehmer' && gewerke.length === 0)}
+              disabled={loading || !acceptTerms || (role === 'subunternehmer' && gewerke.length === 0)}
               className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-bold py-3.5 rounded-lg transition flex items-center justify-center gap-2"
             >
               {loading ? 'Wird erstellt…' : 'Konto erstellen'} <ArrowRight size={18} />

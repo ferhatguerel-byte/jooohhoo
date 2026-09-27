@@ -280,7 +280,7 @@ export default async function HomePage() {
                   )}
                   <div className="text-lg font-bold mb-1">{tier.name}</div>
                   <div className="text-4xl font-black mb-1">€{tier.priceEuroPerMonth}</div>
-                  <div className="text-slate-400 text-sm mb-6">/Monat · {tier.billingNote}</div>
+                  <div className="text-slate-400 text-sm mb-6">/Monat zzgl. MwSt. · {tier.billingNote}</div>
                   <ul className="space-y-3 mb-8">
                     {tier.features.map((f) => (
                       <li key={f} className="flex items-center gap-2 text-sm text-slate-600">

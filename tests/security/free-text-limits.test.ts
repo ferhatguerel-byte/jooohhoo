@@ -32,6 +32,7 @@ describe('POST /api/auth/register — Phase 4.3 (Teil D: Free-Text-Limits)', () 
     companyName: 'Test GmbH',
     plz: '10115',
     ort: 'Berlin',
+    acceptTerms: true,
   }
 
   it('lehnt eine Telefonnummer über 30 Zeichen ab', async () => {

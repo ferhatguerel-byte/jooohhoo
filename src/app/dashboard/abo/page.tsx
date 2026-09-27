@@ -87,7 +87,7 @@ export default async function AboPage({ searchParams }: { searchParams: Promise<
             <div key={tier.id} className={`rounded-2xl p-6 border-2 ${isCurrent ? 'border-brand' : 'border-slate-200'} bg-white`}>
               <div className="text-lg font-bold text-slate-900 mb-1">{tier.name}</div>
               <div className="text-3xl font-black text-slate-900 mb-1">€{tier.priceEuroPerMonth}</div>
-              <div className="text-slate-400 text-sm mb-4">/Monat · {tier.billingNote}</div>
+              <div className="text-slate-400 text-sm mb-4">/Monat zzgl. MwSt. · {tier.billingNote}</div>
               <ul className="space-y-2 mb-6 text-sm text-slate-600">
                 {tier.features.map((f) => <li key={f}>✓ {f}</li>)}
               </ul>
@@ -100,7 +100,7 @@ export default async function AboPage({ searchParams }: { searchParams: Promise<
                   </div>
                 </div>
               ) : (
-                <CheckoutButton tier={tier.id} label={hasActiveSub ? 'Wechseln' : 'Abo abschließen'} />
+                <CheckoutButton tier={tier.id} label={hasActiveSub ? 'Wechseln' : 'Zahlungspflichtig bestellen'} />
               )}
             </div>
           )
