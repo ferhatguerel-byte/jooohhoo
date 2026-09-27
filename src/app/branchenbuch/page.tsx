@@ -6,6 +6,7 @@ import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
 import { getActiveCities } from '@/lib/seo/cities'
 import { ensureCompanySlugs } from '@/lib/company-slug'
 import { getCurrentUser } from '@/lib/current-user'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 import HomeHeader from '../HomeHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
@@ -29,7 +30,7 @@ export default async function BranchenbuchPage() {
             (SELECT AVG(rating)::numeric(2,1) FROM reviews WHERE reviewee_id = users.id) AS avg_rating,
             (SELECT COUNT(*)::int FROM reviews WHERE reviewee_id = users.id) AS review_count
      FROM users
-     WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition()}
        AND company_name IS NOT NULL
      ORDER BY company_name ASC`
   )

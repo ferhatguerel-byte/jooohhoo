@@ -24,6 +24,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user || user.role !== 'subunternehmer') {
     return NextResponse.json({ error: 'Nur Unternehmer können Angebote abgeben.' }, { status: 403 })
   }
+  // Schützt gegen eine bereits bestehende, noch gültige Session einer gesperrten oder gelöschten
+  // Firma – das Dashboard blockt bereits die UI (dashboard/layout.tsx), diese Prüfung sichert den
+  // API-Endpunkt zusätzlich direkt ab (Client-seitige Sperren allein reichen nicht).
+  if (user.accountStatus !== 'active') {
+    return NextResponse.json({ error: 'Ihr Konto ist nicht aktiv.' }, { status: 403 })
+  }
   const tierDef = user.subscriptionTier ? TIERS[user.subscriptionTier] : undefined
   if (user.subscriptionStatus !== 'active' || !tierDef) {
     return NextResponse.json(

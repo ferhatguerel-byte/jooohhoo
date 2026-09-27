@@ -50,7 +50,7 @@ export function GewerkeBlockList({ userId, gewerke, blockedGewerke }: { userId: 
   )
 }
 
-export function AccountStatusToggle({ userId, status }: { userId: string; status: 'active' | 'suspended' }) {
+export function AccountStatusToggle({ userId, status }: { userId: string; status: 'active' | 'suspended' | 'deleted' }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -66,6 +66,12 @@ export function AccountStatusToggle({ userId, status }: { userId: string; status
     } finally {
       setLoading(false)
     }
+  }
+
+  // Ein gelöschtes Konto ist endgültig – Sperren/Entsperren ergibt hier keinen Sinn mehr
+  // (siehe DeleteProviderForm weiter unten für den Löschbereich dieser Seite).
+  if (status === 'deleted') {
+    return <p className="text-sm text-slate-400">Dieses Unternehmen wurde gelöscht.</p>
   }
 
   if (status === 'suspended') {
@@ -173,6 +179,116 @@ export function WarningForm({ userId }: { userId: string }) {
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </form>
+  )
+}
+
+/**
+ * "Unternehmen löschen" – die destruktivste Admin-Aktion, daher die strengste Bestätigung im
+ * gesamten Admin-Bereich. Es existiert im Codebase noch keine echte Modal-/Dialog-Komponente
+ * (keine role="dialog"-Stelle, kein Overlay) – stattdessen folgt diese Komponente demselben
+ * bereits etablierten Muster wie CancelSubscriptionButton oben: eine inline aufklappende
+ * Bestätigungsfläche statt eines browser-nativen confirm().
+ *
+ * Der "Endgültig löschen"-Button ist erst aktiv, wenn der eingegebene Text exakt dem aktuellen
+ * Firmennamen entspricht UND kein aktives/überfälliges Abo mehr besteht – beides wird zusätzlich
+ * serverseitig in der Route selbst geprüft (siehe api/admin/users/[id]/delete/route.ts), diese
+ * Client-Prüfung ist reine UX, keine Sicherheitsgrenze.
+ */
+export function DeleteProviderForm({
+  userId,
+  companyName,
+  subscriptionStatus,
+}: {
+  userId: string
+  companyName: string
+  subscriptionStatus: 'inactive' | 'active' | 'canceled' | 'past_due'
+}) {
+  const router = useRouter()
+  const [expanded, setExpanded] = useState(false)
+  const [confirmationName, setConfirmationName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const hasBlockingSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'past_due'
+  const nameMatches = confirmationName === companyName
+
+  async function handleDelete() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmationName }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Löschung fehlgeschlagen.')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!expanded) {
+    return (
+      <button onClick={() => setExpanded(true)} className="text-sm font-semibold text-red-600 hover:underline">
+        Unternehmen löschen
+      </button>
+    )
+  }
+
+  return (
+    <div className="border border-red-200 bg-red-50/50 rounded-xl p-4 space-y-3">
+      <p className="text-sm font-bold text-red-700">Warnung: Diese Aktion kann nicht rückgängig gemacht werden.</p>
+      <ul className="text-sm text-slate-600 list-disc list-inside space-y-0.5">
+        <li>Das Unternehmen wird dauerhaft aus dem Branchenbuch entfernt.</li>
+        <li>Persönliche Kontaktdaten (E-Mail, Telefon, Login) werden anonymisiert.</li>
+        <li>Historische Aufträge, Angebote und Bewertungen bleiben für die jeweils andere Seite erhalten.</li>
+      </ul>
+
+      {hasBlockingSubscription ? (
+        <p className="text-sm font-semibold text-orange-700 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+          Bitte zuerst das Abonnement kündigen (siehe „Abo sofort kündigen (Admin)&rdquo; oben).
+        </p>
+      ) : (
+        <div>
+          <label htmlFor={`confirm-delete-${userId}`} className="block text-sm text-slate-700 mb-1">
+            Zur Bestätigung bitte den Firmennamen eingeben: <strong>{companyName}</strong>
+          </label>
+          <input
+            id={`confirm-delete-${userId}`}
+            type="text"
+            value={confirmationName}
+            onChange={(e) => setConfirmationName(e.target.value)}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            autoComplete="off"
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleDelete}
+          disabled={loading || hasBlockingSubscription || !nameMatches}
+          className="bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold px-4 py-2 rounded-lg"
+        >
+          {loading ? 'Wird gelöscht…' : 'Endgültig löschen'}
+        </button>
+        <button
+          onClick={() => {
+            setExpanded(false)
+            setConfirmationName('')
+            setError('')
+          }}
+          className="text-sm font-semibold text-slate-500"
+        >
+          Abbrechen
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
   )
 }
 

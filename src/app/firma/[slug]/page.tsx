@@ -7,6 +7,7 @@ import { getResponseTimeStats } from '@/lib/response-time'
 import { getCurrentUser } from '@/lib/current-user'
 import { buildBreadcrumbJsonLd, buildAggregateRatingJsonLd } from '@/lib/seo/structured-data'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 import TrackedCtaLink from '@/components/seo/TrackedCtaLink'
 import JsonLd from '@/components/seo/JsonLd'
 import SiteFooter from '@/components/layout/SiteFooter'
@@ -19,7 +20,7 @@ async function getCompany(slug: string) {
   const result = await db.query(
     `SELECT id, company_name, company_slug, gewerke, plz, ort, verification_status, created_at
      FROM users
-     WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition()}
        AND company_slug = $1
      LIMIT 1`,
     [slug]

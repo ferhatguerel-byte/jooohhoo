@@ -28,17 +28,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     links.push({ href: '/dashboard/admin', label: 'Admin-Dashboard' })
   }
 
-  if (user.accountStatus === 'suspended' && !isAdmin) {
+  // Sowohl 'suspended' (reversibel) als auch 'deleted' (endgültig, siehe
+  // api/admin/users/[id]/delete/route.ts) sperren den kompletten Dashboard-Bereich – nicht nur
+  // einen neuen Login (der bei 'deleted' ohnehin schon am ungültigen password_hash scheitert),
+  // sondern auch eine bereits bestehende, noch gültige Session.
+  if (user.accountStatus !== 'active' && !isAdmin) {
+    const deleted = user.accountStatus === 'deleted'
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
         <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-md text-center">
-          <h1 className="text-xl font-black text-slate-900 mb-2">Konto gesperrt</h1>
+          <h1 className="text-xl font-black text-slate-900 mb-2">{deleted ? 'Konto gelöscht' : 'Konto gesperrt'}</h1>
           <p className="text-slate-500 mb-6">
-            Ihr Konto wurde vorübergehend gesperrt. Bitte kontaktieren Sie unseren Support, um mehr zu erfahren.
+            {deleted
+              ? 'Dieses Konto wurde gelöscht und kann nicht mehr verwendet werden.'
+              : 'Ihr Konto wurde vorübergehend gesperrt. Bitte kontaktieren Sie unseren Support, um mehr zu erfahren.'}
           </p>
-          <a href={`mailto:${process.env.ADMIN_EMAIL || ''}`} className="text-brand font-semibold hover:underline">
-            Support kontaktieren
-          </a>
+          {!deleted && (
+            <a href={`mailto:${process.env.ADMIN_EMAIL || ''}`} className="text-brand font-semibold hover:underline">
+              Support kontaktieren
+            </a>
+          )}
         </div>
       </div>
     )

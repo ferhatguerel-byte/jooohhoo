@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 
-import { getOrCreateCompanySlug, ensureCompanySlugs } from '@/lib/company-slug'
+import { getOrCreateCompanySlug, ensureCompanySlugs, getCompanyBySlug } from '@/lib/company-slug'
 
 describe('getOrCreateCompanySlug', () => {
   beforeEach(() => {
@@ -51,5 +51,27 @@ describe('ensureCompanySlugs', () => {
     const result = await ensureCompanySlugs(rows)
     expect(result[0].company_slug).toBe('a-gmbh-aaaaaaaa')
     expect(result[1].company_slug).toBe('b-gmbh-b')
+  })
+})
+
+describe('getCompanyBySlug — Admin-Unternehmensverwaltung: zentrale Eligibility-Regel', () => {
+  beforeEach(() => {
+    queryMock.mockReset()
+  })
+
+  it('nutzt die zentrale publicProviderSqlCondition (schließt account_status != \'active\' aus)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    await getCompanyBySlug('mustermann-gmbh')
+    const [sql] = queryMock.mock.calls[0]
+    expect(sql).toContain("account_status = 'active'")
+    expect(sql).toContain("role = 'subunternehmer'")
+    expect(sql).toContain('directory_listed = true')
+    expect(sql).toContain("subscription_status = 'active'")
+  })
+
+  it('gibt null zurück, wenn keine Zeile die Bedingung erfüllt (z.B. gesperrtes/gelöschtes Unternehmen)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const result = await getCompanyBySlug('gesperrte-firma')
+    expect(result).toBeNull()
   })
 })

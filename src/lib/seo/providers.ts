@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db'
 import type { City } from '@/lib/seo/cities'
 import { cityPlzPatterns } from '@/lib/seo/cities'
 import { ensureCompanySlugs } from '@/lib/company-slug'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 
 export interface RealProvider {
   id: string
@@ -26,7 +27,7 @@ export async function getRealProviders(gewerkName: string, city: City, limit = 1
             (SELECT AVG(rating)::numeric(2,1) FROM reviews WHERE reviewee_id = u.id) AS avg_rating,
             (SELECT COUNT(*)::int FROM reviews WHERE reviewee_id = u.id) AS review_count
      FROM users u
-     WHERE u.role = 'subunternehmer' AND u.directory_listed = true AND u.subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition('u')}
        AND u.company_name IS NOT NULL
        AND $1 = ANY(u.gewerke)
        AND u.plz LIKE ANY($2::text[])
@@ -52,7 +53,7 @@ export async function countRealProviders(gewerkName: string, city: City): Promis
   const db = getDb()
   const result = await db.query(
     `SELECT COUNT(*)::int AS count FROM users
-     WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition()}
        AND company_name IS NOT NULL AND $1 = ANY(gewerke) AND plz LIKE ANY($2::text[])`,
     [gewerkName, cityPlzPatterns(city)]
   )
@@ -64,7 +65,7 @@ export async function countRealReviews(gewerkName: string, city: City): Promise<
   const result = await db.query(
     `SELECT COUNT(*)::int AS count FROM reviews r
      JOIN users u ON u.id = r.reviewee_id
-     WHERE u.role = 'subunternehmer' AND u.directory_listed = true AND u.subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition('u')}
        AND $1 = ANY(u.gewerke) AND u.plz LIKE ANY($2::text[])`,
     [gewerkName, cityPlzPatterns(city)]
   )

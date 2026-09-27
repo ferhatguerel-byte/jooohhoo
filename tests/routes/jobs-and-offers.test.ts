@@ -72,6 +72,7 @@ describe('POST /api/jobs/[id]/offers — nur Unternehmer mit aktivem Abo dürfen
     getCurrentUserMock.mockResolvedValue({
       id: 'u1',
       role: 'subunternehmer',
+      accountStatus: 'active',
       subscriptionStatus: 'inactive',
       subscriptionTier: null,
     })
@@ -96,6 +97,7 @@ describe('POST /api/jobs/[id]/offers — Phase 3.6G OFFER_RECEIVED (OFFER_CREATE
     getCurrentUserMock.mockResolvedValue({
       id: 'sub-1',
       role: 'subunternehmer',
+      accountStatus: 'active',
       subscriptionStatus: 'active',
       subscriptionTier: 'monthly',
       verifiedGewerke: [],

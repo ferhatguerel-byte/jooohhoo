@@ -4,6 +4,7 @@ import { getAppUrl } from '@/lib/url'
 import { getActiveGewerkeSeo } from '@/lib/seo/gewerke-seo'
 import { getActiveCities } from '@/lib/seo/cities'
 import { getActiveLeistungen } from '@/lib/seo/leistungen'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 
 const BASE_URL = getAppUrl()
 
@@ -69,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const companiesResult = await db.query(
       `SELECT company_slug FROM users
-       WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
+       WHERE ${publicProviderSqlCondition()}
          AND company_slug IS NOT NULL`
     )
     const companyEntries: MetadataRoute.Sitemap = companiesResult.rows.map((c) => ({

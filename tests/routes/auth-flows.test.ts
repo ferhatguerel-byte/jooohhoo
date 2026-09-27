@@ -63,6 +63,19 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(403)
   })
 
+  it('Admin-Unternehmensverwaltung: rejects a deleted account even with the correct password (login-hash is only anonymized, never a plausible password)', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
+    queryMock.mockResolvedValueOnce({
+      rows: [{ id: 'u1', role: 'subunternehmer', password_hash: 'h', account_status: 'deleted' }],
+    })
+    verifyPasswordMock.mockResolvedValue(true)
+    const res = await login(jsonReq('http://localhost/api/auth/login', { email: 'x@example.com', password: 'right' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toBe('Dieses Konto wurde gelöscht.')
+  })
+
   it('enforces the login rate limit (brute-force protection)', async () => {
     queryMock.mockResolvedValueOnce({ rows: [{ count: 999 }] }) // Limit bereits erreicht
     const res = await login(jsonReq('http://localhost/api/auth/login', { email: 'x@example.com', password: 'guess' }))

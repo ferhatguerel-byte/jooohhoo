@@ -38,7 +38,7 @@ export interface HardFilterProvider {
   gewerke: string[]
   blockedGewerke: string[]
   verifiedGewerke: string[]
-  accountStatus: 'active' | 'suspended'
+  accountStatus: 'active' | 'suspended' | 'deleted'
   subscriptionStatus: 'inactive' | 'active' | 'canceled' | 'past_due'
   plz: string
   /** null = keine Angabe. */

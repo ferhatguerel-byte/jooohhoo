@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db'
 import { slugify } from '@/lib/slugify'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 
 /**
  * Liefert den stabilen, kanonischen Firmen-Slug für /firma/[slug]. Anders als die alte
@@ -38,8 +39,7 @@ export async function ensureCompanySlugs<T extends { id: string; company_name: s
 export async function getCompanyBySlug(slug: string): Promise<{ id: string } | null> {
   const db = getDb()
   const result = await db.query(
-    `SELECT id FROM users WHERE company_slug = $1 AND role = 'subunternehmer'
-     AND directory_listed = true AND subscription_status = 'active'`,
+    `SELECT id FROM users WHERE company_slug = $1 AND ${publicProviderSqlCondition()}`,
     [slug]
   )
   return result.rows[0] || null

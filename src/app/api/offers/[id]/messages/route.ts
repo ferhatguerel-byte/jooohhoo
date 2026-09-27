@@ -15,6 +15,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!user) {
     return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
   }
+  // Schützt gegen eine bereits bestehende, noch gültige Session einer gesperrten oder gelöschten
+  // Firma – siehe jobs/[id]/offers/route.ts für dieselbe Begründung.
+  if (user.accountStatus !== 'active') {
+    return NextResponse.json({ error: 'Ihr Konto ist nicht aktiv.' }, { status: 403 })
+  }
 
   try {
     const { message } = schema.parse(await readJsonBody(req))

@@ -30,6 +30,7 @@ describe('POST /api/jobs/[id]/offers — Phase 4.3 Rate Limit (Teil 2/A: Angebot
     getCurrentUserMock.mockResolvedValue({
       id: 'sub-1',
       role: 'subunternehmer',
+      accountStatus: 'active',
       subscriptionStatus: 'active',
       subscriptionTier: 'monthly',
       verifiedGewerke: ['Elektro'],
@@ -81,7 +82,7 @@ describe('POST /api/offers/[id]/messages — Phase 4.3 Rate Limit (Teil 2/A: Cha
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
     vi.spyOn(Math, 'random').mockReturnValue(0.9)
-    getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer' })
+    getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer', accountStatus: 'active' })
   })
 
   it('lehnt wiederholtes Nachrichtensenden ab, sobald das enge Zeitfenster-Limit erreicht ist (429)', async () => {

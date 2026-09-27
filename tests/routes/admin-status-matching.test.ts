@@ -25,7 +25,7 @@ function req(body: unknown) {
   })
 }
 
-describe('POST /api/admin/users/[id]/status — Matching-Lifecycle Phase C (Re-Matching bei Reaktivierung)', () => {
+describe('POST /api/admin/users/[id]/status — Matching-Lifecycle Phase C (Re-Matching bei Statusänderung)', () => {
   beforeEach(() => {
     requireAdminApiMock.mockReset()
     requireAdminApiMock.mockResolvedValue({ id: 'admin-1' })
@@ -42,10 +42,18 @@ describe('POST /api/admin/users/[id]/status — Matching-Lifecycle Phase C (Re-M
     expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith('sub-1')
   })
 
-  it('Sperrung (status=suspended) löst KEIN Re-Matching aus', async () => {
+  it('Sperrung (status=suspended) löst ebenfalls matchProviderAgainstOpenJobs aus (invalidiert bestehende Matches über den Hard Filter, keine zweite Invalidierungslogik)', async () => {
     const res = await POST(req({ status: 'suspended' }), { params: Promise.resolve({ id: 'sub-1' }) })
     expect(res.status).toBe(200)
-    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+    expect(matchProviderAgainstOpenJobsMock).toHaveBeenCalledWith('sub-1')
+  })
+
+  it('ein Fehler im Re-Matching nach einer Sperrung lässt die Statusänderung trotzdem erfolgreich zurückkehren (isoliert)', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    matchProviderAgainstOpenJobsMock.mockRejectedValueOnce(new Error('Matching-DB down'))
+    const res = await POST(req({ status: 'suspended' }), { params: Promise.resolve({ id: 'sub-1' }) })
+    expect(res.status).toBe(200)
+    consoleErrorSpy.mockRestore()
   })
 
   it('ein Fehler im Re-Matching lässt die Statusänderung trotzdem erfolgreich zurückkehren (isoliert)', async () => {

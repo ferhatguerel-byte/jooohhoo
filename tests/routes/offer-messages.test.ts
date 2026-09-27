@@ -45,7 +45,7 @@ describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
   })
 
   it('denies a third party (neither the offering Unternehmer nor the Auftraggeber) access to the chat', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'stranger-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'stranger-1', role: 'auftraggeber', accountStatus: 'active' })
     // Phase 4.3: Rate-Limit-Prüfung (COUNT + INSERT) läuft vor dem Offer-Lookup.
     queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
     queryMock.mockResolvedValueOnce({})
@@ -59,7 +59,7 @@ describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
   })
 
   it('allows the offering Unternehmer to post a message on their own offer', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer' })
+    getCurrentUserMock.mockResolvedValue({ id: 'sub-1', role: 'subunternehmer', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
     queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [offerRow] })
@@ -71,7 +71,7 @@ describe('POST /api/offers/[id]/messages — IDOR-Schutz', () => {
   })
 
   it('allows the Auftraggeber who owns the job to post a message', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
     queryMock.mockResolvedValueOnce({})
     queryMock.mockResolvedValueOnce({ rows: [offerRow] })

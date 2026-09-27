@@ -5,6 +5,7 @@ import { getCityBySlug } from '@/lib/seo/cities'
 import { extractIdPrefixFromSlug } from '@/lib/slugify'
 import { getDb } from '@/lib/db'
 import { getOrCreateCompanySlug } from '@/lib/company-slug'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 import BranchenbuchGewerkOrStadtPage, { buildBranchenbuchMetadata } from '@/components/seo/BranchenbuchGewerkOrStadtPage'
 
 /**
@@ -22,7 +23,7 @@ async function resolveLegacyCompanyRedirect(slug: string): Promise<string | null
   const db = getDb()
   const result = await db.query(
     `SELECT id, company_name FROM users
-     WHERE role = 'subunternehmer' AND directory_listed = true AND subscription_status = 'active'
+     WHERE ${publicProviderSqlCondition()}
        AND id::text LIKE $1 LIMIT 1`,
     [`${idPrefix}%`]
   )

@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       )
     }
+    // 'deleted' (Admin-Löschung/Anonymisierung, siehe api/admin/users/[id]/delete/route.ts) ist
+    // in der Praxis bereits durch den ungültigen password_hash unmöglich zu erreichen – diese
+    // Prüfung ist zusätzliche Verteidigung in der Tiefe, keine alleinige Absicherung.
+    if (user.account_status === 'deleted') {
+      return NextResponse.json({ error: 'Dieses Konto wurde gelöscht.' }, { status: 403 })
+    }
 
     await createSessionCookie({ userId: user.id, role: user.role })
     return NextResponse.json({ ok: true, role: user.role })

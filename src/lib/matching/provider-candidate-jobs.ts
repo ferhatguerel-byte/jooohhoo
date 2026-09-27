@@ -6,7 +6,7 @@ interface ProviderRow {
   gewerke: string[]
   blocked_gewerke: string[]
   verified_gewerke: string[]
-  account_status: 'active' | 'suspended'
+  account_status: 'active' | 'suspended' | 'deleted'
   subscription_status: 'inactive' | 'active' | 'canceled' | 'past_due'
   plz: string
   service_radius_km: number | null

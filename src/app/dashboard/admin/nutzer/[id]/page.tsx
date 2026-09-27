@@ -10,6 +10,7 @@ import {
   CancelSubscriptionButton,
   WarningForm,
   NotesForm,
+  DeleteProviderForm,
 } from './NutzerActions'
 
 export default async function AdminNutzerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,8 +59,16 @@ export default async function AdminNutzerDetailPage({ params }: { params: Promis
           </div>
           <div className="flex items-center gap-2">
             <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${verification.className}`}>{verification.text}</span>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${u.account_status === 'suspended' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-              {u.account_status === 'suspended' ? 'Gesperrt' : 'Aktiv'}
+            <span
+              className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                u.account_status === 'deleted'
+                  ? 'bg-slate-200 text-slate-600'
+                  : u.account_status === 'suspended'
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-green-100 text-green-700'
+              }`}
+            >
+              {u.account_status === 'deleted' ? 'Gelöscht' : u.account_status === 'suspended' ? 'Gesperrt' : 'Aktiv'}
             </span>
           </div>
         </div>
@@ -134,6 +143,17 @@ export default async function AdminNutzerDetailPage({ params }: { params: Promis
         <h2 className="font-bold text-slate-900 mb-3">Interne Notizen</h2>
         <NotesForm userId={u.id} initialNotes={u.admin_notes || ''} />
       </div>
+
+      {u.account_status !== 'deleted' && (
+        <div className="bg-white border border-red-200 rounded-2xl p-6">
+          <h2 className="font-bold text-red-700 mb-1">Unternehmen löschen</h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Getrennt vom Sperren oben: eine endgültige Aktion. Kontaktdaten werden anonymisiert,
+            historische Angebote/Aufträge/Bewertungen bleiben für die jeweils andere Seite erhalten.
+          </p>
+          <DeleteProviderForm userId={u.id} companyName={u.company_name} subscriptionStatus={u.subscription_status} />
+        </div>
+      )}
     </div>
   )
 }

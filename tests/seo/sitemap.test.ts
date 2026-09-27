@@ -60,6 +60,16 @@ describe('sitemap()', () => {
     expect(entries.some((e) => e.url.includes('/api/'))).toBe(false)
   })
 
+  it('Admin-Unternehmensverwaltung: Firmen-Query schließt account_status != \'active\' (suspended/deleted) über die zentrale Eligibility-Regel aus', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] }) // guide_articles
+    queryMock.mockResolvedValueOnce({ rows: [] }) // companies
+    queryMock.mockResolvedValueOnce({ rows: [] }) // seo_landing_pages
+
+    await sitemap()
+    const [companiesSql] = queryMock.mock.calls[1]
+    expect(companiesSql).toContain("account_status = 'active'")
+  })
+
   it('enthält keine doppelten URLs', async () => {
     queryMock.mockResolvedValueOnce({ rows: [] })
     queryMock.mockResolvedValueOnce({ rows: [{ company_slug: 'a-gmbh-aaaaaaaa' }] })

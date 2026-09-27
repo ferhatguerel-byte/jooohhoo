@@ -4,6 +4,7 @@ import { MapPin, Star, BadgeCheck } from 'lucide-react'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
 import { ensureCompanySlugs } from '@/lib/company-slug'
+import { publicProviderSqlCondition } from '@/lib/public-provider-eligibility'
 import type { GewerkSeo } from '@/lib/seo/gewerke-seo'
 import type { City } from '@/lib/seo/cities'
 import { cityPlzPatterns } from '@/lib/seo/cities'
@@ -42,7 +43,7 @@ interface CompanyRow {
  */
 async function loadCompanies(gewerk?: GewerkSeo, city?: City) {
   const db = getDb()
-  const conditions = ["role = 'subunternehmer'", 'directory_listed = true', "subscription_status = 'active'", 'company_name IS NOT NULL']
+  const conditions = [publicProviderSqlCondition(), 'company_name IS NOT NULL']
   const params: unknown[] = []
   if (gewerk) {
     params.push(gewerk.name)

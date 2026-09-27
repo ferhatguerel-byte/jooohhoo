@@ -51,13 +51,22 @@ export default async function AdminNutzerPage({
               key={u.id}
               href={`/dashboard/admin/nutzer/${u.id}`}
               className={`block bg-white border rounded-xl p-4 hover:border-brand/40 transition ${
-                u.account_status === 'suspended' ? 'border-red-300 bg-red-50/30' : 'border-slate-200'
+                u.account_status === 'deleted'
+                  ? 'border-slate-300 bg-slate-50/50'
+                  : u.account_status === 'suspended'
+                  ? 'border-red-300 bg-red-50/30'
+                  : 'border-slate-200'
               }`}
             >
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">{u.company_name}</span>
+                    {u.account_status === 'deleted' && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                        Gelöscht
+                      </span>
+                    )}
                     {u.account_status === 'suspended' && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 flex items-center gap-1">
                         <AlertTriangle size={11} /> Gesperrt

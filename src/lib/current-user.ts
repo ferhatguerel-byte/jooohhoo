@@ -22,7 +22,7 @@ export interface CurrentUser {
   newsletterOptIn: boolean
   subscriptionCommittedUntil: string | null
   subscriptionCancelAt: string | null
-  accountStatus: 'active' | 'suspended'
+  accountStatus: 'active' | 'suspended' | 'deleted'
   blockedGewerke: string[]
   directoryListed: boolean
   verifiedGewerke: string[]
