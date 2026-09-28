@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { hashPassword, verifyPassword } from '@/lib/auth'
 import { handleApiError } from '@/lib/api-error'
 
@@ -11,10 +11,10 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // kein neues Passwort mehr setzen (sicherheitsrelevante Kontoänderung).
+    const user = await requireActiveUserApi()
     const { currentPassword, newPassword } = schema.parse(await req.json())
     const db = getDb()
 

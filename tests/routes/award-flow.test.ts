@@ -18,7 +18,7 @@ import { POST as awardJob } from '@/app/api/jobs/[id]/award/route'
 
 const JOB_ID = 'job-1'
 const OFFER_ID = '11111111-1111-4111-8111-111111111111'
-const AG = { id: 'ag-1', role: 'auftraggeber' as const }
+const AG = { id: 'ag-1', role: 'auftraggeber' as const, accountStatus: 'active' as const }
 const SUB_ID = 'sub-1'
 
 function req(body: unknown = { offerId: OFFER_ID }) {

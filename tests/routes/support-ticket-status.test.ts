@@ -27,7 +27,7 @@ describe('POST /api/support/tickets/[id]/status — Admin-Authorization', () => 
   })
 
   it('a normal user may close their own ticket', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'user-1', email: 'user@example.com', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'user-1', email: 'user@example.com', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ user_id: 'user-1' }] })
     queryMock.mockResolvedValueOnce({})
 
@@ -36,7 +36,7 @@ describe('POST /api/support/tickets/[id]/status — Admin-Authorization', () => 
   })
 
   it('a normal user may NOT re-open a ticket (support-only action)', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'user-1', email: 'user@example.com', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'user-1', email: 'user@example.com', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ user_id: 'user-1' }] })
 
     const res = await POST(req('open'), { params: Promise.resolve({ id: 't1' }) })
@@ -44,7 +44,7 @@ describe('POST /api/support/tickets/[id]/status — Admin-Authorization', () => 
   })
 
   it('a normal user may NEVER change the status of someone else\'s ticket (IDOR / privilege escalation)', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'attacker', email: 'attacker@evil.com', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'attacker', email: 'attacker@evil.com', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ user_id: 'victim-1' }] })
 
     const res = await POST(req('closed'), { params: Promise.resolve({ id: 't1' }) })

@@ -31,13 +31,13 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('rejects a user without a Stripe customer id', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', stripeCustomerId: null })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', accountStatus: 'active', stripeCustomerId: null })
     const res = await POST(req())
     expect(res.status).toBe(404)
   })
 
   it('always uses the requesting user\'s own stripeCustomerId — never a client-supplied one', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', stripeCustomerId: 'cus_own', subscriptionTier: 'monthly' })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', accountStatus: 'active', stripeCustomerId: 'cus_own', subscriptionTier: 'monthly' })
     sessionsCreateMock.mockResolvedValue({ url: 'https://billing.stripe.com/session/abc' })
     const res = await POST(req())
     expect(res.status).toBe(200)
@@ -45,7 +45,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('never leaks internal Stripe error details when session creation fails', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', stripeCustomerId: 'cus_own', subscriptionTier: 'monthly' })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', accountStatus: 'active', stripeCustomerId: 'cus_own', subscriptionTier: 'monthly' })
     sessionsCreateMock.mockRejectedValue(new Error('Stripe secret key sk_live_xxx invalid'))
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const res = await POST(req())

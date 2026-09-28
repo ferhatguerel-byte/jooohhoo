@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { GEWERKE, isMeisterpflichtig } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { rateLimit } from '@/lib/security/rate-limit'
@@ -43,12 +43,10 @@ const profileSchema = z
   )
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
-  }
-
   try {
+    // requireActiveUserApi() statt getCurrentUser(): ein gesperrtes/gelöschtes Konto darf sein
+    // Profil (insbesondere company_name) über eine noch gültige Session nicht mehr verändern.
+    const user = await requireActiveUserApi()
     const body = profileSchema.parse(await readJsonBody(req))
 
     // Phase 4.3: Profil-Updates waren bisher unbegrenzt aufrufbar – großzügiges Limit, das kein

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { randomUUID } from 'crypto'
 import { z } from 'zod'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { getDb } from '@/lib/db'
 import { enforceRateLimit, getClientIp } from '@/lib/rate-limit'
 import { handleApiError } from '@/lib/api-error'
@@ -27,16 +27,15 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 const purposeSchema = z.enum(['qualification_file', 'job_attachment'])
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
-  }
-
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return NextResponse.json({ error: 'Datei-Upload ist noch nicht konfiguriert.' }, { status: 500 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keine neuen Dateien mehr hochladen.
+    const user = await requireActiveUserApi()
+
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ error: 'Datei-Upload ist noch nicht konfiguriert.' }, { status: 500 })
+    }
+
     await enforceRateLimit(
       'upload:user',
       user.id,

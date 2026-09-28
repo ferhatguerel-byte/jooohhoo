@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser, type CurrentUser } from '@/lib/current-user'
+import type { CurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { getStripe } from '@/lib/stripe'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getAppUrl } from '@/lib/url'
@@ -70,12 +71,14 @@ async function resolveValidCustomerId(stripe: Stripe, user: CurrentUser): Promis
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'subunternehmer') {
-    return NextResponse.json({ error: 'Nur Unternehmer können ein Abo abschließen.' }, { status: 403 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // kein neues Abo mehr abschließen (verhindert insbesondere, dass ein gelöschtes Konto sich
+    // selbst re-aktiviert, ohne dass ein Admin das beabsichtigt).
+    const user = await requireActiveUserApi()
+    if (user.role !== 'subunternehmer') {
+      return NextResponse.json({ error: 'Nur Unternehmer können ein Abo abschließen.' }, { status: 403 })
+    }
     const { tier } = checkoutSchema.parse(await req.json())
     const tierDef = TIERS[tier as keyof typeof TIERS]
     const priceId = process.env[tierDef.priceEnv]

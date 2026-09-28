@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { GEWERKE } from '@/lib/gewerke'
 import { handleApiError } from '@/lib/api-error'
 import { ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -37,12 +37,14 @@ const jobSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'auftraggeber') {
-    return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge einstellen.' }, { status: 403 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keine neuen Aufträge mehr erstellen.
+    const user = await requireActiveUserApi()
+    if (user.role !== 'auftraggeber') {
+      return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge einstellen.' }, { status: 403 })
+    }
+
     // Phase 4.3 (Teil 2/A): Job-Erstellung hatte kein Rate Limit (Audit-Fund) – ein
     // Auftraggeber-Konto könnte sonst unbegrenzt viele Aufträge anlegen (Spam, löst jeweils
     // Matching + Benachrichtigungs-E-Mails an Unternehmer aus). Zwei unabhängige Limits wie

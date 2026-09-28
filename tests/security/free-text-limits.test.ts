@@ -67,6 +67,7 @@ describe('POST /api/profile — Phase 4.3 (Teil D: Free-Text-Limits)', () => {
   const baseUser = {
     id: 'u1',
     role: 'auftraggeber' as const,
+    accountStatus: 'active' as const,
     verificationStatus: 'unverified' as const,
     blockedGewerke: [] as string[],
     qualificationFiles: [] as { fileId: string; name: string; label: string }[],

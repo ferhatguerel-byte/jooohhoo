@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuthenticatedUserApi } from '@/lib/authorization'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { getStripe } from '@/lib/stripe'
 import { getAppUrl } from '@/lib/url'
 import { getLockedPortalConfigurationId } from '@/lib/stripe-portal'
@@ -7,7 +7,10 @@ import { handleApiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuthenticatedUserApi()
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // das Stripe-Kundenportal nicht mehr öffnen (erlaubt dort u.a. Zahlungsmethode/Kündigung zu
+    // verwalten – sicherheitsrelevante Kontoaktion).
+    const user = await requireActiveUserApi()
     if (!user.stripeCustomerId) {
       return NextResponse.json({ error: 'Kein Abo vorhanden.' }, { status: 404 })
     }

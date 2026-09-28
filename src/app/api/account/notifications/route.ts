@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 
 const schema = z.object({
@@ -10,10 +10,10 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf seine Kontoeinstellungen über
+    // eine noch gültige Session nicht mehr ändern.
+    const user = await requireActiveUserApi()
     const { emailNotifications, newsletterOptIn } = schema.parse(await req.json())
     await getDb().query(
       'UPDATE users SET email_notifications = $1, newsletter_opt_in = $2 WHERE id = $3',

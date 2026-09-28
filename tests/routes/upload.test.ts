@@ -28,7 +28,7 @@ describe('POST /api/upload', () => {
     putMock.mockReset()
     optimizeMock.mockReset()
     vi.stubEnv('BLOB_READ_WRITE_TOKEN', 'test-token')
-    getCurrentUserMock.mockResolvedValue({ id: 'user-1' })
+    getCurrentUserMock.mockResolvedValue({ id: 'user-1', accountStatus: 'active' })
     queryMock.mockImplementation(async (sql: string) => {
       if (sql.includes('rate_limit_hits')) return { rows: [{ count: 0 }] }
       if (sql.includes('INSERT INTO private_files')) return { rows: [{ id: 'new-file-id' }] }

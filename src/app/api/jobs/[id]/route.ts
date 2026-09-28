@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 import { rateLimit } from '@/lib/security/rate-limit'
 import { readJsonBody } from '@/lib/security/request-limits'
@@ -15,12 +15,13 @@ const updateSchema = z.object({
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'auftraggeber') {
-    return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge bearbeiten.' }, { status: 403 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keinen Auftrag mehr bearbeiten.
+    const user = await requireActiveUserApi()
+    if (user.role !== 'auftraggeber') {
+      return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge bearbeiten.' }, { status: 403 })
+    }
     const body = updateSchema.parse(await readJsonBody(req))
 
     // Phase 4.3: dieselbe Größenordnung wie die Job-Erstellung (Teil 2/A) – auch wiederholtes

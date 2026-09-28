@@ -45,7 +45,7 @@ describe('POST /api/jobs — Phase 3.6A Match Trigger', () => {
     trackEventMock.mockReset()
     trackEventMock.mockResolvedValue(undefined)
 
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber', accountStatus: 'active' })
     // Phase 4.3: POST /api/jobs prüft vor der eigentlichen Erstellung zwei Rate Limits
     // (pro Nutzer + pro IP) über pool.query() (= queryMock), unabhängig von der Transaktion
     // (clientQueryMock). count:0 lässt beide Prüfungen unbegrenzt oft durchlaufen.
@@ -112,7 +112,7 @@ describe('POST /api/jobs — Phase 3.6G PROJECT_CREATED Analytics', () => {
     trackEventMock.mockReset()
     trackEventMock.mockResolvedValue(undefined)
 
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber', accountStatus: 'active' })
     // Phase 4.3: siehe Kommentar im ersten describe-Block oben.
     queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
     connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
@@ -177,7 +177,7 @@ describe('Phase 3.6A — kein zweiter Matching-Trigger außerhalb von POST /api/
   })
 
   it('6. Award löst kein Matching aus', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [] }) // Job/Offer nicht gefunden -> früher Abbruch, reicht für die Assertion
     await awardJob(jsonReq('http://localhost/api/jobs/job-1/award', { offerId: 'offer-1' }), {
       params: Promise.resolve({ id: 'job-1' }),
@@ -186,7 +186,7 @@ describe('Phase 3.6A — kein zweiter Matching-Trigger außerhalb von POST /api/
   })
 
   it('7. PATCH löst kein Matching aus', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'ag-1', role: 'auftraggeber', accountStatus: 'active' })
     // Phase 4.3: PATCH prüft zuerst ein Rate Limit (COUNT + INSERT über queryMock), bevor der
     // eigentliche Job-Lookup läuft.
     queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })

@@ -48,9 +48,12 @@ describe('POST /api/jobs — nur Auftraggeber dürfen Aufträge erstellen', () =
   })
 
   it('rejects an unauthenticated request', async () => {
+    // requireActiveUserApi() -> requireAuthenticatedUserApi() wirft 401 für "nicht angemeldet"
+    // (Admin-Unternehmensverwaltung: konsistent mit der 401/403-Konvention aller anderen über
+    // requireActiveUserApi()/requireAuthenticatedUserApi() abgesicherten Routen).
     getCurrentUserMock.mockResolvedValue(null)
     const res = await createJob(jsonReq('http://localhost/api/jobs', { title: 'x' }))
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(401)
   })
 })
 

@@ -73,18 +73,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       companyName = user.company_name
 
-      // Idempotenz: ein zweiter Löschversuch auf ein bereits gelöschtes Konto ist ein No-op-Erfolg,
-      // keine erneute Nebenwirkung (kein zweiter Audit-Log-Eintrag, keine zweite Anonymisierung).
-      if (user.deleted_at) {
-        await client.query('ROLLBACK')
-        return NextResponse.json({ ok: true, alreadyDeleted: true })
-      }
-
       // Serverseitige Bestätigungsprüfung – die einzige, die zählt. Eine rein clientseitige
-      // Prüfung wäre durch einen direkten API-Aufruf trivial umgehbar.
+      // Prüfung wäre durch einen direkten API-Aufruf trivial umgehbar. Läuft bewusst VOR der
+      // Idempotenz-Prüfung: auch ein wiederholter Löschversuch auf ein bereits gelöschtes Konto
+      // muss den korrekten Firmennamen verlangen, sonst wäre die Bestätigung bei einem zweiten
+      // Aufruf faktisch wirkungslos.
       if (confirmationName !== companyName) {
         await client.query('ROLLBACK')
         return NextResponse.json({ error: 'Der eingegebene Firmenname stimmt nicht überein.' }, { status: 400 })
+      }
+
+      // Idempotenz: ein zweiter Löschversuch mit korrektem Namen auf ein bereits gelöschtes Konto
+      // ist ein No-op-Erfolg, keine erneute Nebenwirkung (kein zweiter Audit-Log-Eintrag, keine
+      // zweite Anonymisierung, kein erneuter Blob-/Matching-Lauf).
+      if (user.deleted_at) {
+        await client.query('ROLLBACK')
+        return NextResponse.json({ ok: true, alreadyDeleted: true })
       }
 
       if (user.subscription_status === 'active' || user.subscription_status === 'past_due') {

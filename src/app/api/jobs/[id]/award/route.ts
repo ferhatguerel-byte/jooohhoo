@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { sendOfferAwardedEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
 import { track, ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -37,12 +37,13 @@ const awardSchema = z.object({ offerId: z.string().uuid() })
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: jobId } = await params
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'auftraggeber') {
-    return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge vergeben.' }, { status: 403 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keinen Auftrag mehr vergeben.
+    const user = await requireActiveUserApi()
+    if (user.role !== 'auftraggeber') {
+      return NextResponse.json({ error: 'Nur Auftraggeber können Aufträge vergeben.' }, { status: 403 })
+    }
     const { offerId } = awardSchema.parse(await req.json())
     const pool = getDb()
 

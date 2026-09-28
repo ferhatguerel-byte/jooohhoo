@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { requireAuthenticatedUserApi, isAdmin, AuthorizationError } from '@/lib/authorization'
+import { requireActiveUserApi, isAdmin, AuthorizationError } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 import { logAdminAction } from '@/lib/admin-audit'
 
@@ -10,7 +10,9 @@ const schema = z.object({ status: z.enum(['open', 'closed']) })
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: ticketId } = await params
   try {
-    const user = await requireAuthenticatedUserApi()
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // den Ticket-Status nicht mehr ändern. Admins ausgenommen (siehe Doku dort).
+    const user = await requireActiveUserApi()
     const admin = isAdmin(user)
     const { status } = schema.parse(await req.json())
     const db = getDb()

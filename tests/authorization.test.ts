@@ -14,14 +14,17 @@ import {
   requireAdmin,
   requireAdminApi,
   requireAuthenticatedUserApi,
+  requireActiveUserApi,
   requireRoleApi,
   AuthorizationError,
 } from '@/lib/authorization'
 
 const ADMIN_EMAIL = 'admin@example.com'
 
-function makeUser(overrides: Partial<{ email: string; role: 'auftraggeber' | 'subunternehmer' }> = {}) {
-  return { id: 'u1', email: 'user@example.com', role: 'auftraggeber', ...overrides } as never
+function makeUser(
+  overrides: Partial<{ email: string; role: 'auftraggeber' | 'subunternehmer'; accountStatus: 'active' | 'suspended' | 'deleted' }> = {}
+) {
+  return { id: 'u1', email: 'user@example.com', role: 'auftraggeber', accountStatus: 'active', ...overrides } as never
 }
 
 describe('isAdmin', () => {
@@ -99,5 +102,47 @@ describe('requireAdminApi / requireRoleApi (API route variant)', () => {
   it('enforces role checks (Auftraggeber vs. Subunternehmer)', async () => {
     getCurrentUserMock.mockResolvedValue(makeUser({ role: 'auftraggeber' }))
     await expect(requireRoleApi('subunternehmer')).rejects.toMatchObject({ status: 403 })
+  })
+})
+
+/**
+ * Admin-Unternehmensverwaltung – requireActiveUserApi(): zentraler Helper gegen eine bereits
+ * bestehende, noch gültige Session eines gesperrten/gelöschten Kontos (siehe Review-Fund:
+ * api/profile & Co. prüften bislang keinen accountStatus, obwohl Login und Dashboard-UI das
+ * bereits taten).
+ */
+describe('requireActiveUserApi', () => {
+  beforeEach(() => {
+    vi.stubEnv('ADMIN_EMAIL', ADMIN_EMAIL)
+    getCurrentUserMock.mockReset()
+  })
+
+  it('lässt einen Nutzer mit account_status=active unverändert durch', async () => {
+    getCurrentUserMock.mockResolvedValue(makeUser({ accountStatus: 'active' }))
+    await expect(requireActiveUserApi()).resolves.toMatchObject({ accountStatus: 'active' })
+  })
+
+  it('weist einen Nutzer mit account_status=suspended mit 403 ab', async () => {
+    getCurrentUserMock.mockResolvedValue(makeUser({ accountStatus: 'suspended' }))
+    const err = await requireActiveUserApi().catch((e) => e)
+    expect(err).toBeInstanceOf(AuthorizationError)
+    expect(err.status).toBe(403)
+  })
+
+  it('weist einen Nutzer mit account_status=deleted mit 403 ab', async () => {
+    getCurrentUserMock.mockResolvedValue(makeUser({ accountStatus: 'deleted' }))
+    const err = await requireActiveUserApi().catch((e) => e)
+    expect(err).toBeInstanceOf(AuthorizationError)
+    expect(err.status).toBe(403)
+  })
+
+  it('wirft 401 für eine nicht angemeldete Anfrage (keine Info über accountStatus geleakt)', async () => {
+    getCurrentUserMock.mockResolvedValue(null)
+    await expect(requireActiveUserApi()).rejects.toMatchObject({ status: 401 })
+  })
+
+  it('lässt einen Admin durch, selbst wenn dessen eigener accountStatus suspended/deleted wäre (Admin-Funktionen bleiben unberührt)', async () => {
+    getCurrentUserMock.mockResolvedValue(makeUser({ email: ADMIN_EMAIL, accountStatus: 'suspended' }))
+    await expect(requireActiveUserApi()).resolves.toMatchObject({ email: ADMIN_EMAIL })
   })
 })

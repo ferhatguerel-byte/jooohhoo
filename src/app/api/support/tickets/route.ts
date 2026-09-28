@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
 import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { sendNewTicketEmail } from '@/lib/email'
 import { handleApiError } from '@/lib/api-error'
 import { rateLimit } from '@/lib/security/rate-limit'
@@ -26,10 +27,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Nicht angemeldet.' }, { status: 401 })
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // kein neues Support-Ticket mehr erstellen (GET zum Lesen bestehender Tickets bleibt bewusst
+    // unverändert – nur mutierende Aktionen werden hier eingeschränkt).
+    const user = await requireActiveUserApi()
     const { category, subject, message } = schema.parse(await readJsonBody(req))
 
     // Phase 4.3 (Teil 6): Support-Ticket-Erstellung hatte kein Rate Limit (Audit-Fund) – jedes

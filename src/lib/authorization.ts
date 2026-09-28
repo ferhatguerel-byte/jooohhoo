@@ -87,3 +87,26 @@ export async function requirePermissionApi(permission: Permission): Promise<Curr
   if (!hasPermission(user, permission)) throw new AuthorizationError('Kein Zugriff.', 403)
   return user
 }
+
+/**
+ * Admin-Unternehmensverwaltung – zentrale Absicherung gegen eine bereits bestehende, noch
+ * gültige Session eines gesperrten (`suspended`) oder gelöschten (`deleted`) Kontos: Login und
+ * das Dashboard-UI (dashboard/layout.tsx) blockieren bereits, aber eine API-Route ist davon
+ * unabhängig über einen direkten Aufruf erreichbar. Statt dieselbe Prüfung in jeder mutierenden
+ * Account-/Business-Route einzeln zu kopieren, erzwingt dieser eine Helper `account_status ===
+ * 'active'` – jede betroffene Route ruft ausschließlich ihn auf (siehe api/profile,
+ * api/account/*, api/upload, api/jobs/[id]/hide, api/support/tickets*).
+ *
+ * Admin-Accounts sind bewusst ausgenommen: diese Prüfung darf niemals eine Admin-Funktion
+ * blockieren (Admin-Routen haben ohnehin ihre eigene requireAdminApi()-Gate-Logik; auf
+ * gemeinsam genutzten Routen wie support/tickets/[id]/messages, die sowohl vom Ticket-Ersteller
+ * als auch von einem antwortenden Admin aufgerufen werden, verhindert die Ausnahme, dass ein
+ * Admin durch seinen eigenen accountStatus blockiert würde).
+ */
+export async function requireActiveUserApi(): Promise<CurrentUser> {
+  const user = await requireAuthenticatedUserApi()
+  if (!isAdmin(user) && user.accountStatus !== 'active') {
+    throw new AuthorizationError('Ihr Konto ist nicht aktiv.', 403)
+  }
+  return user
+}

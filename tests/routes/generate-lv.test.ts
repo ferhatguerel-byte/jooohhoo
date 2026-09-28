@@ -30,14 +30,14 @@ describe('POST /api/jobs/generate-lv', () => {
   })
 
   it('rejects non-Auftraggeber roles', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'subunternehmer' })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'subunternehmer', accountStatus: 'active' })
     const res = await POST(req(LONG_DESCRIPTION))
     expect(res.status).toBe(403)
     expect(generateLeistungsverzeichnisMock).not.toHaveBeenCalled()
   })
 
   it('calls the AI generator when under the rate limit', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'auftraggeber', accountStatus: 'active' })
     // Alle Rate-Limit-Abfragen (COUNT + INSERT je Bucket) sowie das beiläufige, zufällig
     // ausgelöste Cleanup dürfen erfolgreich zurückkehren.
     queryMock.mockResolvedValue({ rows: [{ count: 0 }] })
@@ -50,7 +50,7 @@ describe('POST /api/jobs/generate-lv', () => {
   })
 
   it('returns 429 and skips the (paid) AI call once the per-user limit is hit', async () => {
-    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'auftraggeber' })
+    getCurrentUserMock.mockResolvedValue({ id: 'u1', role: 'auftraggeber', accountStatus: 'active' })
     queryMock.mockResolvedValueOnce({ rows: [{ count: 999 }] }) // Limit für diesen Nutzer bereits erreicht
 
     const res = await POST(req(LONG_DESCRIPTION))

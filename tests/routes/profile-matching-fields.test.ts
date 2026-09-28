@@ -17,6 +17,7 @@ import { POST } from '@/app/api/profile/route'
 const baseSubunternehmer = {
   id: 'sub-1',
   role: 'subunternehmer' as const,
+  accountStatus: 'active' as const,
   verificationStatus: 'unverified' as const,
   blockedGewerke: [] as string[],
   qualificationFiles: [] as { fileId: string; name: string; label: string }[],
@@ -29,6 +30,7 @@ const baseSubunternehmer = {
 const baseAuftraggeber = {
   id: 'ag-1',
   role: 'auftraggeber' as const,
+  accountStatus: 'active' as const,
   verificationStatus: 'unverified' as const,
   blockedGewerke: [] as string[],
   qualificationFiles: [] as { fileId: string; name: string; label: string }[],

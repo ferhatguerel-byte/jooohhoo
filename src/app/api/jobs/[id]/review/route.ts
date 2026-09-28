@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { getCurrentUser } from '@/lib/current-user'
+import { requireActiveUserApi } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 
 const reviewSchema = z.object({
@@ -11,12 +11,13 @@ const reviewSchema = z.object({
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: jobId } = await params
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'auftraggeber') {
-    return NextResponse.json({ error: 'Nur Auftraggeber können nach Auftragsvergabe bewerten.' }, { status: 403 })
-  }
-
   try {
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keine neue Bewertung mehr abgeben.
+    const user = await requireActiveUserApi()
+    if (user.role !== 'auftraggeber') {
+      return NextResponse.json({ error: 'Nur Auftraggeber können nach Auftragsvergabe bewerten.' }, { status: 403 })
+    }
     const { rating, comment } = reviewSchema.parse(await req.json())
     const db = getDb()
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getDb } from '@/lib/db'
-import { requireAuthenticatedUserApi, isAdmin, AuthorizationError } from '@/lib/authorization'
+import { requireActiveUserApi, isAdmin, AuthorizationError } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error'
 import { sendTicketReplyEmail } from '@/lib/email'
 import { rateLimit } from '@/lib/security/rate-limit'
@@ -12,7 +12,11 @@ const schema = z.object({ message: z.string().min(1).max(4000) })
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: ticketId } = await params
   try {
-    const user = await requireAuthenticatedUserApi()
+    // requireActiveUserApi(): ein gesperrtes/gelöschtes Konto darf über eine noch gültige Session
+    // keine neue Support-Nachricht mehr senden. Admins sind darin bewusst ausgenommen (siehe
+    // Doku dort) – diese Route wird sowohl vom Ticket-Ersteller als auch von antwortenden Admins
+    // aufgerufen.
+    const user = await requireActiveUserApi()
     const admin = isAdmin(user)
 
     const { message } = schema.parse(await readJsonBody(req))

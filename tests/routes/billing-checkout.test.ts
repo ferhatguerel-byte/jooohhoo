@@ -41,6 +41,7 @@ function baseUser(overrides: Record<string, unknown> = {}) {
   return {
     id: 'u1',
     role: 'subunternehmer',
+    accountStatus: 'active',
     email: 'unternehmer@example.com',
     companyName: 'Testbetrieb GmbH',
     subscriptionStatus: null,

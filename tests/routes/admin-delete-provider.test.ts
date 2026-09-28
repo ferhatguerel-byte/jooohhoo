@@ -150,6 +150,17 @@ describe('POST /api/admin/users/[id]/delete — Admin-Unternehmensverwaltung: L�
     expect(updateCall).toBeUndefined()
   })
 
+  it('bereits gelöschtes Konto + falscher Firmenname: 400 (Confirmation-Check gilt auch bei bereits gelöschten Konten), kein alreadyDeleted-Erfolg', async () => {
+    clientQueryMock.mockResolvedValueOnce({}) // BEGIN
+    clientQueryMock.mockResolvedValueOnce({ rows: [baseUserRow({ deleted_at: new Date().toISOString() })] })
+    const res = await POST(req({ confirmationName: 'Falscher Name GmbH' }), { params: Promise.resolve({ id: PROVIDER_ID }) })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.alreadyDeleted).toBeUndefined()
+    expect(logAdminActionMock).not.toHaveBeenCalled()
+    expect(matchProviderAgainstOpenJobsMock).not.toHaveBeenCalled()
+  })
+
   describe('erfolgreiche Anonymisierung — Details der UPDATE-Query', () => {
     beforeEach(() => {
       clientQueryMock.mockImplementation((sql: string) => {
