@@ -72,6 +72,14 @@ describe('sendMatchNotificationEmails — Phase 3.6F Zustandsmaschine', () => {
     expect(claimCall[0]).toContain("status = 'pending'")
     expect(claimCall[0]).toContain("status = 'failed' AND attempts < $2")
     expect(claimCall[0]).toContain("status = 'sending' AND attempts < $2")
+    // Regression (identischer Fund/Fix wie in retry-match-notification-emails.ts, siehe dort):
+    // ohne ::int-Cast löst PostgreSQL den CASE-Ausdruck als `text` auf, wonach die anschließende
+    // Multiplikation mit `interval '1 second'` mit "operator does not exist: text * interval"
+    // scheitert (Fehlercode 42883 – reproduziert und verifiziert gegen eine echte, vollständig
+    // migrierte PostgreSQL-Instanz; ein reiner getDb()-Mock kann diesen SQL-Typfehler nicht
+    // abbilden). Dieser Assert stellt sicher, dass die Casts nicht versehentlich wieder entfernt
+    // werden.
+    expect(claimCall[0]).toContain('CASE attempts WHEN 1 THEN $3::int WHEN 2 THEN $4::int ELSE $4::int END')
     expect(claimCall[1]).toEqual(['n1', MAX_MATCH_EMAIL_ATTEMPTS, 60, 300, 300])
     const sentCall = queryMock.mock.calls[2]
     expect(sentCall[0]).toContain("SET status = 'sent', sent_at = now(), last_error = NULL")
@@ -158,6 +166,33 @@ describe('sendMatchNotificationEmails — Phase 3.6F Zustandsmaschine', () => {
     await sendMatchNotificationEmails(['n1'])
     const failedCall = queryMock.mock.calls[2]
     expect((failedCall[1][1] as string).length).toBeLessThanOrEqual(500)
+  })
+
+  it('Claim wirft eine Exception (z.B. SQL-Fehler): Batch bricht nicht ab, kein markFailed (Status/Retry-Logik bleibt unverändert), Fehler wird als eigener Outcome erfasst', async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [candidateRow({ notification_id: 'n1' }), candidateRow({ notification_id: 'n2' })],
+    })
+    // n1: Claim-Query wirft (simuliert z.B. den ehemaligen 42883-SQL-Typfehler)
+    queryMock.mockRejectedValueOnce(new Error('operator does not exist: text * interval'))
+    // n2: Claim erfolgreich, danach Versand
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'n2' }] })
+    queryMock.mockResolvedValueOnce({ rows: [] }) // markSent für n2
+    sendMatchNotificationEmailMock.mockResolvedValue(undefined)
+
+    const result = await sendMatchNotificationEmails(['n1', 'n2'])
+
+    expect(result).toEqual([
+      { notificationId: 'n1', sent: false, skipReason: 'claim_error' },
+      { notificationId: 'n2', sent: true },
+    ])
+    // Kein UPDATE ... SET status = 'failed' für n1 (kein erzwungener Statuswechsel bei einem
+    // reinen Claim-Fehler) – nur die Kandidaten-Query, der fehlgeschlagene Claim für n1, der
+    // erfolgreiche Claim für n2 und dessen markSent.
+    const failedUpdateCalls = queryMock.mock.calls.filter(
+      ([sql]) => typeof sql === 'string' && sql.includes("SET status = 'failed'")
+    )
+    expect(failedUpdateCalls).toHaveLength(0)
+    expect(queryMock).toHaveBeenCalledTimes(4)
   })
 
   it('keine N+1: für mehrere Notification-IDs wird nur eine Kandidaten-Query ausgeführt', async () => {

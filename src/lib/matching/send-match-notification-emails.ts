@@ -13,6 +13,7 @@ export type SendMatchNotificationSkipReason =
   | 'email_notifications_disabled'
   | 'invalid_email'
   | 'already_claimed'
+  | 'claim_error'
 
 export interface SendMatchNotificationOutcome {
   notificationId: string
@@ -140,7 +141,20 @@ export async function sendMatchNotificationEmails(notificationIds: string[]): Pr
       continue
     }
 
-    const claimed = await claimNotification(row.notification_id)
+    let claimed: boolean
+    try {
+      claimed = await claimNotification(row.notification_id)
+    } catch (err) {
+      // Ein Fehler beim Claim selbst (z.B. ein DB-/SQL-Fehler) darf den gesamten Batch nicht
+      // abbrechen – die übrigen Kandidaten müssen unabhängig davon weiterverarbeitet werden.
+      // Bewusst KEIN markFailed() hier: der Claim ist nicht durchgelaufen, der tatsächliche
+      // DB-Status der Zeile ist unverändert (pending/failed/sending, je nachdem was er vorher
+      // war) – ein Status-Zwangswechsel auf 'failed' würde die bestehende Retry-/Backoff-Logik
+      // verfälschen. Die Zeile bleibt dadurch für den nächsten Lauf unverändert claimbar.
+      captureError(err, { notificationId: row.notification_id, operation: 'match_notification_claim' })
+      outcomes.push({ notificationId: row.notification_id, sent: false, skipReason: 'claim_error' })
+      continue
+    }
     if (!claimed) {
       outcomes.push({ notificationId: row.notification_id, sent: false, skipReason: 'already_claimed' })
       continue
@@ -216,7 +230,7 @@ async function claimNotification(id: string): Promise<boolean> {
          status = 'pending'
          OR (
            status = 'failed' AND attempts < $2
-           AND processing_started_at <= now() - (CASE attempts WHEN 1 THEN $3 WHEN 2 THEN $4 ELSE $4 END * interval '1 second')
+           AND processing_started_at <= now() - (CASE attempts WHEN 1 THEN $3::int WHEN 2 THEN $4::int ELSE $4::int END * interval '1 second')
          )
          OR (
            status = 'sending' AND attempts < $2
