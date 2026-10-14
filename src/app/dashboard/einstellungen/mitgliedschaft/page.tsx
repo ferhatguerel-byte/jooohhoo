@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/current-user'
 import { TIERS } from '@/lib/tiers'
 import PortalButton from '../../abo/PortalButton'
+import BillingLegalLinks from '../../abo/BillingLegalLinks'
 import CancelYearlyButton from './CancelYearlyButton'
 
 export default async function MitgliedschaftPage() {
@@ -65,6 +66,8 @@ export default async function MitgliedschaftPage() {
           <CancelYearlyButton cancelAt={user.subscriptionCancelAt} />
         </div>
       )}
+
+      <BillingLegalLinks />
     </div>
   )
 }

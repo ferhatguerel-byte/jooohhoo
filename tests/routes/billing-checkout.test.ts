@@ -9,6 +9,8 @@ const {
   customersListMock,
   customersCreateMock,
   sessionsCreateMock,
+  subscriptionsRetrieveMock,
+  subscriptionsUpdateMock,
 } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
@@ -16,6 +18,8 @@ const {
   customersListMock: vi.fn(),
   customersCreateMock: vi.fn(),
   sessionsCreateMock: vi.fn(),
+  subscriptionsRetrieveMock: vi.fn(),
+  subscriptionsUpdateMock: vi.fn(),
 }))
 
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
@@ -24,6 +28,7 @@ vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
     customers: { retrieve: customersRetrieveMock, list: customersListMock, create: customersCreateMock },
     checkout: { sessions: { create: sessionsCreateMock } },
+    subscriptions: { retrieve: subscriptionsRetrieveMock, update: subscriptionsUpdateMock },
   }),
 }))
 
@@ -286,5 +291,86 @@ describe('POST /api/billing/checkout — Stripe-Customer-Auflösung', () => {
 
     expect(res.status).toBe(500)
     expect(customersCreateMock).not.toHaveBeenCalled()
+  })
+})
+
+function reqWithPreview(tier: 'monthly' | 'yearly', previewId?: string) {
+  return new NextRequest('http://localhost/api/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ tier, ...(previewId ? { previewId } : {}) }),
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+function userWithActiveSub(overrides: Record<string, unknown> = {}) {
+  return baseUser({
+    subscriptionStatus: 'active',
+    subscriptionTier: 'monthly',
+    stripeSubscriptionId: 'sub_1',
+    stripeCustomerId: 'cus_1',
+    ...overrides,
+  })
+}
+
+describe('POST /api/billing/checkout — Tarifwechsel erfordert bestätigte Preisvorschau (Phase 2B, Aufgabe 3)', () => {
+  beforeEach(() => {
+    getCurrentUserMock.mockReset()
+    queryMock.mockReset()
+    subscriptionsRetrieveMock.mockReset()
+    subscriptionsUpdateMock.mockReset()
+    vi.stubEnv('STRIPE_PRICE_MONTHLY', 'price_monthly')
+    vi.stubEnv('STRIPE_PRICE_YEARLY', 'price_yearly')
+  })
+
+  it('lehnt einen Tarifwechsel ohne previewId ab, OHNE die Subscription zu berühren', async () => {
+    getCurrentUserMock.mockResolvedValue(userWithActiveSub())
+
+    const res = await POST(reqWithPreview('yearly'))
+    expect(res.status).toBe(400)
+    expect(subscriptionsUpdateMock).not.toHaveBeenCalled()
+  })
+
+  it('lehnt eine abgelaufene/bereits verbrauchte/fremde previewId mit 409 ab, OHNE die Subscription zu berühren', async () => {
+    getCurrentUserMock.mockResolvedValue(userWithActiveSub())
+    queryMock.mockResolvedValueOnce({ rows: [] }) // claimTierChangePreview: 0 Zeilen -> ungültig
+
+    const res = await POST(reqWithPreview('yearly', '11111111-1111-4111-8111-111111111111'))
+    expect(res.status).toBe(409)
+    expect(subscriptionsUpdateMock).not.toHaveBeenCalled()
+  })
+
+  it('führt den Wechsel erst nach erfolgreichem Claim der previewId aus, mit Idempotency-Key aus der previewId', async () => {
+    getCurrentUserMock.mockResolvedValue(userWithActiveSub())
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ id: '22222222-2222-4222-8222-222222222222', target_tier: 'yearly', stripe_subscription_id: 'sub_1' }] }) // claim
+      .mockResolvedValueOnce({ rows: [] }) // subscription_tier UPDATE
+    subscriptionsRetrieveMock.mockResolvedValue({ items: { data: [{ id: 'si_1' }] } })
+    subscriptionsUpdateMock.mockResolvedValue({})
+
+    const res = await POST(reqWithPreview('yearly', '22222222-2222-4222-8222-222222222222'))
+    expect(res.status).toBe(200)
+    expect(subscriptionsUpdateMock).toHaveBeenCalledWith(
+      'sub_1',
+      expect.objectContaining({ proration_behavior: 'create_prorations' }),
+      expect.objectContaining({ idempotencyKey: expect.any(String) })
+    )
+  })
+
+  it('kann dieselbe previewId nicht zweimal ausführen (zweiter Claim-Versuch scheitert, kein doppelter Wechsel)', async () => {
+    getCurrentUserMock.mockResolvedValue(userWithActiveSub())
+    // Erster Request: Claim gewinnt.
+    queryMock
+      .mockResolvedValueOnce({ rows: [{ id: '33333333-3333-4333-8333-333333333333', target_tier: 'yearly', stripe_subscription_id: 'sub_1' }] })
+      .mockResolvedValueOnce({ rows: [] })
+    subscriptionsRetrieveMock.mockResolvedValue({ items: { data: [{ id: 'si_1' }] } })
+    subscriptionsUpdateMock.mockResolvedValue({})
+    const resA = await POST(reqWithPreview('yearly', '33333333-3333-4333-8333-333333333333'))
+    expect(resA.status).toBe(200)
+
+    // Zweiter Request mit derselben previewId: Claim liefert 0 Zeilen (bereits consumed_at gesetzt).
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    const resB = await POST(reqWithPreview('yearly', '33333333-3333-4333-8333-333333333333'))
+    expect(resB.status).toBe(409)
+    expect(subscriptionsUpdateMock).toHaveBeenCalledTimes(1)
   })
 })

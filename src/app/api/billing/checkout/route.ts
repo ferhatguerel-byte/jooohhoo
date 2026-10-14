@@ -9,8 +9,15 @@ import { getStripe } from '@/lib/stripe'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getAppUrl } from '@/lib/url'
 import { handleApiError } from '@/lib/api-error'
+import { claimTierChangePreview, tierChangeIdempotencyKey } from '@/lib/billing/tier-change-preview'
 
-const checkoutSchema = z.object({ tier: z.enum(TIER_ORDER as [string, ...string[]]) })
+const checkoutSchema = z.object({
+  tier: z.enum(TIER_ORDER as [string, ...string[]]),
+  // Nur für einen Tarifwechsel bei bereits aktivem Abo erforderlich (siehe hasActiveSub-Zweig
+  // unten) – ein Neuabschluss (Stripe Hosted Checkout) braucht keine Vorschau, da dort Preis und
+  // Fälligkeit bereits auf der Stripe-Checkout-Seite selbst angezeigt werden.
+  previewId: z.string().uuid().optional(),
+})
 
 /**
  * Deterministischer Stripe-Idempotency-Key für die Customer-Neuanlage eines Users (nie die rohe
@@ -79,7 +86,7 @@ export async function POST(req: NextRequest) {
     if (user.role !== 'subunternehmer') {
       return NextResponse.json({ error: 'Nur Unternehmer können ein Abo abschließen.' }, { status: 403 })
     }
-    const { tier } = checkoutSchema.parse(await req.json())
+    const { tier, previewId } = checkoutSchema.parse(await req.json())
     const tierDef = TIERS[tier as keyof typeof TIERS]
     const priceId = process.env[tierDef.priceEnv]
 
@@ -104,6 +111,27 @@ export async function POST(req: NextRequest) {
         )
       }
 
+      // Phase 2B (Aufgabe 3): ein Tarifwechsel wird NIE mehr ohne vorherige, vom Nutzer
+      // ausdrücklich bestätigte Preisvorschau ausgeführt. Der Client kann den Betrag dabei nicht
+      // beeinflussen – nur die serverseitig unter `previewId` gespeicherte Zeile (siehe
+      // src/lib/billing/tier-change-preview.ts) entscheidet, welcher Tarif/Preis gilt. Fehlt die
+      // previewId, ist sie abgelaufen, bereits verbraucht oder gehört zu einem anderen Tarif,
+      // bricht der Wechsel kontrolliert ab (409) – der Client muss dann über
+      // POST /api/billing/tier-change-preview eine neue Vorschau anfordern.
+      if (!previewId) {
+        return NextResponse.json(
+          { error: 'Für einen Tarifwechsel ist eine bestätigte Preisvorschau erforderlich.' },
+          { status: 400 }
+        )
+      }
+      const claimedPreview = await claimTierChangePreview(previewId, user.id, tier as keyof typeof TIERS)
+      if (!claimedPreview) {
+        return NextResponse.json(
+          { error: 'Die Preisvorschau ist abgelaufen oder bereits verwendet. Bitte fordern Sie eine neue Vorschau an.' },
+          { status: 409 }
+        )
+      }
+
       // Bestehendes Abo (Monatspaket -> Jahrespaket) direkt umstellen, statt ein zweites
       // Stripe-Abo für dieselbe E-Mail-Adresse anzulegen und doppelt abzurechnen.
       const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!)
@@ -112,11 +140,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Abo konnte nicht gefunden werden.' }, { status: 404 })
       }
 
-      await stripe.subscriptions.update(user.stripeSubscriptionId!, {
-        items: [{ id: currentItemId, price: priceId }],
-        metadata: { userId: user.id, tier },
-        proration_behavior: 'create_prorations',
-      })
+      await stripe.subscriptions.update(
+        user.stripeSubscriptionId!,
+        {
+          items: [{ id: currentItemId, price: priceId }],
+          metadata: { userId: user.id, tier },
+          proration_behavior: 'create_prorations',
+        },
+        // Idempotenz-Schutz zusätzlich auf Stripe-HTTP-Ebene (Verteidigung in der Tiefe): der
+        // lokale atomare Claim oben verhindert bereits, dass ein Doppelklick/Parallel-Request
+        // diesen Codepfad zweimal erreicht – dieser Key schützt zusätzlich gegen einen reinen
+        // Netzwerk-Retry derselben bereits abgesendeten Anfrage.
+        { idempotencyKey: tierChangeIdempotencyKey(claimedPreview.id) }
+      )
 
       // Phase 4.2: subscription_state_updated_at = now() stempeln (siehe
       // src/lib/billing/subscription-state.ts) – verhindert, dass ein noch ausstehender,

@@ -254,3 +254,114 @@ export async function sendMatchNotificationEmail(to: string, job: MatchNotificat
 
   await send(to, `🔧 Neuer passender Auftrag: „${job.title}“`, html, text)
 }
+
+export interface SubscriptionConfirmationEmailInfo {
+  tierName: string
+  priceEuroPerMonth: number
+  billingNote: string
+  minimumTermMonths: number
+  committedUntil: string | null
+}
+
+/**
+ * Phase 2B – Bestätigung des Abo-Abschlusses. Enthält AUSSCHLIESSLICH die zum Zeitpunkt des
+ * Vertragsschlusses im Outbox-Eintrag eingefrorenen Tarifdaten (siehe
+ * src/lib/billing/billing-notification-outbox.ts) – keine zum Versandzeitpunkt aktuellen
+ * TIERS-Werte, keine Widerrufsbelehrung, kein AGB-Auszug: diese Texte sind nicht Gegenstand
+ * dieser technischen Phase und bedürfen vor jeder Veröffentlichung einer eigenständigen
+ * rechtlichen Freigabe (siehe Verbraucherrecht-Audit, Freigabepunkt D).
+ */
+export async function sendSubscriptionConfirmationEmail(to: string, info: SubscriptionConfirmationEmailInfo) {
+  const safeTierName = escapeHtml(info.tierName)
+  const safeBillingNote = escapeHtml(info.billingNote)
+  const committedUntilText = info.committedUntil
+    ? new Date(info.committedUntil).toLocaleDateString('de-DE')
+    : null
+  const membershipUrl = `${getAppUrl()}/dashboard/einstellungen/mitgliedschaft`
+
+  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #1e3a8a;">Ihr Abo wurde aktiviert</h1>
+      <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>Tarif:</strong> ${safeTierName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Preis:</strong> €${info.priceEuroPerMonth} / Monat zzgl. MwSt.</p>
+        <p style="margin: 0 0 8px 0;"><strong>Abrechnung:</strong> ${safeBillingNote}</p>
+        ${
+          info.minimumTermMonths > 0
+            ? `<p style="margin: 0 0 8px 0;"><strong>Mindestlaufzeit:</strong> ${info.minimumTermMonths} Monate${committedUntilText ? ` (bis ${committedUntilText})` : ''}</p>`
+            : ''
+        }
+      </div>
+      <a href="${membershipUrl}"
+         style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 8px;">
+        Abo verwalten →
+      </a>
+      <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+        Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos mit den oben genannten Eckdaten.
+      </p>
+    </div>`
+
+  const text = [
+    'Ihr Abo wurde aktiviert',
+    '',
+    `Tarif: ${info.tierName}`,
+    `Preis: €${info.priceEuroPerMonth} / Monat zzgl. MwSt.`,
+    `Abrechnung: ${info.billingNote}`,
+    info.minimumTermMonths > 0
+      ? `Mindestlaufzeit: ${info.minimumTermMonths} Monate${committedUntilText ? ` (bis ${committedUntilText})` : ''}`
+      : null,
+    '',
+    `Abo verwalten: ${membershipUrl}`,
+  ]
+    .filter((line) => line !== null)
+    .join('\n')
+
+  await send(to, `Ihr BAUVERSUS-Abo (${info.tierName}) wurde aktiviert`, html, text)
+}
+
+export interface CancellationConfirmationEmailInfo {
+  tierName: string
+  requestedAt: string
+  effectiveAt: string
+}
+
+/**
+ * Phase 2B – Bestätigung einer eingegangenen Kündigung. Übermittelt ausschließlich den
+ * tatsächlich serverseitig gespeicherten Zugangszeitpunkt (`requestedAt`) und den berechneten
+ * Beendigungszeitpunkt (`effectiveAt`) – keine erfundenen Fristen, kein Widerrufs-/§312k-Text.
+ */
+export async function sendCancellationConfirmationEmail(to: string, info: CancellationConfirmationEmailInfo) {
+  const safeTierName = escapeHtml(info.tierName)
+  const requestedAtText = new Date(info.requestedAt).toLocaleString('de-DE')
+  const effectiveAtText = new Date(info.effectiveAt).toLocaleDateString('de-DE')
+  const membershipUrl = `${getAppUrl()}/dashboard/einstellungen/mitgliedschaft`
+
+  const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #1e3a8a;">Ihre Kündigung wurde registriert</h1>
+      <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
+        <p style="margin: 0 0 8px 0;"><strong>Tarif:</strong> ${safeTierName}</p>
+        <p style="margin: 0 0 8px 0;"><strong>Eingegangen am:</strong> ${escapeHtml(requestedAtText)}</p>
+        <p style="margin: 0;"><strong>Vertragsende:</strong> ${escapeHtml(effectiveAtText)}</p>
+      </div>
+      <p>Bis zu diesem Zeitpunkt behalten Sie den vollen Zugriff auf Ihr Abo. Sie können die
+      Kündigung bis dahin jederzeit in Ihrem Konto zurückziehen.</p>
+      <a href="${membershipUrl}"
+         style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 8px;">
+        Zur Mitgliedschaft →
+      </a>
+    </div>`
+
+  const text = [
+    'Ihre Kündigung wurde registriert',
+    '',
+    `Tarif: ${info.tierName}`,
+    `Eingegangen am: ${requestedAtText}`,
+    `Vertragsende: ${effectiveAtText}`,
+    '',
+    'Bis zu diesem Zeitpunkt behalten Sie den vollen Zugriff auf Ihr Abo. Sie können die Kündigung',
+    'bis dahin jederzeit in Ihrem Konto zurückziehen.',
+    '',
+    `Zur Mitgliedschaft: ${membershipUrl}`,
+  ].join('\n')
+
+  await send(to, `Ihre Kündigung (${info.tierName}) wurde registriert`, html, text)
+}

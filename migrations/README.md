@@ -64,3 +64,8 @@ angewendete automatisch.
   Stripe-Webhook-Idempotenz, `stripe_event_id UNIQUE` + `ON CONFLICT DO NOTHING`) sowie
   `users.subscription_state_updated_at` (Ordering-Guard gegen verspätete/ungeordnete
   Stripe-Events; siehe `src/lib/billing/` und `docs/phase-4.2-stripe-hardening.md`).
+- `0014_billing_outbox_and_tier_change_preview.sql` – Phase 2B: `billing_notification_outbox`
+  (Outbox-Muster für Abo-/Kündigungsbestätigungs-E-Mails, analog `match_notifications`) sowie
+  `billing_tier_change_previews` (kurzlebige, serverseitig berechnete Tarifwechsel-Preisvorschau;
+  verhindert, dass ein Tarifwechsel ohne ausdrückliche Bestätigung des tatsächlich fälligen
+  Betrags ausgeführt wird). Reine Technik, keine neuen Rechtstexte – siehe `src/lib/billing/`.

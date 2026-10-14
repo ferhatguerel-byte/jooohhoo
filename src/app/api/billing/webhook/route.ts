@@ -15,6 +15,7 @@ import { logEvent } from '@/lib/observability/logger'
 import { getRequestId, REQUEST_ID_HEADER } from '@/lib/observability/request-id'
 import { matchProviderAgainstOpenJobs } from '@/lib/matching/run-provider-matching'
 import { captureError } from '@/lib/observability/sentry'
+import { enqueueBillingNotification } from '@/lib/billing/billing-notification-outbox'
 
 /**
  * Phase 4.2 – Stripe-Webhook-Härtung.
@@ -153,6 +154,57 @@ async function handleCheckoutCompleted(
     } catch (err) {
       console.error('Provider-Matching nach Checkout-Aktivierung fehlgeschlagen:', userId, err)
       captureError(err, { userId, operation: 'provider_matching_after_checkout_activation' })
+    }
+
+    // Phase 2B (Aufgabe 1): Vertragsbestätigung als Outbox-Eintrag, NICHT synchron per Resend
+    // versendet – ein fehlgeschlagener E-Mail-Versand darf die bereits angewendete
+    // Subscription-Aktivierung niemals rückgängig machen oder den Webhook fehlschlagen lassen
+    // (dieselbe Isolations-Begründung wie beim Matching-Lifecycle direkt darüber). `dedupeKey`
+    // ist an die Stripe-Event-ID gebunden: ein Webhook-Retry desselben Events (z.B. weil ein
+    // SPÄTERER Schritt in einem anderen Event-Typ fehlschlägt) legt dadurch nie eine zweite
+    // Bestätigungs-Zeile an. Preis/Laufzeit werden JETZT, zum Zeitpunkt der tatsächlichen
+    // Aktivierung, aus TIERS gelesen und als Snapshot eingefroren – für künftige Tarifänderungen
+    // bleibt der historische Vertragsinhalt dadurch korrekt; für vor dieser Phase aktivierte,
+    // bereits bestehende Abos existiert bewusst KEIN nachträglich erfundener Snapshot.
+    const tierDef = TIERS[tier]
+    // Kalendergenaue Nachbildung von applyCheckoutActivation()s `now() + make_interval(months =>
+    // ...)` in JS (setUTCMonth statt Tage-Multiplikation, analog subscription-term.ts) – bewusst
+    // OHNE zusätzliche DB-Lesezugriffe, um hier keine neue Query in den bereits
+    // produktiv-gehärteten, bestehenden Checkout-Aktivierungspfad einzufügen. `eventCreatedAt`
+    // (Stripe-Event-Zeitpunkt) statt eines separaten `now()` als Anker – das ist der tatsächliche
+    // Zeitpunkt des Vertragsschlusses, nicht der ggf. spätere Verarbeitungszeitpunkt dieses Webhooks.
+    const committedUntilValue =
+      tierDef.minimumTermMonths > 0
+        ? (() => {
+            const d = new Date(eventCreatedAt.getTime())
+            d.setUTCMonth(d.getUTCMonth() + tierDef.minimumTermMonths)
+            return d
+          })()
+        : null
+    // Eigenes try/catch, obwohl enqueueBillingNotification() laut eigenem Vertrag nie wirft
+    // (siehe billing-notification-outbox.ts): wäre das NICHT abgesichert, würde ein unerwarteter
+    // Fehler hier den Webhook mit 500 beantworten -> Stripe wiederholt das Event -> der
+    // Ordering-Guard liefert beim Retry `applied=false` (die Aktivierung ist ja bereits
+    // geschehen) -> dieser gesamte Block liefe nie wieder an -> die Bestätigung ginge für immer
+    // verloren, nicht nur verzögert. Ein isolierter Fehlschlag hier bleibt dagegen folgenlos für
+    // die bereits abgeschlossene Aktivierung UND verhindert nicht, dass spätere Events normal
+    // verarbeitet werden.
+    try {
+      await enqueueBillingNotification({
+        userId,
+        kind: 'subscription_confirmation',
+        dedupeKey: `subscription_confirmation:${session.id}`,
+        payload: {
+          tierName: tierDef.name,
+          priceEuroPerMonth: tierDef.priceEuroPerMonth,
+          billingNote: tierDef.billingNote,
+          minimumTermMonths: tierDef.minimumTermMonths,
+          committedUntil: committedUntilValue ? new Date(committedUntilValue).toISOString() : null,
+        },
+      })
+    } catch (err) {
+      console.error('Vertragsbestätigungs-Outbox-Eintrag fehlgeschlagen:', userId, err)
+      captureError(err, { userId, operation: 'billing_notification_enqueue_after_checkout' })
     }
   }
 }

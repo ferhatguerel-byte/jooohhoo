@@ -4,7 +4,9 @@ import { getDb } from '@/lib/db'
 import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { reconcileUserStripeSubscription } from '@/lib/billing/reconcile-subscription'
 import CheckoutButton from './CheckoutButton'
+import TierChangeButton from './TierChangeButton'
 import PortalButton from './PortalButton'
+import BillingLegalLinks from './BillingLegalLinks'
 
 export default async function AboPage({ searchParams }: { searchParams: Promise<{ success?: string }> }) {
   const { success } = await searchParams
@@ -99,13 +101,17 @@ export default async function AboPage({ searchParams }: { searchParams: Promise<
                     Erst nach Ablauf der Jahrespaket-Laufzeit verfügbar. Bitte zuerst über „Vertrag kündigen&rdquo; kündigen.
                   </div>
                 </div>
+              ) : hasActiveSub ? (
+                <TierChangeButton tier={tier.id} />
               ) : (
-                <CheckoutButton tier={tier.id} label={hasActiveSub ? 'Wechseln' : 'Zahlungspflichtig bestellen'} />
+                <CheckoutButton tier={tier.id} label="Zahlungspflichtig bestellen" />
               )}
             </div>
           )
         })}
       </div>
+
+      <BillingLegalLinks />
     </div>
   )
 }

@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { queryMock, constructEventMock, retrieveSubscriptionMock, matchProviderAgainstOpenJobsMock } = vi.hoisted(() => ({
-  queryMock: vi.fn(),
-  constructEventMock: vi.fn(),
-  retrieveSubscriptionMock: vi.fn(),
-  matchProviderAgainstOpenJobsMock: vi.fn(),
-}))
+const { queryMock, constructEventMock, retrieveSubscriptionMock, matchProviderAgainstOpenJobsMock, enqueueBillingNotificationMock } =
+  vi.hoisted(() => ({
+    queryMock: vi.fn(),
+    constructEventMock: vi.fn(),
+    retrieveSubscriptionMock: vi.fn(),
+    matchProviderAgainstOpenJobsMock: vi.fn(),
+    enqueueBillingNotificationMock: vi.fn(),
+  }))
 vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
@@ -18,6 +20,10 @@ vi.mock('@/lib/stripe', () => ({
 // queryMock-Call-Zählungen/-Indizes der bestehenden Webhook-Tests nicht verschieben – siehe eigene
 // Tests weiter unten für das Trigger-Verhalten selbst.
 vi.mock('@/lib/matching/run-provider-matching', () => ({ matchProviderAgainstOpenJobs: matchProviderAgainstOpenJobsMock }))
+// Phase 2B (Aufgabe 1): ebenfalls eigenständig gemockt, aus demselben Grund – die bestehenden
+// Idempotenz-/Ordering-/Matching-Tests oben dürfen durch die neue Outbox-Anbindung nicht in ihren
+// queryMock-Erwartungen verschoben werden. Eigene Tests für das Enqueue-Verhalten weiter unten.
+vi.mock('@/lib/billing/billing-notification-outbox', () => ({ enqueueBillingNotification: enqueueBillingNotificationMock }))
 
 import { POST } from '@/app/api/billing/webhook/route'
 
@@ -44,6 +50,8 @@ beforeEach(() => {
   retrieveSubscriptionMock.mockReset()
   matchProviderAgainstOpenJobsMock.mockReset()
   matchProviderAgainstOpenJobsMock.mockResolvedValue({ providerId: 'u1', resultCount: 0, eligibleCount: 0, excludedCount: 0 })
+  enqueueBillingNotificationMock.mockReset()
+  enqueueBillingNotificationMock.mockResolvedValue(undefined)
   vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test')
   vi.stubEnv('STRIPE_PRICE_MONTHLY', 'price_monthly')
   vi.stubEnv('STRIPE_PRICE_YEARLY', 'price_yearly')
@@ -654,5 +662,74 @@ describe('POST /api/billing/webhook — Matching-Lifecycle Phase B (Re-Matching 
     const res = await POST(webhookReq('{}', 'sig_valid'))
     expect(res.status).toBe(200)
     consoleErrorSpy.mockRestore()
+  })
+})
+
+describe('POST /api/billing/webhook — Vertragsbestätigungs-Outbox (Phase 2B, Aufgabe 1)', () => {
+  it('reicht nach erfolgreicher Aktivierung eine Vertragsbestätigung mit stripe-event-gebundenem dedupeKey ein', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_confirm_1',
+      type: 'checkout.session.completed',
+      created: 1_700_000_000,
+      data: {
+        object: {
+          id: 'cs_test_1',
+          metadata: { userId: 'u1', tier: 'monthly' },
+          subscription: 'sub_1',
+          customer: 'cus_1',
+          payment_status: 'paid',
+        },
+      },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // applyCheckoutActivation
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // markStripeEventProcessed
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(enqueueBillingNotificationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'u1',
+        kind: 'subscription_confirmation',
+        dedupeKey: 'subscription_confirmation:cs_test_1',
+        payload: expect.objectContaining({ tierName: 'Monatspaket', priceEuroPerMonth: 119 }),
+      })
+    )
+  })
+
+  it('reicht KEINE Bestätigung ein, wenn die Aktivierung durch den Ordering-Guard verworfen wurde (applied=false)', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_confirm_stale',
+      type: 'checkout.session.completed',
+      created: 1000,
+      data: {
+        object: { id: 'cs_stale', metadata: { userId: 'u1', tier: 'monthly' }, subscription: 'sub_1', customer: 'cus_1', payment_status: 'paid' },
+      },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 0 }) // applyCheckoutActivation: applied=false
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // markStripeEventProcessed
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(enqueueBillingNotificationMock).not.toHaveBeenCalled()
+  })
+
+  it('ein Fehler beim Enqueue der Vertragsbestätigung lässt den Webhook trotzdem erfolgreich zurückkehren (isoliert)', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_confirm_enqueue_fails',
+      type: 'checkout.session.completed',
+      created: 1000,
+      data: {
+        object: { id: 'cs_fail', metadata: { userId: 'u1', tier: 'yearly' }, subscription: 'sub_1', customer: 'cus_1', payment_status: 'paid' },
+      },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    queryMock.mockResolvedValueOnce({ rowCount: 1 })
+    // In der echten Implementierung wirft enqueueBillingNotification() nie (siehe
+    // tests/billing/billing-notification-outbox.test.ts) – dieser Test prüft dennoch die
+    // Isolations-Erwartung, falls diese Garantie künftig versehentlich verletzt würde.
+    enqueueBillingNotificationMock.mockRejectedValueOnce(new Error('sollte laut Vertrag nie passieren'))
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
   })
 })
