@@ -84,7 +84,13 @@ beforeEach(() => {
   clientQueryMock.mockReset()
   releaseMock.mockReset()
   connectMock.mockResolvedValue({ query: clientQueryMock, release: releaseMock })
-  clientQueryMock.mockResolvedValue({ rows: [] })
+  // Phase 2F.2: cancel-yearly hält während Stripe-Aufruf + lokalem Write eine Session-Advisory-
+  // Lock über eine dedizierte connect()-Verbindung (siehe src/lib/billing/cancellation-lock.ts).
+  // `locked: true` lässt den einzigen Active-Happy-Path-Test dieser Datei (cancel-yearly) den Lock
+  // wie erwartet erhalten; für andere hier getestete Routen (award/offers/jobs-Transaktionen) ist
+  // diese Zeilenform irrelevant, da deren Tests in dieser Datei ausschließlich den
+  // account-status-Gate-Block VOR jedem DB-Zugriff prüfen (connectMock wird dort nie aufgerufen).
+  clientQueryMock.mockResolvedValue({ rows: [{ locked: true }] })
   generateLeistungsverzeichnisMock.mockReset()
   getStripeMock.mockReset()
   getStripeMock.mockReturnValue(stripeMock)
@@ -199,6 +205,7 @@ describe('Admin-Unternehmensverwaltung – requireActiveUserApi() sichert Busine
     it('ACTIVE: Kündigung funktioniert weiterhin wie vorher (kein pre-existing Test für den Happy-Path vorhanden)', async () => {
       getCurrentUserMock.mockResolvedValue(subunternehmer('active'))
       stripeMock.subscriptions.update.mockResolvedValue({})
+      queryMock.mockResolvedValueOnce({ rowCount: 1 }) // UPDATE users SET subscription_cancel_at
       const res = await cancelYearly()
       expect(res.status).toBe(200)
       expect(stripeMock.subscriptions.update).toHaveBeenCalledWith('sub_stripe_1', expect.objectContaining({ cancel_at: expect.any(Number) }))
