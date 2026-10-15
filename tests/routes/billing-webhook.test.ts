@@ -26,6 +26,7 @@ vi.mock('@/lib/matching/run-provider-matching', () => ({ matchProviderAgainstOpe
 vi.mock('@/lib/billing/billing-notification-outbox', () => ({ enqueueBillingNotification: enqueueBillingNotificationMock }))
 
 import { POST } from '@/app/api/billing/webhook/route'
+import { CURRENT_TERMS_VERSION } from '@/lib/legal/terms-version'
 
 function webhookReq(body: string, signature?: string) {
   const headers = new Headers()
@@ -692,6 +693,33 @@ describe('POST /api/billing/webhook — Vertragsbestätigungs-Outbox (Phase 2B, 
         kind: 'subscription_confirmation',
         dedupeKey: 'subscription_confirmation:cs_test_1',
         payload: expect.objectContaining({ tierName: 'Monatspaket', priceEuroPerMonth: 119 }),
+      })
+    )
+  })
+
+  it('Phase 2E: der Vertragsnachweis-Snapshot enthält die aktuelle AGB-Versionskennung', async () => {
+    constructEventMock.mockReturnValue({
+      id: 'evt_confirm_agb',
+      type: 'checkout.session.completed',
+      created: 1_700_000_000,
+      data: {
+        object: {
+          id: 'cs_test_agb',
+          metadata: { userId: 'u1', tier: 'monthly' },
+          subscription: 'sub_1',
+          customer: 'cus_1',
+          payment_status: 'paid',
+        },
+      },
+    })
+    mockClaimWins()
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // applyCheckoutActivation
+    queryMock.mockResolvedValueOnce({ rowCount: 1 }) // markStripeEventProcessed
+    const res = await POST(webhookReq('{}', 'sig_valid'))
+    expect(res.status).toBe(200)
+    expect(enqueueBillingNotificationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ agbVersion: CURRENT_TERMS_VERSION }),
       })
     )
   })

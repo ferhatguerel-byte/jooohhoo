@@ -16,6 +16,7 @@ import { getRequestId, REQUEST_ID_HEADER } from '@/lib/observability/request-id'
 import { matchProviderAgainstOpenJobs } from '@/lib/matching/run-provider-matching'
 import { captureError } from '@/lib/observability/sentry'
 import { enqueueBillingNotification } from '@/lib/billing/billing-notification-outbox'
+import { CURRENT_TERMS_VERSION } from '@/lib/legal/terms-version'
 
 /**
  * Phase 4.2 – Stripe-Webhook-Härtung.
@@ -200,6 +201,11 @@ async function handleCheckoutCompleted(
           billingNote: tierDef.billingNote,
           minimumTermMonths: tierDef.minimumTermMonths,
           committedUntil: committedUntilValue ? new Date(committedUntilValue).toISOString() : null,
+          // Phase 2E: AGB-Version zum Zeitpunkt der Aktivierung, aus derselben zentralen Konstante
+          // wie bei der Registrierung (src/lib/legal/terms-version.ts) – JETZT gelesen, nicht die
+          // ggf. ältere Version, die der Nutzer bei seiner ursprünglichen Registrierung akzeptiert
+          // hat (dieselbe "Snapshot zum Aktivierungszeitpunkt"-Logik wie bei tierName/Preis oben).
+          agbVersion: CURRENT_TERMS_VERSION,
         },
       })
     } catch (err) {

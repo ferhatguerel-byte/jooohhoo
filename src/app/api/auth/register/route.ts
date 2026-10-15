@@ -6,6 +6,7 @@ import { GEWERKE } from '@/lib/gewerke'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { handleApiError } from '@/lib/api-error'
 import { readJsonBody } from '@/lib/security/request-limits'
+import { CURRENT_TERMS_VERSION } from '@/lib/legal/terms-version'
 
 // Phase 4.3 (Teil D): phone/plz/ort hatten keine Maximallänge.
 // Rechtssicherheits-Fix: ohne nachweisbare Zustimmung zu AGB/Datenschutz bei Vertragsschluss war
@@ -48,11 +49,32 @@ export async function POST(req: NextRequest) {
     const passwordHash = await hashPassword(body.password)
     const gewerke = body.role === 'subunternehmer' ? body.gewerke || [] : []
 
+    // Phase 2E – Nachweis der AGB-/Datenschutz-Zustimmung: Zeitpunkt UND Versionskennung werden im
+    // selben atomaren INSERT wie der restliche Nutzerdatensatz geschrieben, nicht in einem
+    // separaten Folge-Query (kein Zeitfenster, in dem ein Nutzer ohne dokumentierte Zustimmung
+    // existiert). `new Date()` ist intern immer UTC (epochbasiert); der pg-Treiber übermittelt den
+    // Wert entsprechend als UTC-Zeitstempel, unabhängig von der Server-Zeitzone. Die Version
+    // kommt ausschließlich aus der serverseitigen Konstante CURRENT_TERMS_VERSION – der Client
+    // kann sie über den Request-Body nicht beeinflussen (registerSchema oben kennt kein
+    // entsprechendes Feld, ein zusätzlich mitgesendetes Feld würde von Zod ignoriert).
+    const termsAcceptedAt = new Date()
+
     const result = await db.query(
-      `INSERT INTO users (email, password_hash, role, company_name, phone, plz, ort, gewerke)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (email, password_hash, role, company_name, phone, plz, ort, gewerke, terms_accepted_at, terms_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id, role`,
-      [body.email, passwordHash, body.role, body.companyName, body.phone || null, body.plz, body.ort, gewerke]
+      [
+        body.email,
+        passwordHash,
+        body.role,
+        body.companyName,
+        body.phone || null,
+        body.plz,
+        body.ort,
+        gewerke,
+        termsAcceptedAt,
+        CURRENT_TERMS_VERSION,
+      ]
     )
 
     const user = result.rows[0]

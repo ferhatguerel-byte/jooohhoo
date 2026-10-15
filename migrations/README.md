@@ -69,3 +69,7 @@ angewendete automatisch.
   `billing_tier_change_previews` (kurzlebige, serverseitig berechnete Tarifwechsel-Preisvorschau;
   verhindert, dass ein Tarifwechsel ohne ausdrückliche Bestätigung des tatsächlich fälligen
   Betrags ausgeführt wird). Reine Technik, keine neuen Rechtstexte – siehe `src/lib/billing/`.
+- `0015_terms_acceptance.sql` – Phase 2E: `users.terms_accepted_at`, `users.terms_version`
+  (Nachweis der AGB-/Datenschutz-Zustimmung bei Registrierung; siehe
+  `src/lib/legal/terms-version.ts` für die zentrale Versionskonstante). Bestandsnutzer behalten
+  `NULL` – keine rückwirkend erfundenen Zustimmungsdaten.

@@ -18,6 +18,11 @@ export interface SubscriptionConfirmationPayload {
   /** Siehe SubscriptionConfirmationEmailInfo.isTest in src/lib/email.ts – manueller
    * Produktionstest der Zustellung, kein echter Vertragsabschluss. */
   isTest?: boolean
+  /** Phase 2E – CURRENT_TERMS_VERSION (siehe src/lib/legal/terms-version.ts) zum Zeitpunkt der
+   * Abo-Aktivierung, als Teil des dauerhaften Vertragsdaten-Nachweises. Optional, da ältere,
+   * vor dieser Phase aktivierte Outbox-Einträge dieses Feld nicht enthalten (kein nachträglich
+   * erfundener Wert für bestehende Zeilen). */
+  agbVersion?: string
 }
 
 export interface CancellationConfirmationPayload {

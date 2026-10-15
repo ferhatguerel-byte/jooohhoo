@@ -21,6 +21,7 @@ vi.mock('@/lib/auth', () => ({
 import { POST as login } from '@/app/api/auth/login/route'
 import { POST as register } from '@/app/api/auth/register/route'
 import { POST as resetPassword } from '@/app/api/auth/reset-password/route'
+import { CURRENT_TERMS_VERSION } from '@/lib/legal/terms-version'
 
 function jsonReq(url: string, body: unknown) {
   return new NextRequest(url, {
@@ -185,6 +186,75 @@ describe('POST /api/auth/register', () => {
     )
     expect(res.status).toBe(400)
     expect(queryMock).not.toHaveBeenCalled()
+  })
+
+  it('Phase 2E: speichert bei erfolgreicher Registrierung terms_accepted_at (UTC-Zeitstempel) und terms_version im selben INSERT', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] }) // Rate-Limit COUNT
+    queryMock.mockResolvedValueOnce({}) // Rate-Limit INSERT
+    queryMock.mockResolvedValueOnce({ rows: [] }) // E-Mail noch nicht vergeben
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'new-user', role: 'auftraggeber' }] }) // INSERT users
+
+    const before = new Date()
+    const res = await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'zustimmung@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'Test GmbH',
+        plz: '10115',
+        ort: 'Berlin',
+        acceptTerms: true,
+      })
+    )
+    const after = new Date()
+
+    expect(res.status).toBe(200)
+    const insertCall = queryMock.mock.calls[3]
+    expect(String(insertCall[0])).toContain('terms_accepted_at')
+    expect(String(insertCall[0])).toContain('terms_version')
+
+    const [, , , , , , , , termsAcceptedAt, termsVersion] = insertCall[1] as [
+      string,
+      string,
+      string,
+      string,
+      string | null,
+      string,
+      string,
+      string[],
+      Date,
+      string,
+    ]
+    expect(termsAcceptedAt).toBeInstanceOf(Date)
+    expect(termsAcceptedAt.getTime()).toBeGreaterThanOrEqual(before.getTime())
+    expect(termsAcceptedAt.getTime()).toBeLessThanOrEqual(after.getTime())
+    expect(termsVersion).toBe(CURRENT_TERMS_VERSION)
+  })
+
+  it('Phase 2E: eine vom Client mitgesendete, abweichende Versionskennung wird ignoriert — gespeichert wird ausschließlich CURRENT_TERMS_VERSION', async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ count: 0 }] })
+    queryMock.mockResolvedValueOnce({})
+    queryMock.mockResolvedValueOnce({ rows: [] })
+    queryMock.mockResolvedValueOnce({ rows: [{ id: 'new-user', role: 'auftraggeber' }] })
+
+    await register(
+      jsonReq('http://localhost/api/auth/register', {
+        email: 'manipulation@example.com',
+        password: 'supersecret',
+        role: 'auftraggeber',
+        companyName: 'Test GmbH',
+        plz: '10115',
+        ort: 'Berlin',
+        acceptTerms: true,
+        // Zusätzliches, vom registerSchema nicht vorgesehenes Feld – muss folgenlos bleiben.
+        termsVersion: 'client-erfundene-version-9999',
+      })
+    )
+
+    const insertCall = queryMock.mock.calls[3]
+    const storedVersion = (insertCall[1] as unknown[])[9]
+    expect(storedVersion).toBe(CURRENT_TERMS_VERSION)
+    expect(storedVersion).not.toBe('client-erfundene-version-9999')
   })
 })
 
