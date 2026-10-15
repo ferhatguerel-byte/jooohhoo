@@ -15,6 +15,9 @@ export interface SubscriptionConfirmationPayload {
   billingNote: string
   minimumTermMonths: number
   committedUntil: string | null
+  /** Siehe SubscriptionConfirmationEmailInfo.isTest in src/lib/email.ts – manueller
+   * Produktionstest der Zustellung, kein echter Vertragsabschluss. */
+  isTest?: boolean
 }
 
 export interface CancellationConfirmationPayload {

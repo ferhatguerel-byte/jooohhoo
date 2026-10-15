@@ -261,6 +261,11 @@ export interface SubscriptionConfirmationEmailInfo {
   billingNote: string
   minimumTermMonths: number
   committedUntil: string | null
+  /** Manueller Produktionstest der Zustellung (siehe billing-notification-outbox.ts) – KEIN
+   * echter Vertragsabschluss. Bei true wird Betreff und Inhalt eindeutig als Test gekennzeichnet,
+   * statt die reguläre Vertragsbestätigung zu versenden. Default (undefined/false): unverändertes
+   * bisheriges Verhalten. */
+  isTest?: boolean
 }
 
 /**
@@ -272,6 +277,7 @@ export interface SubscriptionConfirmationEmailInfo {
  * rechtlichen Freigabe (siehe Verbraucherrecht-Audit, Freigabepunkt D).
  */
 export async function sendSubscriptionConfirmationEmail(to: string, info: SubscriptionConfirmationEmailInfo) {
+  const isTest = info.isTest === true
   const safeTierName = escapeHtml(info.tierName)
   const safeBillingNote = escapeHtml(info.billingNote)
   const committedUntilText = info.committedUntil
@@ -279,8 +285,20 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
     : null
   const membershipUrl = `${getAppUrl()}/dashboard/einstellungen/mitgliedschaft`
 
+  // Nur bei isTest===true gerendert, direkt unter der Überschrift – unübersehbar vor den
+  // eigentlichen (im Testfall ohnehin nur synthetischen) Tarifdaten.
+  const testBannerHtml = isTest
+    ? `<p style="background: #fee2e2; border: 2px solid #dc2626; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-weight: bold; margin: 0 0 16px 0;">
+        Dies ist ein interner technischer Test der E-Mail-Zustellung. Es wurde kein Vertrag abgeschlossen oder verändert.
+      </p>`
+    : ''
+  const testBannerText = isTest
+    ? 'Dies ist ein interner technischer Test der E-Mail-Zustellung. Es wurde kein Vertrag abgeschlossen oder verändert.'
+    : ''
+
   const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h1 style="color: #1e3a8a;">Ihr Abo wurde aktiviert</h1>
+      ${testBannerHtml}
       <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
         <p style="margin: 0 0 8px 0;"><strong>Tarif:</strong> ${safeTierName}</p>
         <p style="margin: 0 0 8px 0;"><strong>Preis:</strong> €${info.priceEuroPerMonth} / Monat zzgl. MwSt.</p>
@@ -303,6 +321,7 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
   const text = [
     'Ihr Abo wurde aktiviert',
     '',
+    testBannerText || null,
     `Tarif: ${info.tierName}`,
     `Preis: €${info.priceEuroPerMonth} / Monat zzgl. MwSt.`,
     `Abrechnung: ${info.billingNote}`,
@@ -315,7 +334,8 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
     .filter((line) => line !== null)
     .join('\n')
 
-  await send(to, `Ihr BAUVERSUS-Abo (${info.tierName}) wurde aktiviert`, html, text)
+  const subjectPrefix = isTest ? '[TECHNISCHER TEST – KEIN VERTRAG] ' : ''
+  await send(to, `${subjectPrefix}Ihr BAUVERSUS-Abo (${info.tierName}) wurde aktiviert`, html, text)
 }
 
 export interface CancellationConfirmationEmailInfo {
