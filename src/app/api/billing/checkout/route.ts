@@ -10,6 +10,9 @@ import { TIERS, TIER_ORDER } from '@/lib/tiers'
 import { getAppUrl } from '@/lib/url'
 import { handleApiError } from '@/lib/api-error'
 import { claimTierChangePreview, tierChangeIdempotencyKey } from '@/lib/billing/tier-change-preview'
+import { applySubscriptionUpdated } from '@/lib/billing/subscription-state'
+import { withYearlyCancellationLock, LOCK_UNAVAILABLE, LOCK_SETUP_FAILED } from '@/lib/billing/cancellation-lock'
+import { captureError, captureMessage } from '@/lib/observability/sentry'
 
 const checkoutSchema = z.object({
   tier: z.enum(TIER_ORDER as [string, ...string[]]),
@@ -124,52 +127,32 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      const claimedPreview = await claimTierChangePreview(previewId, user.id, tier as keyof typeof TIERS)
-      if (!claimedPreview) {
+
+      // Phase 2G.5: derselbe Nutzer-Lock-Schlüssel wie `cancel-yearly`/die Admin-Kündigung (siehe
+      // cancellation-lock.ts) – ein Tarifwechsel ist fachlich eine weitere "Nutzeraktion auf das
+      // eigene Abo", gleichrangig zu cancel-yearly POST/DELETE, OHNE eigene Priorität gegenüber
+      // einer Admin-Kündigung. Serialisiert diesen Tarifwechsel gegen eine zeitgleiche
+      // Admin-Kündigung oder Jahreskündigung/-Rückzug DESSELBEN Nutzers: hält eine der beiden
+      // bereits den Lock, scheitert dieser Request sofort mit 409, OHNE dass der
+      // `stripe.subscriptions.update()`-Aufruf unten überhaupt versucht wird – das schließt die in
+      // Phase 2G.1 identifizierte Race Condition (konkurrierender Tarifwechsel überschreibt eine
+      // soeben erfolgte Admin-Kündigung) auf Stripe-Call-Ebene aus, nicht nur auf DB-Write-Ebene.
+      const result = await withYearlyCancellationLock(user.id, () =>
+        performTierChange(stripe, user, tier as keyof typeof TIERS, tierDef, priceId, previewId, req)
+      )
+      if (result === LOCK_UNAVAILABLE) {
         return NextResponse.json(
-          { error: 'Die Preisvorschau ist abgelaufen oder bereits verwendet. Bitte fordern Sie eine neue Vorschau an.' },
+          { error: 'Für dieses Abo läuft bereits eine andere Änderung. Bitte in Kürze erneut versuchen.' },
           { status: 409 }
         )
       }
-
-      // Bestehendes Abo (Monatspaket -> Jahrespaket) direkt umstellen, statt ein zweites
-      // Stripe-Abo für dieselbe E-Mail-Adresse anzulegen und doppelt abzurechnen.
-      const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!)
-      const currentItemId = subscription.items.data[0]?.id
-      if (!currentItemId) {
-        return NextResponse.json({ error: 'Abo konnte nicht gefunden werden.' }, { status: 404 })
+      if (result === LOCK_SETUP_FAILED) {
+        return NextResponse.json(
+          { error: 'Die Anfrage konnte derzeit nicht verarbeitet werden. Bitte später erneut versuchen.' },
+          { status: 503 }
+        )
       }
-
-      await stripe.subscriptions.update(
-        user.stripeSubscriptionId!,
-        {
-          items: [{ id: currentItemId, price: priceId }],
-          metadata: { userId: user.id, tier },
-          proration_behavior: 'create_prorations',
-        },
-        // Idempotenz-Schutz zusätzlich auf Stripe-HTTP-Ebene (Verteidigung in der Tiefe): der
-        // lokale atomare Claim oben verhindert bereits, dass ein Doppelklick/Parallel-Request
-        // diesen Codepfad zweimal erreicht – dieser Key schützt zusätzlich gegen einen reinen
-        // Netzwerk-Retry derselben bereits abgesendeten Anfrage.
-        { idempotencyKey: tierChangeIdempotencyKey(claimedPreview.id) }
-      )
-
-      // Phase 4.2: subscription_state_updated_at = now() stempeln (siehe
-      // src/lib/billing/subscription-state.ts) – verhindert, dass ein noch ausstehender,
-      // älterer Webhook (mit dem vorherigen Tarif in seinem Payload/Metadata) diesen
-      // gerade erst vollzogenen Tarifwechsel über den Ordering-Guard rückgängig macht.
-      const minimumTermMonths = tierDef.minimumTermMonths
-      await getDb().query(
-        `UPDATE users SET subscription_tier = $1,
-         subscription_committed_until = CASE WHEN $2::int > 0 THEN now() + make_interval(months => $2::int) ELSE NULL END,
-         subscription_cancel_at = NULL,
-         subscription_state_updated_at = now()
-         WHERE id = $3`,
-        [tier, minimumTermMonths, user.id]
-      )
-
-      const appUrl = getAppUrl(req)
-      return NextResponse.json({ url: `${appUrl}/dashboard/abo?success=1` })
+      return result
     }
 
     const customerId = await resolveValidCustomerId(stripe, user)
@@ -190,4 +173,123 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     return handleApiError(err, 'Checkout konnte nicht gestartet werden.')
   }
+}
+
+async function performTierChange(
+  stripe: Stripe,
+  user: CurrentUser,
+  tier: keyof typeof TIERS,
+  tierDef: (typeof TIERS)[keyof typeof TIERS],
+  priceId: string,
+  previewId: string,
+  req: NextRequest
+): Promise<NextResponse> {
+  const claimedPreview = await claimTierChangePreview(previewId, user.id, tier)
+  if (!claimedPreview) {
+    return NextResponse.json(
+      { error: 'Die Preisvorschau ist abgelaufen oder bereits verwendet. Bitte fordern Sie eine neue Vorschau an.' },
+      { status: 409 }
+    )
+  }
+
+  // Bestehendes Abo (Monatspaket -> Jahrespaket) direkt umstellen, statt ein zweites Stripe-Abo
+  // für dieselbe E-Mail-Adresse anzulegen und doppelt abzurechnen.
+  const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!)
+  const currentItemId = subscription.items.data[0]?.id
+  if (!currentItemId) {
+    return NextResponse.json({ error: 'Abo konnte nicht gefunden werden.' }, { status: 404 })
+  }
+
+  // Phase 2G.5: Zeitstempel VOR dem Stripe-Aufruf erfasst (nicht danach!) – dieselbe Begründung
+  // wie in cancel-yearly/route.ts bzw. der Admin-Kündigung (Phase 2F.2/2G.2): verhindert, dass
+  // dieser Direkt-Schreibpfad das zugehörige `customer.subscription.updated`-Webhook-Event
+  // fälschlich als veraltet erscheinen lässt.
+  const guardTimestamp = new Date()
+
+  // Stripe-Fehler: wirft unverändert in den äußeren catch (handleApiError) – keine lokale
+  // Änderung, der vorangehende claimTierChangePreview()-Verbrauch bleibt zwar bestehen (die
+  // Vorschau ist "verbrannt"), das ist aber unabhängig von einer lokalen Abo-Zustandsänderung und
+  // kein Sicherheitsproblem – der Nutzer fordert bei Bedarf eine neue Vorschau an.
+  await stripe.subscriptions.update(
+    user.stripeSubscriptionId!,
+    {
+      items: [{ id: currentItemId, price: priceId }],
+      metadata: { userId: user.id, tier },
+      proration_behavior: 'create_prorations',
+    },
+    // Idempotenz-Schutz zusätzlich auf Stripe-HTTP-Ebene (Verteidigung in der Tiefe): der lokale
+    // atomare Claim oben verhindert bereits, dass ein Doppelklick/Parallel-Request diesen
+    // Codepfad zweimal erreicht – dieser Key schützt zusätzlich gegen einen reinen
+    // Netzwerk-Retry derselben bereits abgesendeten Anfrage.
+    { idempotencyKey: tierChangeIdempotencyKey(claimedPreview.id) }
+  )
+
+  const writeOutcome = await writeTierChange(user.id, tier, tierDef.minimumTermMonths, guardTimestamp)
+  if (writeOutcome !== 'applied') {
+    return buildStripeSucceededButLocalWriteUncertainResponse(user.id, writeOutcome)
+  }
+
+  const appUrl = getAppUrl(req)
+  return NextResponse.json({ url: `${appUrl}/dashboard/abo?success=1` })
+}
+
+type LocalWriteOutcome = 'applied' | 'db_error' | 'guard_skipped'
+
+/**
+ * Schreibt den Tarifwechsel ausschließlich über `applySubscriptionUpdated()` (siehe
+ * subscription-state.ts) – dieselbe, bereits bestehende und getestete Ordering-Guard-Funktion,
+ * die auch der `customer.subscription.updated`-Webhook-Handler nutzt. Keine zweite, eigenständige
+ * UPDATE-Formulierung mehr (Phase-2G.1-Befund behoben: der vorherige, bedingungslose UPDATE ohne
+ * Ordering-Guard konnte einen zwischenzeitlich neueren Zustand – insbesondere eine Admin-
+ * Kündigung – ungeschützt überschreiben).
+ */
+async function writeTierChange(
+  userId: string,
+  tier: keyof typeof TIERS,
+  minimumTermMonths: number,
+  guardTimestamp: Date
+): Promise<LocalWriteOutcome> {
+  try {
+    const applied = await applySubscriptionUpdated(getDb(), {
+      userId,
+      status: 'active',
+      tier,
+      cancelAt: null,
+      committedUntilMonths: minimumTermMonths,
+      eventCreatedAt: guardTimestamp,
+    })
+    if (!applied) {
+      // Stripe wurde bereits erfolgreich aktualisiert; der Ordering-Guard hat die Zeile aber als
+      // bereits aktueller als dieser Request erkannt (z.B. eine nahezu gleichzeitige
+      // Admin-Kündigung oder ein Webhook). Bewusst NICHT erzwungen überschrieben.
+      captureMessage('checkout_tier_change: lokaler Schreibvorgang durch Ordering-Guard übersprungen', {
+        userId,
+        operation: 'checkout_tier_change_guard_skipped',
+      })
+      return 'guard_skipped'
+    }
+    return 'applied'
+  } catch (err) {
+    captureError(err, { userId, operation: 'checkout_tier_change_db_write_after_stripe_success' })
+    return 'db_error'
+  }
+}
+
+/**
+ * Stripe wurde in jedem Fall bereits erfolgreich aktualisiert (Tarif/Preis geändert) – nur die
+ * lokale Bestätigung ist entweder fehlgeschlagen (`db_error`) oder unsicher/übersprungen
+ * (`guard_skipped`). KEINE Meldung, die einen vollständigen Fehlschlag bei Stripe suggeriert –
+ * KEIN automatischer Retry des Stripe-Aufrufs hier. Die Selbstheilung über das zugehörige Webhook
+ * wird NICHT als garantiert oder fristgebunden dargestellt.
+ */
+function buildStripeSucceededButLocalWriteUncertainResponse(userId: string, outcome: LocalWriteOutcome): NextResponse {
+  console.error('Tarifwechsel bei Stripe durchgeführt, lokale Bestätigung aber nicht gesichert:', userId, outcome)
+  return NextResponse.json(
+    {
+      error:
+        'Der Tarifwechsel wurde bei unserem Zahlungsdienstleister bereits übernommen, konnte lokal aber noch nicht sicher bestätigt werden. Bitte laden Sie die Seite in Kürze neu – eine endgültige Bestätigung erfolgt automatisch, sobald die Synchronisierung abgeschlossen ist. Es gibt dafür keine garantierte Frist.',
+      stripeUpdated: true,
+    },
+    { status: 500 }
+  )
 }

@@ -96,22 +96,50 @@ export interface ApplySubscriptionUpdatedInput extends OrderingGuardedUpdate {
   cancelAt: Date | null
   /** Optional: bei Reconciliation kann die Subscription-ID noch fehlen/abweichen. */
   stripeSubscriptionId?: string | null
+  /**
+   * Phase 2G.5 – optional: Monate bis zur neuen Mindestlaufzeit, AB JETZT gerechnet (dieselbe
+   * `make_interval`-Logik wie bereits in `applyCheckoutActivation()`). `undefined` (Standardwert,
+   * alle bisherigen Aufrufstellen – Webhook-Handler, Reconciliation, `invoice.payment_failed`)
+   * lässt `subscription_committed_until` UNVERÄNDERT – diese Aufrufstellen haben nie eine eigene
+   * Mindestlaufzeit-Policy getroffen und sollen das auch weiterhin nicht tun. `0` oder `null`
+   * setzt sie explizit auf NULL (kein Mindestlaufzeit-Bezug mehr). Eingeführt, damit der
+   * Tarifwechsel in `checkout/route.ts` (Monat -> Jahr) dieselbe Ordering-Guard-Funktion
+   * wiederverwenden kann, statt einen eigenen, ungeschützten UPDATE zu formulieren (siehe
+   * Phase-2G.5-Bericht).
+   */
+  committedUntilMonths?: number | null
 }
 
 /** Phase 4.2 (Teil D/G/J) – entspricht der bisherigen `customer.subscription.updated`-Logik, jetzt
- * mit Ordering-Guard, zentralisiertem Status-/Tier-Mapping. Auch von der Reconciliation und von
- * `invoice.payment_failed` (nach `subscriptions.retrieve`) wiederverwendet, statt eine zweite,
- * konkurrierende State-Machine zu bauen (Audit-Vorgabe: "keine zweite State-Machine"). */
+ * mit Ordering-Guard, zentralisiertem Status-/Tier-Mapping. Auch von der Reconciliation, von
+ * `invoice.payment_failed` (nach `subscriptions.retrieve`) UND vom Tarifwechsel in
+ * `checkout/route.ts` (Phase 2G.5) wiederverwendet, statt eine zweite, konkurrierende
+ * State-Machine zu bauen (Audit-Vorgabe: "keine zweite State-Machine"). */
 export async function applySubscriptionUpdated(db: Queryable, input: ApplySubscriptionUpdatedInput): Promise<boolean> {
+  const updateCommittedUntil = input.committedUntilMonths !== undefined
   const result = await db.query(
     `UPDATE users SET
        subscription_status = $1,
        subscription_tier = COALESCE($2, subscription_tier),
        subscription_cancel_at = $3,
        stripe_subscription_id = COALESCE($4, stripe_subscription_id),
+       subscription_committed_until = CASE
+         WHEN $7::boolean = false THEN subscription_committed_until
+         WHEN $8::int > 0 THEN now() + make_interval(months => $8::int)
+         ELSE NULL
+       END,
        subscription_state_updated_at = $5
      WHERE id = $6 AND (subscription_state_updated_at IS NULL OR subscription_state_updated_at < $5)`,
-    [input.status, input.tier, input.cancelAt, input.stripeSubscriptionId ?? null, input.eventCreatedAt, input.userId]
+    [
+      input.status,
+      input.tier,
+      input.cancelAt,
+      input.stripeSubscriptionId ?? null,
+      input.eventCreatedAt,
+      input.userId,
+      updateCommittedUntil,
+      input.committedUntilMonths ?? 0,
+    ]
   )
   return (result.rowCount ?? 0) > 0
 }

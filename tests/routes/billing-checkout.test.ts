@@ -5,6 +5,7 @@ import Stripe from 'stripe'
 const {
   getCurrentUserMock,
   queryMock,
+  connectMock,
   customersRetrieveMock,
   customersListMock,
   customersCreateMock,
@@ -14,6 +15,7 @@ const {
 } = vi.hoisted(() => ({
   getCurrentUserMock: vi.fn(),
   queryMock: vi.fn(),
+  connectMock: vi.fn(),
   customersRetrieveMock: vi.fn(),
   customersListMock: vi.fn(),
   customersCreateMock: vi.fn(),
@@ -23,7 +25,7 @@ const {
 }))
 
 vi.mock('@/lib/current-user', () => ({ getCurrentUser: getCurrentUserMock }))
-vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock }) }))
+vi.mock('@/lib/db', () => ({ getDb: () => ({ query: queryMock, connect: connectMock }) }))
 vi.mock('@/lib/stripe', () => ({
   getStripe: () => ({
     customers: { retrieve: customersRetrieveMock, list: customersListMock, create: customersCreateMock },
@@ -33,6 +35,31 @@ vi.mock('@/lib/stripe', () => ({
 }))
 
 import { POST, stripeCustomerCreateIdempotencyKey } from '@/app/api/billing/checkout/route'
+
+/**
+ * Phase 2G.5 – der Tarifwechsel-Zweig (hasActiveSub) serialisiert sich jetzt über denselben
+ * Nutzer-Lock-Schlüssel wie `cancel-yearly`/die Admin-Kündigung (siehe
+ * src/lib/billing/cancellation-lock.ts). Simuliert dieselbe Session-Advisory-Lock-Semantik wie in
+ * tests/routes/billing-cancel-yearly.test.ts bzw. tests/routes/admin-cancel-subscription.test.ts.
+ */
+function createLockSimulator(heldUsers: Set<string>) {
+  connectMock.mockImplementation(async () => ({
+    query: vi.fn(async (sql: string, params: unknown[] = []) => {
+      const userId = params[0] as string
+      if (sql.includes('pg_try_advisory_lock')) {
+        if (heldUsers.has(userId)) return { rows: [{ locked: false }] }
+        heldUsers.add(userId)
+        return { rows: [{ locked: true }] }
+      }
+      if (sql.includes('pg_advisory_unlock')) {
+        heldUsers.delete(userId)
+        return { rows: [{ unlocked: true }] }
+      }
+      return { rows: [] }
+    }),
+    release: vi.fn(),
+  }))
+}
 
 function req(tier: 'monthly' | 'yearly' = 'monthly') {
   return new NextRequest('http://localhost/api/billing/checkout', {
@@ -316,10 +343,14 @@ describe('POST /api/billing/checkout — Tarifwechsel erfordert bestätigte Prei
   beforeEach(() => {
     getCurrentUserMock.mockReset()
     queryMock.mockReset()
+    connectMock.mockReset()
     subscriptionsRetrieveMock.mockReset()
     subscriptionsUpdateMock.mockReset()
     vi.stubEnv('STRIPE_PRICE_MONTHLY', 'price_monthly')
     vi.stubEnv('STRIPE_PRICE_YEARLY', 'price_yearly')
+    // Standard: Lock steht immer sofort zur Verfügung; Tests für echte Lock-Konkurrenz
+    // überschreiben dies gezielt via createLockSimulator(heldUsers).
+    createLockSimulator(new Set())
   })
 
   it('lehnt einen Tarifwechsel ohne previewId ab, OHNE die Subscription zu berühren', async () => {
@@ -343,7 +374,7 @@ describe('POST /api/billing/checkout — Tarifwechsel erfordert bestätigte Prei
     getCurrentUserMock.mockResolvedValue(userWithActiveSub())
     queryMock
       .mockResolvedValueOnce({ rows: [{ id: '22222222-2222-4222-8222-222222222222', target_tier: 'yearly', stripe_subscription_id: 'sub_1' }] }) // claim
-      .mockResolvedValueOnce({ rows: [] }) // subscription_tier UPDATE
+      .mockResolvedValueOnce({ rowCount: 1 }) // applySubscriptionUpdated (Tarifwechsel)
     subscriptionsRetrieveMock.mockResolvedValue({ items: { data: [{ id: 'si_1' }] } })
     subscriptionsUpdateMock.mockResolvedValue({})
 
@@ -361,7 +392,7 @@ describe('POST /api/billing/checkout — Tarifwechsel erfordert bestätigte Prei
     // Erster Request: Claim gewinnt.
     queryMock
       .mockResolvedValueOnce({ rows: [{ id: '33333333-3333-4333-8333-333333333333', target_tier: 'yearly', stripe_subscription_id: 'sub_1' }] })
-      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 1 })
     subscriptionsRetrieveMock.mockResolvedValue({ items: { data: [{ id: 'si_1' }] } })
     subscriptionsUpdateMock.mockResolvedValue({})
     const resA = await POST(reqWithPreview('yearly', '33333333-3333-4333-8333-333333333333'))
