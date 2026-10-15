@@ -285,6 +285,15 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
     : null
   const membershipUrl = `${getAppUrl()}/dashboard/einstellungen/mitgliedschaft`
 
+  // Im Testmodus wird die GESAMTE Mail als Test erkennbar, nicht nur ein zusätzlicher Hinweis:
+  // eigene Überschrift, eigener Schlusssatz (statt der Vertragsbestätigung), zusätzlich weiterhin
+  // der rot hervorgehobene Banner (unverändert erhalten, siehe testBannerHtml/testBannerText
+  // unten). Im Normalmodus bleibt jede dieser drei Stellen exakt wie zuvor.
+  const heading = isTest ? 'Technischer E-Mail-Test erfolgreich' : 'Ihr Abo wurde aktiviert'
+  const footerSentence = isTest
+    ? 'Diese E-Mail bestätigt lediglich, dass der technische Zustellweg für Abo-Benachrichtigungen funktioniert. Die oben gezeigten Werte sind synthetisch und stammen aus keinem echten Vertrag.'
+    : 'Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos mit den oben genannten Eckdaten.'
+
   // Nur bei isTest===true gerendert, direkt unter der Überschrift – unübersehbar vor den
   // eigentlichen (im Testfall ohnehin nur synthetischen) Tarifdaten.
   const testBannerHtml = isTest
@@ -297,7 +306,7 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
     : ''
 
   const html = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #1e3a8a;">Ihr Abo wurde aktiviert</h1>
+      <h1 style="color: #1e3a8a;">${heading}</h1>
       ${testBannerHtml}
       <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; margin: 16px 0;">
         <p style="margin: 0 0 8px 0;"><strong>Tarif:</strong> ${safeTierName}</p>
@@ -314,12 +323,12 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
         Abo verwalten →
       </a>
       <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
-        Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos mit den oben genannten Eckdaten.
+        ${footerSentence}
       </p>
     </div>`
 
   const text = [
-    'Ihr Abo wurde aktiviert',
+    heading,
     '',
     testBannerText || null,
     `Tarif: ${info.tierName}`,
@@ -330,12 +339,19 @@ export async function sendSubscriptionConfirmationEmail(to: string, info: Subscr
       : null,
     '',
     `Abo verwalten: ${membershipUrl}`,
+    // Der Normalmodus hatte diesen Satz bisher NUR im HTML, nie im Text-Fallback – unverändert so
+    // belassen (Vorgabe: normaler Modus darf sich nicht ändern). Im Testmodus wird er zusätzlich
+    // auch im Text-Fallback ausgegeben, damit auch reine Text-Clients eindeutig erkennen, dass es
+    // sich um einen Test handelt.
+    isTest ? '' : null,
+    isTest ? footerSentence : null,
   ]
     .filter((line) => line !== null)
     .join('\n')
 
   const subjectPrefix = isTest ? '[TECHNISCHER TEST – KEIN VERTRAG] ' : ''
-  await send(to, `${subjectPrefix}Ihr BAUVERSUS-Abo (${info.tierName}) wurde aktiviert`, html, text)
+  const subject = isTest ? `${subjectPrefix}${heading}` : `Ihr BAUVERSUS-Abo (${info.tierName}) wurde aktiviert`
+  await send(to, subject, html, text)
 }
 
 export interface CancellationConfirmationEmailInfo {

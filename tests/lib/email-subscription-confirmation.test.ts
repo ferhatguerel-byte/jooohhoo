@@ -69,6 +69,37 @@ describe('sendSubscriptionConfirmationEmail — Phase 2B (manuelle Testkennzeich
       expect(payload.html).toContain('Mindestlaufzeit:')
       expect(payload.html).toContain('12 Monate')
     })
+
+    it('Überschrift bleibt "Ihr Abo wurde aktiviert" (HTML und als erste Zeile im Text)', async () => {
+      await sendSubscriptionConfirmationEmail('kunde@example.com', baseInfo)
+      const payload = emailsSendMock.mock.calls[0][0]
+      expect(payload.html).toContain('<h1 style="color: #1e3a8a;">Ihr Abo wurde aktiviert</h1>')
+      expect(payload.text.split('\n')[0]).toBe('Ihr Abo wurde aktiviert')
+      expect(payload.html).not.toContain('Technischer E-Mail-Test erfolgreich')
+    })
+
+    it('Schlusssatz bleibt die echte Vertragsbestätigung (nur im HTML, wie bisher nicht im Text-Fallback)', async () => {
+      await sendSubscriptionConfirmationEmail('kunde@example.com', baseInfo)
+      const payload = emailsSendMock.mock.calls[0][0]
+      expect(payload.html).toContain('Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos mit den oben genannten Eckdaten.')
+      expect(payload.text).not.toContain('Diese E-Mail bestätigt den Abschluss')
+      expect(payload.text).not.toContain('technischer Zustellweg')
+    })
+
+    it('Text-Fallback ist byte-identisch zur bisherigen Struktur (keine neue Leerzeile/Satz am Ende)', async () => {
+      await sendSubscriptionConfirmationEmail('kunde@example.com', baseInfo)
+      const payload = emailsSendMock.mock.calls[0][0]
+      const expectedText = [
+        'Ihr Abo wurde aktiviert',
+        '',
+        'Tarif: Monatspaket',
+        'Preis: €119 / Monat zzgl. MwSt.',
+        'Abrechnung: monatliche Abbuchung · jederzeit kündbar',
+        '',
+        'Abo verwalten: https://bauversus.de/dashboard/einstellungen/mitgliedschaft',
+      ].join('\n')
+      expect(payload.text).toBe(expectedText)
+    })
   })
 
   describe('Testmail (isTest: true) — eindeutig gekennzeichnet, kein echter Vertrag', () => {
@@ -107,6 +138,34 @@ describe('sendSubscriptionConfirmationEmail — Phase 2B (manuelle Testkennzeich
       await sendSubscriptionConfirmationEmail('eigene-test-adresse@example.com', { ...baseInfo, isTest: true })
       const payload = emailsSendMock.mock.calls[0][0]
       expect(payload.to).toBe('eigene-test-adresse@example.com')
+    })
+
+    it('Überschrift (HTML h1 und erste Textzeile) ist "Technischer E-Mail-Test erfolgreich", NICHT die Vertragsformulierung', async () => {
+      await sendSubscriptionConfirmationEmail('eigene-test-adresse@example.com', { ...baseInfo, isTest: true })
+      const payload = emailsSendMock.mock.calls[0][0]
+      expect(payload.html).toContain('<h1 style="color: #1e3a8a;">Technischer E-Mail-Test erfolgreich</h1>')
+      expect(payload.html).not.toContain('>Ihr Abo wurde aktiviert<')
+      expect(payload.text.split('\n')[0]).toBe('Technischer E-Mail-Test erfolgreich')
+    })
+
+    it('Schlusssatz ist ein neutraler technischer Hinweis, NICHT die Vertragsbestätigungsformulierung – in HTML und Text', async () => {
+      await sendSubscriptionConfirmationEmail('eigene-test-adresse@example.com', { ...baseInfo, isTest: true })
+      const payload = emailsSendMock.mock.calls[0][0]
+      const expectedSentence =
+        'Diese E-Mail bestätigt lediglich, dass der technische Zustellweg für Abo-Benachrichtigungen funktioniert. Die oben gezeigten Werte sind synthetisch und stammen aus keinem echten Vertrag.'
+      expect(payload.html).toContain(expectedSentence)
+      expect(payload.text).toContain(expectedSentence)
+      expect(payload.html).not.toContain('Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos')
+      expect(payload.text).not.toContain('Diese E-Mail bestätigt den Abschluss Ihres BAUVERSUS-Abos')
+    })
+
+    it('HTML und Text sind widerspruchsfrei: nirgends taucht die reguläre Aktivierungsformulierung zusätzlich zur Testkennzeichnung auf', async () => {
+      await sendSubscriptionConfirmationEmail('eigene-test-adresse@example.com', { ...baseInfo, isTest: true })
+      const payload = emailsSendMock.mock.calls[0][0]
+      // "wurde aktiviert" darf nur noch im Betreff-Resttext (Vertragsname-Platzhalter) vorkommen,
+      // niemals mehr als eigenständige Überschrift/Aussage im Body.
+      expect(payload.html).not.toMatch(/<h1[^>]*>\s*Ihr Abo wurde aktiviert\s*<\/h1>/)
+      expect(payload.text.startsWith('Ihr Abo wurde aktiviert')).toBe(false)
     })
   })
 })
