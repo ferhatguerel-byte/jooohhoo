@@ -32,6 +32,25 @@ export function getStripe(): Stripe {
           'https://dashboard.stripe.com/account/api-keys'
       )
     }
+    // Phase 2G.17 – bewusst an `VERCEL_ENV` gekoppelt, NICHT an `NODE_ENV`: Next.js baut sowohl
+    // Vercel-Production- als auch Preview-Deployments mit `NODE_ENV=production` (siehe
+    // Phase-2G.16-Audit), nur `VERCEL_ENV` unterscheidet die beiden. Ein Preview-Deployment MUSS
+    // weiterhin einen Test-Key verwenden können – diese Prüfung darf das nicht verhindern, sie
+    // gilt ausschließlich für das tatsächliche Vercel-Production-Environment. Lokale Entwicklung
+    // (VERCEL_ENV ist dort nicht gesetzt) ist ebenfalls nicht betroffen.
+    //
+    // Ohne diese Prüfung akzeptierte getStripe() in Production bisher auch einen gültig
+    // aussehenden, aber im Testmodus laufenden Schlüssel (sk_test_...) anstandslos – das führte
+    // zu genau der in der Produktion beobachteten Diskrepanz (Stripe-Objekte, die im Live-Konto
+    // nicht auffindbar sind, "No such subscription" bei einer Admin-Kündigung).
+    if (process.env.VERCEL_ENV === 'production' && !secretKey?.startsWith('sk_live_')) {
+      throw new Error(
+        'STRIPE_SECRET_KEY ist in der Vercel-Production-Umgebung kein Live-Schlüssel (sk_live_...) – ' +
+          'der Wert fehlt oder beginnt mit einem anderen Präfix (z.B. sk_test_...). Ein Test-Schlüssel ' +
+          'darf in Production niemals verwendet werden. Bitte den Live Secret Key in den ' +
+          'Vercel-Projekteinstellungen (Environment: Production) hinterlegen: https://dashboard.stripe.com/apikeys'
+      )
+    }
     stripeClient = new Stripe(secretKey || 'sk_test_build_placeholder')
   }
   return stripeClient
