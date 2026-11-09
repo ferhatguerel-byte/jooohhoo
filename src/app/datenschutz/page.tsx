@@ -78,7 +78,29 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">8. Speicherdauer</h2>
+        <h2 className="font-bold text-slate-900 mb-2">8. Hosting</h2>
+        <p>
+          Diese Website wird beim Hosting-Anbieter Vercel Inc. (USA) betrieben. Im Rahmen des Hostings
+          verarbeitet Vercel technisch notwendige Daten (u. a. IP-Adresse, Zeitpunkt des Zugriffs), die
+          beim Aufruf der Website anfallen. Die Verarbeitung erfolgt zur Bereitstellung der Website und
+          damit auf Grundlage unseres berechtigten Interesses an einem funktionsfähigen, sicheren Betrieb
+          (Art. 6 Abs. 1 lit. f DSGVO). Weitere Informationen: vercel.com/legal/privacy-policy.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">9. Fehler-Tracking</h2>
+        <p>
+          Zur Erkennung und Behebung technischer Fehler setzen wir den Dienst Sentry (Functional Software,
+          Inc., USA) ein. Dabei können technische Daten zum Fehlerkontext (u. a. aufgerufene Seite, Gerät-
+          und Browserinformationen, ggf. IP-Adresse) verarbeitet werden. Die Verarbeitung erfolgt auf
+          Grundlage unseres berechtigten Interesses an einem fehlerfreien, sicheren Betrieb der Plattform
+          (Art. 6 Abs. 1 lit. f DSGVO). Weitere Informationen: sentry.io/privacy.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="font-bold text-slate-900 mb-2">10. Speicherdauer</h2>
         <p>
           Wir speichern Ihre Daten, solange Ihr Nutzerkonto besteht, bzw. so lange, wie dies zur Erfüllung
           gesetzlicher Aufbewahrungspflichten erforderlich ist. Nach Löschung des Kontos werden Daten
@@ -87,7 +109,7 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">9. Ihre Rechte</h2>
+        <h2 className="font-bold text-slate-900 mb-2">11. Ihre Rechte</h2>
         <p>
           Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
           Datenübertragbarkeit sowie Widerspruch gegen die Verarbeitung Ihrer personenbezogenen Daten.
@@ -96,7 +118,7 @@ export default function DatenschutzPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="font-bold text-slate-900 mb-2">10. Cookies</h2>
+        <h2 className="font-bold text-slate-900 mb-2">12. Cookies</h2>
         <p>
           Diese Website verwendet ein technisch notwendiges Session-Cookie zur Anmeldung im Nutzerkonto.
           Es werden keine Tracking- oder Marketing-Cookies eingesetzt.

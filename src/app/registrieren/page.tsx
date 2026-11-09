@@ -148,6 +148,7 @@ function RegisterForm() {
                             type="button"
                             key={g}
                             onClick={() => toggleGewerk(g)}
+                            aria-pressed={gewerke.includes(g)}
                             className={`px-3 py-1.5 rounded-full text-sm border transition ${
                               gewerke.includes(g)
                                 ? 'bg-accent border-accent text-white'
